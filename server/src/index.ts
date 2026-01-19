@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
 import { errorHandler } from './middleware/errorHandler';
+import logger, { loggers } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -38,16 +39,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log(`✅ User connected: ${socket.id}`);
+  loggers.socket.connection(socket.id);
 
   // Authenticate and join user's room
   socket.on('authenticate', (userId: number) => {
     socket.join(`user:${userId}`);
-    console.log(`User ${userId} joined their room`);
+    loggers.socket.connection(socket.id, userId);
   });
 
   socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+    loggers.socket.disconnect(socket.id);
   });
 });
 
@@ -60,29 +61,28 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-// TODO: Import and use routes here
-// import authRoutes from './routes/authRoutes';
-// import collectionRoutes from './routes/collectionRoutes';
-// import deckRoutes from './routes/deckRoutes';
-// import socialRoutes from './routes/socialRoutes';
-// import reactionRoutes from './routes/reactionRoutes';
-// import commentRoutes from './routes/commentRoutes';
-// import notificationRoutes from './routes/notificationRoutes';
+import authRoutes from './routes/authRoutes';
+import collectionRoutes from './routes/collectionRoutes';
+import deckRoutes from './routes/deckRoutes';
+import socialRoutes from './routes/socialRoutes';
+import reactionRoutes from './routes/reactionRoutes';
+import commentRoutes from './routes/commentRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
-// app.use('/api/auth', authRoutes);
-// app.use('/api/collection', collectionRoutes);
-// app.use('/api/decks', deckRoutes);
-// app.use('/api/social', socialRoutes);
-// app.use('/api/reactions', reactionRoutes);
-// app.use('/api/comments', commentRoutes);
-// app.use('/api/notifications', notificationRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/collection', collectionRoutes);
+app.use('/api/decks', deckRoutes);
+app.use('/api/social', socialRoutes);
+app.use('/api/reactions', reactionRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
 
 // Start server
 httpServer.listen(PORT, () => {
-  console.log(`
+  logger.info(`
 ╔══════════════════════════════════════════════════╗
 ║   🎴 YuGiOh Collection Manager API Server       ║
 ║   🚀 Server running on http://localhost:${PORT}   ║
@@ -90,6 +90,7 @@ httpServer.listen(PORT, () => {
 ║   🗄️  Database: PostgreSQL                       ║
 ╚══════════════════════════════════════════════════╝
   `);
+  logger.info('Server started successfully');
 });
 
 // Handle graceful shutdown
