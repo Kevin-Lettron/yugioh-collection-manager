@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/userModel';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { ValidationError, UnauthorizedError } from '../middleware/errorHandler';
 import { loggers } from '../utils/logger';
+import { generateToken } from '../utils/jwt';
 import { AuthResponse, LoginRequest, RegisterRequest } from '../../../shared/types';
 
 export class AuthController {
@@ -33,14 +33,11 @@ export class AuthController {
       const user = await UserModel.create(username, email, password);
 
       // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
-      const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
-        jwtSecret,
-        { expiresIn: jwtExpiresIn }
-      );
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      });
 
       loggers.auth.register(user.id, user.email, user.username);
 
@@ -78,14 +75,11 @@ export class AuthController {
       }
 
       // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
-      const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
-        jwtSecret,
-        { expiresIn: jwtExpiresIn }
-      );
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      });
 
       loggers.auth.login(user.id, email, true);
 
