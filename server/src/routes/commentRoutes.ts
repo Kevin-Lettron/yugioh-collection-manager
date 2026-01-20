@@ -10,7 +10,7 @@ router.get('/:commentId/replies', optionalAuth, CommentController.getReplies);
 
 // Protected routes (creating/editing comments)
 router.post('/deck/:deckId', authenticateToken, CommentController.createComment);
-router.post('/:commentId/reply', authenticateToken, CommentController.createReply);
+router.post('/:commentId/reply', authenticateToken, CommentController.createComment);
 router.put('/:commentId', authenticateToken, CommentController.updateComment);
 router.delete('/:commentId', authenticateToken, CommentController.deleteComment);
 

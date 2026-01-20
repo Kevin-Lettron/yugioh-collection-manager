@@ -294,7 +294,7 @@ export class DeckController {
       const allCards = [...(deck.main_deck || []), ...(deck.extra_deck || [])];
       const deckCard = allCards.find((dc) => dc.id === deckCardId);
 
-      if (!deckCard) {
+      if (!deckCard || !deckCard.card) {
         throw new NotFoundError('Card not found in deck');
       }
 

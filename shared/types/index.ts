@@ -119,7 +119,7 @@ export interface DeckReaction {
   is_like: boolean;
   created_at: Date;
   updated_at: Date;
-  user?: User;
+  user?: Partial<User>;
 }
 
 export interface DeckComment {
@@ -130,8 +130,9 @@ export interface DeckComment {
   content: string;
   created_at: Date;
   updated_at: Date;
-  user?: User;
+  user?: Partial<User>;
   replies?: DeckComment[];
+  replies_count?: number;
 }
 
 export interface Notification {
@@ -143,8 +144,8 @@ export interface Notification {
   comment_id?: number;
   is_read: boolean;
   created_at: Date;
-  from_user?: User;
-  deck?: Deck;
+  from_user?: Partial<User>;
+  deck?: Partial<Deck>;
   comment?: DeckComment;
 }
 

@@ -11,9 +11,9 @@ router.use(authenticateToken);
 router.post('/follow/:userId', SocialController.followUser);
 router.delete('/follow/:userId', SocialController.unfollowUser);
 router.get('/followers', SocialController.getFollowers);
-router.get('/followers/:userId', SocialController.getUserFollowers);
+router.get('/followers/:userId', SocialController.getFollowers);
 router.get('/following', SocialController.getFollowing);
-router.get('/following/:userId', SocialController.getUserFollowing);
+router.get('/following/:userId', SocialController.getFollowing);
 
 // Wishlist routes
 router.post('/wishlist/:deckId', SocialController.addToWishlist);

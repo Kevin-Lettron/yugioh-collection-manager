@@ -70,7 +70,7 @@ export class DeckModel {
     });
 
     // Check if requesting user has reacted
-    let userReaction = null;
+    let userReaction: 'like' | 'dislike' | null = null;
     if (requestingUserId) {
       const reactionResult = await query(
         `SELECT is_like FROM deck_reactions WHERE deck_id = $1 AND user_id = $2`,
@@ -231,7 +231,7 @@ export class DeckModel {
     // Get paginated results
     values.push(limit, offset);
     const result = await query(
-      `SELECT d.*, u.username, u.profile_picture,
+      `SELECT d.*, u.username, u.email, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count,
               (SELECT COUNT(*) FROM deck_comments WHERE deck_id = d.id) as comments_count
@@ -255,7 +255,10 @@ export class DeckModel {
       user: {
         id: row.user_id,
         username: row.username,
+        email: row.email,
         profile_picture: row.profile_picture,
+        created_at: row.user_created_at,
+        updated_at: row.user_updated_at,
       },
       likes_count: parseInt(row.likes_count || 0),
       dislikes_count: parseInt(row.dislikes_count || 0),

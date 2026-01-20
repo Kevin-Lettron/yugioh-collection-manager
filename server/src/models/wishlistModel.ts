@@ -65,8 +65,9 @@ export class WishlistModel {
     const result = await query(
       `SELECT dw.*,
               d.id as deck_id, d.name as deck_name, d.cover_image, d.user_id as deck_user_id,
-              d.is_public, d.respect_banlist, d.created_at as deck_created_at,
-              u.username as deck_owner_username, u.profile_picture as deck_owner_picture,
+              d.is_public, d.respect_banlist, d.created_at as deck_created_at, d.updated_at as deck_updated_at,
+              u.username as deck_owner_username, u.email as deck_owner_email, u.profile_picture as deck_owner_picture,
+              u.created_at as deck_owner_created_at, u.updated_at as deck_owner_updated_at,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count
        FROM deck_wishlists dw
@@ -91,11 +92,14 @@ export class WishlistModel {
         is_public: row.is_public,
         respect_banlist: row.respect_banlist,
         created_at: row.deck_created_at,
-        updated_at: row.deck_created_at,
+        updated_at: row.deck_updated_at,
         user: {
           id: row.deck_user_id,
           username: row.deck_owner_username,
+          email: row.deck_owner_email,
           profile_picture: row.deck_owner_picture,
+          created_at: row.deck_owner_created_at,
+          updated_at: row.deck_owner_updated_at,
         },
         likes_count: parseInt(row.likes_count || 0),
         dislikes_count: parseInt(row.dislikes_count || 0),
