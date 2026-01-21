@@ -6,6 +6,21 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Deck, Card, DeckCard, UserCard, CollectionFilters, CardLanguage } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+
+// AI response types
+interface AISuggestion {
+  cardName: string;
+  reason: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+interface AISelectedCard {
+  cardId: number;
+  cardName: string;
+  quantity: number;
+  isExtraDeck: boolean;
+  reason: string;
+}
 import AppNavbar from '../components/AppNavbar';
 
 const LANGUAGE_LABELS: Record<CardLanguage, string> = {
@@ -86,6 +101,13 @@ const DeckEditor = () => {
   // Card detail modal
   const [selectedCardDetail, setSelectedCardDetail] = useState<UserCard | null>(null);
 
+  // AI deck builder
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
+  const [aiExplanation, setAiExplanation] = useState<string>('');
+
   // Infinite scroll for collection modal
   const loadMoreRef = useInfiniteScroll({
     loading: collectionLoading,
@@ -136,8 +158,28 @@ const DeckEditor = () => {
       setDeckName(deck.name);
       setIsPublic(deck.is_public);
       setRespectBanlist(deck.respect_banlist);
-      setMainDeck(deck.main_deck || []);
-      setExtraDeck(deck.extra_deck || []);
+
+      // Deduplicate cards by card NAME (merge quantities if duplicates exist)
+      // This handles corrupted data where same card appears multiple times with different IDs
+      const deduplicateCards = (cards: DeckCard[]): DeckCardWithCollection[] => {
+        const cardMap = new Map<string, DeckCardWithCollection>();
+        for (const card of cards || []) {
+          const cardName = card.card?.name || `card_${card.card_id}`;
+          const existing = cardMap.get(cardName);
+          if (existing) {
+            // Merge: add quantities but cap at 3
+            existing.quantity = Math.min(3, existing.quantity + card.quantity);
+            console.log(`Merged duplicate "${cardName}": now x${existing.quantity}`);
+          } else {
+            cardMap.set(cardName, { ...card } as DeckCardWithCollection);
+          }
+        }
+        console.log(`Deduplicated: ${cards?.length || 0} entries -> ${cardMap.size} unique cards`);
+        return Array.from(cardMap.values());
+      };
+
+      setMainDeck(deduplicateCards(deck.main_deck || []));
+      setExtraDeck(deduplicateCards(deck.extra_deck || []));
     } catch (error) {
       console.error('Failed to fetch deck:', error);
       toast.error('Impossible de charger le deck');
@@ -603,6 +645,136 @@ const DeckEditor = () => {
     setCollectionCards([]);
   };
 
+  // AI Deck Builder
+  const handleAIBuild = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error('Veuillez entrer une description pour votre deck');
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      // Prepare existing deck data with card names for context
+      const existingMainDeck = mainDeck.length > 0 ? mainDeck.map(dc => ({
+        cardId: dc.card_id,
+        cardName: dc.card?.name || '',
+        quantity: dc.quantity,
+      })) : undefined;
+
+      const existingExtraDeck = extraDeck.length > 0 ? extraDeck.map(dc => ({
+        cardId: dc.card_id,
+        cardName: dc.card?.name || '',
+        quantity: dc.quantity,
+      })) : undefined;
+
+      const response = await api.post('/decks/ai/build', {
+        prompt: aiPrompt,
+        existingMainDeck,
+        existingExtraDeck,
+      });
+
+      const { selectedCards: aiSelectedCards, suggestions, explanation } = response.data;
+
+      console.log('AI returned cards:', aiSelectedCards);
+
+      // Group cards by card NAME to merge duplicates (handles cases where same card has different IDs)
+      const mainDeckMap = new Map<string, DeckCardWithCollection>();
+      const extraDeckMap = new Map<string, DeckCardWithCollection>();
+
+      for (const selected of aiSelectedCards as AISelectedCard[]) {
+        // Skip if quantity is 0 or invalid
+        if (!selected.quantity || selected.quantity <= 0) continue;
+
+        // Use card name as key for deduplication
+        const cardKey = selected.cardName;
+        const targetMap = selected.isExtraDeck ? extraDeckMap : mainDeckMap;
+        const existing = targetMap.get(cardKey);
+
+        if (existing) {
+          // Merge: add quantity (but cap at 3)
+          existing.quantity = Math.min(3, existing.quantity + selected.quantity);
+          console.log(`Merged ${selected.cardName}: now x${existing.quantity}`);
+        } else {
+          // Fetch card data from collection
+          try {
+            const cardResponse = await api.get(`/collection/cards`, {
+              params: { card_id: selected.cardId, limit: 1 },
+            });
+
+            const userCards = cardResponse.data.data || cardResponse.data;
+            if (userCards && userCards.length > 0) {
+              const userCard = userCards[0];
+
+              // Use the quantity from AI (already validated server-side)
+              // Only cap at 3 (max allowed by rules), don't limit by collection
+              const finalQuantity = Math.min(selected.quantity, 3);
+
+              if (finalQuantity <= 0) {
+                console.warn(`Skipping ${selected.cardName}: no quantity`);
+                continue;
+              }
+
+              const deckCard: DeckCardWithCollection = {
+                id: Date.now() + Math.random(),
+                deck_id: parseInt(deckId || '0'),
+                card_id: selected.cardId,
+                quantity: finalQuantity,
+                is_extra_deck: selected.isExtraDeck,
+                created_at: new Date(),
+                card: userCard.card,
+                setCode: userCard.set_code,
+                rarity: userCard.rarity,
+                collectionQuantity: userCard.quantity,
+              };
+
+              targetMap.set(cardKey, deckCard);
+              console.log(`Added ${selected.cardName} x${finalQuantity} to ${selected.isExtraDeck ? 'extra' : 'main'} deck`);
+            }
+          } catch (cardError) {
+            console.error(`Failed to fetch card ${selected.cardId}:`, cardError);
+          }
+        }
+      }
+
+      // Convert maps to arrays
+      const newMainDeck = Array.from(mainDeckMap.values());
+      const newExtraDeck = Array.from(extraDeckMap.values());
+
+      // Calculate totals
+      const mainDeckTotal = newMainDeck.reduce((sum, c) => sum + c.quantity, 0);
+      const extraDeckTotal = newExtraDeck.reduce((sum, c) => sum + c.quantity, 0);
+
+      console.log(`Final deck: Main=${mainDeckTotal} cards (${newMainDeck.length} unique), Extra=${extraDeckTotal} cards (${newExtraDeck.length} unique)`);
+      console.log('New main deck cards:', newMainDeck.map(c => `${c.card?.name} x${c.quantity}`));
+
+      // Replace deck completely - React batch update
+      setMainDeck(newMainDeck);
+      setExtraDeck(newExtraDeck);
+
+      // Store suggestions and explanation
+      setAiSuggestions(suggestions || []);
+      setAiExplanation(explanation || '');
+
+      setShowAIModal(false);
+      setAiPrompt('');
+
+      const totalAdded = newMainDeck.reduce((s, c) => s + c.quantity, 0) +
+                         newExtraDeck.reduce((s, c) => s + c.quantity, 0);
+      toast.success(`${totalAdded} cartes ajoutées par l'IA !`);
+    } catch (error: any) {
+      console.error('AI build error:', error);
+      const message = error.response?.data?.message || 'Erreur lors de la création du deck avec l\'IA';
+      toast.error(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const clearAISuggestions = () => {
+    setAiSuggestions([]);
+    setAiExplanation('');
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -871,6 +1043,18 @@ const DeckEditor = () => {
                 </button>
               </div>
 
+              {/* AI Deck Builder Button */}
+              <button
+                type="button"
+                onClick={() => setShowAIModal(true)}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-semibold flex items-center justify-center space-x-2 mb-4"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span>{isEditing ? 'Optimiser avec l\'IA' : 'Créer avec l\'IA'}</span>
+              </button>
+
               {/* Quick search results */}
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {searching && (
@@ -1061,6 +1245,72 @@ const DeckEditor = () => {
                 </p>
               )}
             </div>
+
+            {/* AI Suggestions Block - Below Extra Deck */}
+            {(aiSuggestions.length > 0 || aiExplanation) && (
+              <div className="bg-white rounded-lg shadow p-6 mt-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 className="text-lg font-bold text-gray-800">Suggestions de l'IA</h3>
+                  </div>
+                  <button
+                    onClick={clearAISuggestions}
+                    className="text-gray-500 hover:text-gray-700 text-xl leading-none p-1"
+                    title="Fermer les suggestions"
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                {/* AI Explanation */}
+                {aiExplanation && (
+                  <div className="bg-indigo-50 rounded-lg p-4 mb-4">
+                    <h4 className="text-sm font-semibold text-indigo-800 mb-2">Stratégie du deck :</h4>
+                    <p className="text-sm text-indigo-700">{aiExplanation}</p>
+                  </div>
+                )}
+
+                {/* Suggestions List */}
+                {aiSuggestions.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Cartes recommandées à obtenir :</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {aiSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className={`rounded-lg p-3 border ${
+                            suggestion.priority === 'high'
+                              ? 'bg-red-50 border-red-200'
+                              : suggestion.priority === 'medium'
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-green-50 border-green-200'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <h5 className="font-semibold text-gray-800 text-sm">{suggestion.cardName}</h5>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                suggestion.priority === 'high'
+                                  ? 'bg-red-200 text-red-800'
+                                  : suggestion.priority === 'medium'
+                                  ? 'bg-yellow-200 text-yellow-800'
+                                  : 'bg-green-200 text-green-800'
+                              }`}
+                            >
+                              {suggestion.priority === 'high' ? 'Prioritaire' : suggestion.priority === 'medium' ? 'Recommandé' : 'Optionnel'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">{suggestion.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1567,6 +1817,108 @@ const DeckEditor = () => {
           </div>
         </div>
       )}
+
+      {/* AI Deck Builder Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-lg">
+              <div className="flex items-center space-x-3">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {isEditing ? 'Optimiser avec l\'IA' : 'Créer avec l\'IA'}
+                  </h3>
+                  <p className="text-sm text-indigo-100">Propulsé par Claude</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIModal(false)}
+                className="text-white hover:text-gray-200 text-2xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">
+                Décrivez le type de deck que vous souhaitez construire. L'IA analysera votre collection et sélectionnera les meilleures cartes.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Votre demande
+                </label>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="Ex: Je veux un deck Dragon Blanc aux Yeux Bleus compétitif avec des cartes de support..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
+                  rows={4}
+                />
+              </div>
+
+              <div className="bg-indigo-50 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-semibold text-indigo-800 mb-2">Exemples de demandes :</h4>
+                <ul className="text-sm text-indigo-700 space-y-1">
+                  <li className="cursor-pointer hover:text-indigo-900" onClick={() => setAiPrompt('Un deck Dragon Blanc aux Yeux Bleus optimisé pour la compétition')}>
+                    • Un deck Dragon Blanc aux Yeux Bleus optimisé pour la compétition
+                  </li>
+                  <li className="cursor-pointer hover:text-indigo-900" onClick={() => setAiPrompt('Un deck rapide et agressif avec beaucoup de monstres niveau 4')}>
+                    • Un deck rapide et agressif avec beaucoup de monstres niveau 4
+                  </li>
+                  <li className="cursor-pointer hover:text-indigo-900" onClick={() => setAiPrompt('Un deck contrôle avec des cartes piège et des magies de protection')}>
+                    • Un deck contrôle avec des cartes piège et des magies de protection
+                  </li>
+                </ul>
+              </div>
+
+              {mainDeck.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note :</strong> L'IA va analyser votre deck actuel et le <strong>remplacer</strong> par une version optimisée. Les cartes actuelles seront prises en compte pour l'optimisation.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+              <button
+                onClick={() => setShowAIModal(false)}
+                disabled={aiLoading}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleAIBuild}
+                disabled={aiLoading || !aiPrompt.trim()}
+                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {aiLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Génération en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Générer le deck</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

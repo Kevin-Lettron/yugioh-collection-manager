@@ -149,6 +149,7 @@ export class CollectionController {
         max_def,
         attribute,
         race,
+        card_id,
       } = req.query;
 
       const filters = {
@@ -165,6 +166,7 @@ export class CollectionController {
         max_def: max_def ? parseInt(max_def as string) : undefined,
         attribute: attribute as string,
         race: race as string,
+        card_id: card_id ? parseInt(card_id as string) : undefined,
       };
 
       const result = await UserCardModel.getUserCollection(req.user.id, filters);

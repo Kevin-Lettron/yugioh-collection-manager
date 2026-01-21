@@ -28,8 +28,10 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setLoading(true);
     try {
       const response = await api.get('/notifications');
-      setNotifications(response.data);
-      setUnreadCount(response.data.filter((n: Notification) => !n.is_read).length);
+      // API returns { notifications, total, unread_count, ... }
+      const notificationData = response.data.notifications || [];
+      setNotifications(notificationData);
+      setUnreadCount(response.data.unread_count || 0);
     } catch (error) {
       console.error('Failed to fetch notifications', error);
     } finally {

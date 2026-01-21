@@ -136,11 +136,17 @@ export class AuthController {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const { username, profile_picture } = req.body;
+      const { username, profile_picture, password } = req.body;
 
       const updates: any = {};
       if (username) updates.username = username;
       if (profile_picture !== undefined) updates.profile_picture = profile_picture;
+      if (password) {
+        if (password.length < 6) {
+          throw new ValidationError('Password must be at least 6 characters long');
+        }
+        updates.password = password;
+      }
 
       const updatedUser = await UserModel.update(req.user.id, updates);
       if (!updatedUser) {

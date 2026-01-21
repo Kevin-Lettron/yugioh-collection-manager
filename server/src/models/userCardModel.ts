@@ -47,12 +47,20 @@ export class UserCardModel {
       max_def,
       attribute,
       race,
+      card_id,
     } = filters;
 
     const offset = (page - 1) * limit;
     const conditions: string[] = ['uc.user_id = $1'];
     const values: any[] = [userId];
     let paramCount = 2;
+
+    // Card ID filter (filter by cards.id - the database PK)
+    if (card_id !== undefined) {
+      conditions.push(`c.id = $${paramCount}`);
+      values.push(card_id);
+      paramCount++;
+    }
 
     // Search filter
     if (search) {

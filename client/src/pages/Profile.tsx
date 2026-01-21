@@ -136,7 +136,7 @@ const Profile = () => {
       }
 
       const response = await api.put('/auth/profile', updateData);
-      const updatedUser: User = response.data;
+      const updatedUser: User = response.data.user;
 
       updateUser(updatedUser);
       toast.success('Profil mis à jour avec succès !');
@@ -149,6 +149,17 @@ const Profile = () => {
       setLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <AppNavbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">

@@ -4,6 +4,8 @@ import { ValidationError, NotFoundError, ForbiddenError } from '../middleware/er
 import { loggers } from '../utils/logger';
 import { DeckModel } from '../models/deckModel';
 import { CardModel } from '../models/cardModel';
+import { UserCardModel } from '../models/userCardModel';
+import { buildDeckWithAI, getApiCallCount, getMaxApiCalls, getRemainingCalls, resetApiCallCount } from '../services/claudeService';
 
 export class DeckController {
   /**
@@ -473,6 +475,105 @@ export class DeckController {
       const result = await DeckModel.searchPublicDecks(filters, requestingUserId);
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Build or optimize deck with AI
+   */
+  static async buildWithAI(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      const { prompt, deckId } = req.body;
+
+      if (!prompt || prompt.trim().length === 0) {
+        throw new ValidationError('Un prompt est requis pour générer le deck');
+      }
+
+      if (prompt.length > 1000) {
+        throw new ValidationError('Le prompt ne peut pas dépasser 1000 caractères');
+      }
+
+      // Check if Claude API key is configured
+      if (!process.env.CLAUDE_API_KEY) {
+        throw new ValidationError('La clé API Claude n\'est pas configurée');
+      }
+
+      // Get user's collection
+      const userCards = await UserCardModel.getUserCollection(req.user.id, {
+        limit: 10000, // Get all cards
+        page: 1,
+      });
+
+      if (!userCards.data || userCards.data.length === 0) {
+        throw new ValidationError('Votre collection est vide. Ajoutez des cartes avant de créer un deck avec l\'IA.');
+      }
+
+      // Get existing deck if optimizing (from request body, not from DB)
+      const { existingMainDeck, existingExtraDeck } = req.body;
+
+      // Call Claude AI
+      const aiResponse = await buildDeckWithAI(
+        userCards.data,
+        prompt,
+        existingMainDeck,
+        existingExtraDeck
+      );
+
+      loggers.api.request('POST', '/decks/ai/build', req.user.id);
+
+      res.json({
+        message: 'Deck généré avec succès',
+        selectedCards: aiResponse.selectedCards,
+        suggestions: aiResponse.suggestions,
+        explanation: aiResponse.explanation,
+        apiCallsRemaining: getRemainingCalls(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get AI API call status
+   */
+  static async getAIStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({
+        callCount: getApiCallCount(),
+        maxCalls: getMaxApiCalls(),
+        remainingCalls: getRemainingCalls(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reset AI API call counter (admin only - for testing)
+   */
+  static async resetAICounter(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      // For testing purposes - in production you'd want to restrict this to admins
+      resetApiCallCount();
+
+      loggers.api.request('POST', '/decks/ai/reset', req.user.id);
+
+      res.json({
+        message: 'Compteur API réinitialisé',
+        callCount: getApiCallCount(),
+        maxCalls: getMaxApiCalls(),
+        remainingCalls: getRemainingCalls(),
+      });
     } catch (error) {
       next(error);
     }

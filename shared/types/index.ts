@@ -217,6 +217,7 @@ export interface CollectionFilters extends PaginationParams {
   max_def?: number;
   attribute?: string;
   race?: string;
+  card_id?: number;
 }
 
 export interface DeckFilters extends PaginationParams {

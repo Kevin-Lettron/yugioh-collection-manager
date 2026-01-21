@@ -106,7 +106,7 @@ export class UserModel {
   /**
    * Update user profile
    */
-  static async update(id: number, updates: Partial<User>): Promise<User | null> {
+  static async update(id: number, updates: Partial<User> & { password?: string }): Promise<User | null> {
     const fields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
@@ -124,6 +124,12 @@ export class UserModel {
     if (updates.profile_picture !== undefined) {
       fields.push(`profile_picture = $${paramCount++}`);
       values.push(updates.profile_picture);
+    }
+
+    if (updates.password) {
+      const hashedPassword = await bcrypt.hash(updates.password, 10);
+      fields.push(`password_hash = $${paramCount++}`);
+      values.push(hashedPassword);
     }
 
     if (fields.length === 0) {

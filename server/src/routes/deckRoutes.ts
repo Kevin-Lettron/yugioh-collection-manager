@@ -24,4 +24,9 @@ router.put('/:id/cards/:cardId', authenticateToken, DeckController.updateCardQua
 router.post('/:id/share', authenticateToken, DeckController.generateShareLink);
 router.delete('/:id/share', authenticateToken, DeckController.removeShareLink);
 
+// AI routes
+router.get('/ai/status', authenticateToken, DeckController.getAIStatus);
+router.post('/ai/build', authenticateToken, DeckController.buildWithAI);
+router.post('/ai/reset', authenticateToken, DeckController.resetAICounter);
+
 export default router;
