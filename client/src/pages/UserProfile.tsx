@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Deck } from '../../../shared/types';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 
@@ -155,7 +155,7 @@ const UserProfile = () => {
             {/* Avatar */}
             {profileUser.profile_picture ? (
               <img
-                src={profileUser.profile_picture}
+                src={getImageUrl(profileUser.profile_picture)}
                 alt={profileUser.username}
                 className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
               />

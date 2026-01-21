@@ -53,7 +53,7 @@ export class NotificationController {
         throw new ValidationError('Not authenticated');
       }
 
-      const notificationId = parseInt(req.params.notificationId);
+      const notificationId = parseInt(req.params.id);
 
       if (isNaN(notificationId)) {
         throw new ValidationError('Invalid notification ID');
@@ -104,7 +104,7 @@ export class NotificationController {
         throw new ValidationError('Not authenticated');
       }
 
-      const notificationId = parseInt(req.params.notificationId);
+      const notificationId = parseInt(req.params.id);
 
       if (isNaN(notificationId)) {
         throw new ValidationError('Invalid notification ID');

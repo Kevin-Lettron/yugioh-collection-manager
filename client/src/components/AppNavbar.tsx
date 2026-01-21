@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Notification } from '../../../shared/types';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 
 const AppNavbar = () => {
   const { user, logout } = useAuth();
@@ -228,7 +228,7 @@ const AppNavbar = () => {
                           {/* Avatar */}
                           {notification.from_user?.profile_picture ? (
                             <img
-                              src={notification.from_user.profile_picture}
+                              src={getImageUrl(notification.from_user.profile_picture)}
                               alt=""
                               className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                             />

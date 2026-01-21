@@ -179,6 +179,47 @@ export class AuthController {
   }
 
   /**
+   * Upload profile picture
+   */
+  static async uploadAvatar(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      if (!req.file) {
+        throw new ValidationError('No image file provided');
+      }
+
+      // Build the URL path for the uploaded file
+      const profilePicturePath = `/uploads/profiles/${req.file.filename}`;
+
+      // Update user profile with new picture path
+      const updatedUser = await UserModel.update(req.user.id, {
+        profile_picture: profilePicturePath,
+      });
+
+      if (!updatedUser) {
+        throw new Error('Failed to update profile picture');
+      }
+
+      loggers.api.request('POST', '/auth/profile/avatar', req.user.id);
+
+      res.json({
+        message: 'Profile picture updated successfully',
+        user: updatedUser,
+        profile_picture: profilePicturePath,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Search users by username
    */
   static async searchUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

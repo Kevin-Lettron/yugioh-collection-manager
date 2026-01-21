@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Deck, User } from '../../../shared/types';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 
@@ -290,7 +290,7 @@ const Social = () => {
                   {/* Avatar */}
                   {searchUser.profile_picture ? (
                     <img
-                      src={searchUser.profile_picture}
+                      src={getImageUrl(searchUser.profile_picture)}
                       alt={searchUser.username}
                       className="w-16 h-16 rounded-full object-cover"
                     />

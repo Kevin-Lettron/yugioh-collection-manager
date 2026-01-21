@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Follow } from '../../../shared/types';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 
@@ -92,7 +92,7 @@ const Followers = () => {
         {/* Avatar */}
         {displayUser.profile_picture ? (
           <img
-            src={displayUser.profile_picture}
+            src={getImageUrl(displayUser.profile_picture)}
             alt={displayUser.username}
             className="w-16 h-16 rounded-full object-cover"
           />

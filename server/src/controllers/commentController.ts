@@ -16,8 +16,30 @@ export class CommentController {
         throw new ValidationError('Not authenticated');
       }
 
-      const deckId = parseInt(req.params.deckId);
       const { content, parent_comment_id } = req.body;
+
+      // Get deckId from URL param or from parent comment (for replies via /:commentId/reply)
+      let deckId: number;
+      let parentCommentIdToUse = parent_comment_id;
+
+      if (req.params.deckId) {
+        // Route: /deck/:deckId
+        deckId = parseInt(req.params.deckId);
+      } else if (req.params.commentId) {
+        // Route: /:commentId/reply - get deckId from parent comment
+        const parentId = parseInt(req.params.commentId);
+        if (isNaN(parentId)) {
+          throw new ValidationError('Invalid comment ID');
+        }
+        const parentComment = await DeckCommentModel.findById(parentId);
+        if (!parentComment) {
+          throw new NotFoundError('Parent comment not found');
+        }
+        deckId = parentComment.deck_id;
+        parentCommentIdToUse = parentId; // Use the commentId from URL as parent
+      } else {
+        throw new ValidationError('Invalid request');
+      }
 
       if (isNaN(deckId)) {
         throw new ValidationError('Invalid deck ID');
@@ -42,8 +64,8 @@ export class CommentController {
         throw new ForbiddenError('You cannot comment on a private deck');
       }
 
-      // If replying to a comment, verify parent exists
-      if (parent_comment_id) {
+      // If replying to a comment from body, verify parent exists
+      if (parent_comment_id && !req.params.commentId) {
         const parentComment = await DeckCommentModel.findById(parent_comment_id);
         if (!parentComment) {
           throw new NotFoundError('Parent comment not found');
@@ -57,13 +79,13 @@ export class CommentController {
         req.user.id,
         deckId,
         content.trim(),
-        parent_comment_id
+        parentCommentIdToUse
       );
 
       // Create notification
-      if (parent_comment_id) {
+      if (parentCommentIdToUse) {
         // Notification for reply to comment
-        const parentComment = await DeckCommentModel.findById(parent_comment_id);
+        const parentComment = await DeckCommentModel.findById(parentCommentIdToUse);
         if (parentComment && parentComment.user_id !== req.user.id) {
           const notificationExists = await NotificationModel.exists(
             parentComment.user_id,
@@ -139,18 +161,12 @@ export class CommentController {
         throw new ForbiddenError('You do not have permission to view comments on this deck');
       }
 
-      const pageNum = parseInt(page as string);
-      const limitNum = parseInt(limit as string);
-      const offset = (pageNum - 1) * limitNum;
-
-      const result = await DeckCommentModel.getDeckComments(deckId, limitNum, offset);
+      // Get comments with nested replies
+      const comments = await DeckCommentModel.getDeckCommentsWithReplies(deckId);
 
       res.json({
-        comments: result.comments,
-        total: result.total,
-        page: pageNum,
-        limit: limitNum,
-        total_pages: Math.ceil(result.total / limitNum),
+        comments: comments,
+        total: comments.length,
       });
     } catch (error) {
       next(error);

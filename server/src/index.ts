@@ -26,7 +26,15 @@ const io = new SocketServer(httpServer, {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'blob:', process.env.CLIENT_URL || 'http://localhost:5173'],
+    },
+  },
+}));
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -34,8 +42,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (uploads)
-app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+// Serve static files (uploads) with CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'uploads')));
 
 // Socket.io connection handling
 io.on('connection', (socket) => {

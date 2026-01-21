@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User } from '../../../shared/types';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 
@@ -81,7 +81,7 @@ const Profile = () => {
     }
 
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append('profile_picture', file);
 
     setUploading(true);
     try {
@@ -91,7 +91,7 @@ const Profile = () => {
         },
       });
 
-      const updatedUser: User = response.data;
+      const updatedUser: User = response.data.user;
       setProfilePicture(updatedUser.profile_picture || '');
       updateUser(updatedUser);
       toast.success('Photo de profil mise à jour !');
@@ -168,7 +168,7 @@ const Profile = () => {
                 <div className="relative inline-block group">
                   {profilePicture ? (
                     <img
-                      src={profilePicture}
+                      src={getImageUrl(profilePicture)}
                       alt={username}
                       className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
                     />

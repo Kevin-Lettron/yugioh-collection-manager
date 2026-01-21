@@ -51,5 +51,16 @@ api.interceptors.response.use(
   }
 );
 
+// Helper to get full URL for uploaded images
+export const getImageUrl = (path: string | null | undefined): string => {
+  if (!path) return '';
+  // If already a full URL, return as is
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  // Otherwise, prepend API_URL
+  return `${API_URL}${path}`;
+};
+
 export default api;
 export { API_URL };
