@@ -10,7 +10,9 @@ import Collection from './pages/Collection';
 import Decks from './pages/Decks';
 import DeckEditor from './pages/DeckEditor';
 import DeckView from './pages/DeckView';
+import DeckShare from './pages/DeckShare';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import Social from './pages/Social';
 import Followers from './pages/Followers';
 
@@ -37,6 +39,7 @@ const AppRoutes = () => {
       {/* Public routes */}
       <Route path="/login" element={user ? <Navigate to="/collection" /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/collection" /> : <Register />} />
+      <Route path="/deck/share/:shareToken" element={<DeckShare />} />
 
       {/* Protected routes */}
       <Route
@@ -84,6 +87,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/:userId"
+        element={
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/:userId"
+        element={
+          <ProtectedRoute>
+            <UserProfile />
           </ProtectedRoute>
         }
       />

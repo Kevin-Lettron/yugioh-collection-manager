@@ -34,6 +34,20 @@ export class UserModel {
   }
 
   /**
+   * Find user by email or username (for login)
+   */
+  static async findByEmailOrUsername(identifier: string): Promise<(User & { password_hash: string }) | null> {
+    const result = await query(
+      `SELECT id, username, email, password_hash, profile_picture, created_at, updated_at
+       FROM users
+       WHERE email = $1 OR username = $1`,
+      [identifier]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  /**
    * Find user by ID
    */
   static async findById(id: number): Promise<User | null> {
@@ -64,7 +78,19 @@ export class UserModel {
   /**
    * Search users by username
    */
-  static async searchByUsername(searchTerm: string, limit: number = 20): Promise<User[]> {
+  static async searchByUsername(searchTerm: string, limit: number = 20, excludeUserId?: number): Promise<User[]> {
+    if (excludeUserId) {
+      const result = await query(
+        `SELECT id, username, email, profile_picture, created_at, updated_at
+         FROM users
+         WHERE username ILIKE $1 AND id != $2
+         ORDER BY username
+         LIMIT $3`,
+        [`%${searchTerm}%`, excludeUserId, limit]
+      );
+      return result.rows;
+    }
+
     const result = await query(
       `SELECT id, username, email, profile_picture, created_at, updated_at
        FROM users
@@ -159,5 +185,32 @@ export class UserModel {
     );
 
     return parseInt(result.rows[0].count);
+  }
+
+  /**
+   * Get recent users (for discovery when no search query)
+   */
+  static async getRecentUsers(limit: number = 20, excludeUserId?: number): Promise<User[]> {
+    if (excludeUserId) {
+      const result = await query(
+        `SELECT id, username, email, profile_picture, created_at, updated_at
+         FROM users
+         WHERE id != $1
+         ORDER BY created_at DESC
+         LIMIT $2`,
+        [excludeUserId, limit]
+      );
+      return result.rows;
+    }
+
+    const result = await query(
+      `SELECT id, username, email, profile_picture, created_at, updated_at
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+
+    return result.rows;
   }
 }

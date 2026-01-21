@@ -4,21 +4,23 @@ import { UserCard, CollectionFilters, PaginatedResponse } from '../../../shared/
 export class UserCardModel {
   /**
    * Add card to user's collection
+   * @param language - Card language (EN, FR, DE, IT, PT, SP, JP, KR)
    */
   static async addToCollection(
     userId: number,
     cardId: number,
     setCode: string,
     rarity: string,
-    quantity: number = 1
+    quantity: number = 1,
+    language: string = 'EN'
   ): Promise<UserCard> {
     const result = await query(
-      `INSERT INTO user_cards (user_id, card_id, set_code, rarity, quantity)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, card_id, set_code, rarity)
+      `INSERT INTO user_cards (user_id, card_id, set_code, rarity, quantity, language)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, card_id, set_code, rarity, language)
        DO UPDATE SET quantity = user_cards.quantity + $5, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
-      [userId, cardId, setCode, rarity, quantity]
+      [userId, cardId, setCode, rarity, quantity, language]
     );
 
     return result.rows[0];
@@ -142,15 +144,15 @@ export class UserCardModel {
     // Get paginated results with card data
     values.push(limit, offset);
     const result = await query(
-      `SELECT uc.*,
-              c.id as card_db_id, c.card_id, c.name, c.type, c.frame_type, c.description,
+      `SELECT uc.id, uc.user_id, uc.card_id as user_card_card_id, uc.set_code, uc.rarity, uc.language, uc.quantity, uc.created_at, uc.updated_at,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
        FROM user_cards uc
        JOIN cards c ON uc.card_id = c.id
        WHERE ${whereClause}
-       ORDER BY c.name
+       ORDER BY c.name, uc.set_code, uc.rarity
        LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
       values
     );
@@ -172,8 +174,8 @@ export class UserCardModel {
    */
   static async getUserCard(userId: number, cardId: number): Promise<UserCard | null> {
     const result = await query(
-      `SELECT uc.*,
-              c.id as card_db_id, c.card_id, c.name, c.type, c.frame_type, c.description,
+      `SELECT uc.id, uc.user_id, uc.card_id as user_card_card_id, uc.set_code, uc.rarity, uc.language, uc.quantity, uc.created_at, uc.updated_at,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -253,15 +255,16 @@ export class UserCardModel {
     return {
       id: row.id,
       user_id: row.user_id,
-      card_id: row.card_id,
+      card_id: row.user_card_card_id, // FK to cards.id (number)
       set_code: row.set_code,
       rarity: row.rarity,
+      language: row.language || 'EN',
       quantity: row.quantity,
       created_at: row.created_at,
       updated_at: row.updated_at,
       card: {
-        id: row.card_db_id,
-        card_id: row.card_id,
+        id: row.card_db_id, // cards.id (number) - the database ID
+        card_id: row.card_api_id, // cards.card_id (string) - the YGOProDeck API ID
         name: row.name,
         type: row.type,
         frame_type: row.frame_type,

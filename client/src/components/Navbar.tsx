@@ -23,9 +23,9 @@ const Navbar: React.FC<NavbarProps> = ({
   brandName = 'YuGiOh Collection',
   brandLogo,
   navLinks = [
-    { to: '/', label: 'Dashboard' },
-    { to: '/collection', label: 'My Collection' },
-    { to: '/search', label: 'Search Cards' },
+    { to: '/', label: 'Tableau de bord' },
+    { to: '/collection', label: 'Ma Collection' },
+    { to: '/search', label: 'Rechercher' },
     { to: '/decks', label: 'Decks' },
   ],
   userName,
@@ -138,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1 transition-colors duration-200"
-                  aria-label="User menu"
+                  aria-label="Menu utilisateur"
                   aria-expanded={isUserMenuOpen}
                 >
                   {userAvatar ? (
@@ -185,7 +185,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
                     >
-                      Your Profile
+                      Votre profil
                     </button>
                     <button
                       onClick={() => {
@@ -193,7 +193,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
                     >
-                      Settings
+                      Paramètres
                     </button>
                     <hr className="my-1 border-gray-200" />
                     <button
@@ -203,7 +203,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
                     >
-                      Sign out
+                      Déconnexion
                     </button>
                   </div>
                 )}
@@ -214,7 +214,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
-              aria-label="Toggle mobile menu"
+              aria-label="Ouvrir le menu mobile"
               aria-expanded={isMobileMenuOpen}
             >
               <svg

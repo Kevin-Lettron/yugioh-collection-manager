@@ -7,6 +7,9 @@ const router = Router();
 // All collection routes require authentication
 router.use(authenticateToken);
 
+// Search route - search card by code (Card ID or Set Code)
+router.get('/search', CollectionController.searchCard);
+
 // Collection routes
 router.post('/cards/add', CollectionController.addCardByCode);
 router.get('/cards', CollectionController.getUserCollection);

@@ -17,34 +17,34 @@ const Register = () => {
 
     // Validation
     if (!username || !email || !password || !confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error('Veuillez remplir tous les champs');
       return;
     }
 
     if (username.length < 3) {
-      toast.error('Username must be at least 3 characters');
+      toast.error('Le nom d\'utilisateur doit contenir au moins 3 caractères');
       return;
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      toast.error('Please enter a valid email address');
+      toast.error('Veuillez entrer une adresse email valide');
       return;
     }
 
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('Les mots de passe ne correspondent pas');
       return;
     }
 
     setLoading(true);
     try {
       await register(username, email, password);
-      toast.success('Account created successfully!');
+      toast.success('Compte créé avec succès !');
       navigate('/collection');
     } catch (error: any) {
       // Error is handled by the API interceptor
@@ -59,13 +59,13 @@ const Register = () => {
       <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">YuGiOh Manager</h1>
-          <p className="text-gray-600">Create your account</p>
+          <p className="text-gray-600">Créez votre compte</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-              Username
+              Nom d'utilisateur
             </label>
             <input
               id="username"
@@ -73,14 +73,14 @@ const Register = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="Choose a username"
+              placeholder="Choisissez un nom d'utilisateur"
               disabled={loading}
             />
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              Adresse email
             </label>
             <input
               id="email"
@@ -88,14 +88,14 @@ const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="your@email.com"
+              placeholder="votre@email.com"
               disabled={loading}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              Mot de passe
             </label>
             <input
               id="password"
@@ -103,14 +103,14 @@ const Register = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="At least 6 characters"
+              placeholder="Au moins 6 caractères"
               disabled={loading}
             />
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
+              Confirmer le mot de passe
             </label>
             <input
               id="confirmPassword"
@@ -118,7 +118,7 @@ const Register = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="Re-enter your password"
+              placeholder="Entrez à nouveau votre mot de passe"
               disabled={loading}
             />
           </div>
@@ -128,15 +128,15 @@ const Register = () => {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Création du compte...' : 'S\'inscrire'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Already have an account?{' '}
+            Vous avez déjà un compte ?{' '}
             <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
-              Sign in
+              Connectez-vous
             </Link>
           </p>
         </div>

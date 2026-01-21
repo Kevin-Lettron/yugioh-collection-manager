@@ -99,14 +99,22 @@ export class SocialController {
   /**
    * Get user's followers
    */
-  static async getFollowers(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async getFollowers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = parseInt(req.params.userId);
-      const { page = 1, limit = 50 } = req.query;
-
-      if (isNaN(userId)) {
-        throw new ValidationError('Invalid user ID');
+      // Use userId from params, or fall back to authenticated user
+      let userId: number;
+      if (req.params.userId) {
+        userId = parseInt(req.params.userId);
+        if (isNaN(userId)) {
+          throw new ValidationError('Invalid user ID');
+        }
+      } else if (req.user) {
+        userId = req.user.id;
+      } else {
+        throw new ValidationError('User ID is required');
       }
+
+      const { page = 1, limit = 50 } = req.query;
 
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
@@ -129,14 +137,22 @@ export class SocialController {
   /**
    * Get users that a user is following
    */
-  static async getFollowing(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async getFollowing(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = parseInt(req.params.userId);
-      const { page = 1, limit = 50 } = req.query;
-
-      if (isNaN(userId)) {
-        throw new ValidationError('Invalid user ID');
+      // Use userId from params, or fall back to authenticated user
+      let userId: number;
+      if (req.params.userId) {
+        userId = parseInt(req.params.userId);
+        if (isNaN(userId)) {
+          throw new ValidationError('Invalid user ID');
+        }
+      } else if (req.user) {
+        userId = req.user.id;
+      } else {
+        throw new ValidationError('User ID is required');
       }
+
+      const { page = 1, limit = 50 } = req.query;
 
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);

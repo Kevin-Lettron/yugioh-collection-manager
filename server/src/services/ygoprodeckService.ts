@@ -24,16 +24,142 @@ interface YGOProDeckCard {
   scale?: number;
 }
 
+// Cache for card sets to avoid repeated API calls
+let cardSetsCache: { set_name: string; set_code: string }[] | null = null;
+let cardSetsCacheTime: number = 0;
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 export class YGOProDeckService {
   /**
-   * Fetch card by name or set code
+   * Get all card sets from API (cached)
    */
-  static async getCardBySetCode(setCode: string): Promise<Card | null> {
+  static async getCardSets(): Promise<{ set_name: string; set_code: string }[]> {
+    const now = Date.now();
+    if (cardSetsCache && (now - cardSetsCacheTime) < CACHE_TTL) {
+      return cardSetsCache;
+    }
+
     try {
-      // YGOProDeck API doesn't support direct set code search
-      // We need to extract the card name from set code or search by set
+      const response = await axios.get(`${API_BASE_URL}/cardsets.php`);
+      if (response.data) {
+        cardSetsCache = response.data;
+        cardSetsCacheTime = now;
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching card sets:', error);
+      return cardSetsCache || [];
+    }
+  }
+
+  /**
+   * Get set name from set code prefix
+   * Example: "LDK2" -> "Legendary Decks II"
+   */
+  static async getSetNameFromCode(setCodePrefix: string): Promise<string | null> {
+    const sets = await this.getCardSets();
+    const matchingSet = sets.find(
+      (s) => s.set_code.toLowerCase() === setCodePrefix.toLowerCase()
+    );
+    return matchingSet?.set_name || null;
+  }
+
+  /**
+   * Language codes mapping for Yu-Gi-Oh cards
+   */
+  static readonly LANGUAGE_CODES: { [key: string]: string } = {
+    'EN': 'EN', // English
+    'FR': 'FR', // French
+    'DE': 'DE', // German
+    'IT': 'IT', // Italian
+    'PT': 'PT', // Portuguese
+    'SP': 'SP', // Spanish
+    'JP': 'JP', // Japanese
+    'JA': 'JP', // Japanese (alternate)
+    'KR': 'KR', // Korean
+    'KO': 'KR', // Korean (alternate)
+  };
+
+  /**
+   * Detect language from set code
+   * Example: LDK2-FRK40 -> 'FR', LOB-EN001 -> 'EN', LOB-001 -> 'EN' (default)
+   */
+  static detectLanguageFromSetCode(setCode: string): string {
+    // Pattern: XXXX-XXnnn where XX is the language code
+    const match = setCode.match(/^[A-Z0-9]+-([A-Z]{2})[A-Z]?\d+$/i);
+    if (match) {
+      const langCode = match[1].toUpperCase();
+      return this.LANGUAGE_CODES[langCode] || 'EN';
+    }
+    // Default to English if no language code detected
+    return 'EN';
+  }
+
+  /**
+   * Convert localized set codes to English format
+   * French: LDK2-FRK40 -> LDK2-ENK40
+   * German: LDK2-DEK40 -> LDK2-ENK40
+   * Italian: LDK2-ITK40 -> LDK2-ENK40
+   * Portuguese: LDK2-PTK40 -> LDK2-ENK40
+   * Spanish: LDK2-SPK40 -> LDK2-ENK40
+   */
+  static normalizeSetCode(setCode: string): string {
+    // Language code patterns: FR, DE, IT, PT, SP -> EN
+    const languageCodes = ['FR', 'DE', 'IT', 'PT', 'SP'];
+    let normalized = setCode;
+
+    for (const lang of languageCodes) {
+      // Pattern: XXXX-FRYnn -> XXXX-ENYnn (where Y is optional letter, nn is number)
+      const regex = new RegExp(`^([A-Z0-9]+)-${lang}([A-Z]?)(\\d+)$`, 'i');
+      const match = normalized.match(regex);
+      if (match) {
+        normalized = `${match[1]}-EN${match[2]}${match[3]}`.toUpperCase();
+        break;
+      }
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Fetch card by set code using the cardset endpoint
+   * Example: LDK2-FRK40 -> extracts set name "Legendary Decks II" and searches
+   * Supports French, German, Italian, Portuguese, Spanish card codes
+   */
+  static async getCardBySetCode(setCode: string): Promise<{ card: Card | null; error?: string }> {
+    try {
+      // Extract set prefix (e.g., "LDK2" from "LDK2-FRK40")
+      const setPrefix = setCode.split('-')[0];
+
+      // Get the full set name from the prefix
+      const setName = await this.getSetNameFromCode(setPrefix);
+
+      if (!setName) {
+        // Try to find similar set codes for suggestion
+        const sets = await this.getCardSets();
+        const similar = sets
+          .filter(s => s.set_code.startsWith(setPrefix.substring(0, 2)))
+          .slice(0, 5)
+          .map(s => s.set_code);
+
+        const suggestion = similar.length > 0
+          ? ` Sets similaires : ${similar.join(', ')}`
+          : '';
+
+        return {
+          card: null,
+          error: `Set "${setPrefix}" non trouvé dans la base de données.${suggestion}`
+        };
+      }
+
+      // Normalize the set code to English format for comparison
+      const normalizedSetCode = this.normalizeSetCode(setCode);
+
+      // Search for cards in this set by name
       const response = await axios.get(`${API_BASE_URL}/cardinfo.php`, {
         params: {
+          cardset: setName,
           misc: 'yes',
         },
       });
@@ -41,26 +167,114 @@ export class YGOProDeckService {
       if (response.data && response.data.data) {
         const cards: YGOProDeckCard[] = response.data.data;
 
-        // Find card by set code
+        // Find the exact card by full set code (try both original and normalized)
         const card = cards.find((c: YGOProDeckCard) => {
           if (c.card_sets) {
-            return c.card_sets.some((set: any) =>
-              set.set_code.toLowerCase() === setCode.toLowerCase()
-            );
+            return c.card_sets.some((set: any) => {
+              const apiSetCode = set.set_code.toLowerCase();
+              return (
+                apiSetCode === setCode.toLowerCase() ||
+                apiSetCode === normalizedSetCode.toLowerCase()
+              );
+            });
           }
           return false;
         });
 
         if (card) {
-          return this.transformCard(card);
+          return { card: this.transformCard(card) };
         }
+
+        // Card not found with this exact set code in this set
+        return {
+          card: null,
+          error: `Code "${setCode}" non trouvé dans le set "${setName}". Vérifiez le numéro de carte.`
+        };
       }
 
-      return null;
+      return { card: null };
     } catch (error) {
       console.error('Error fetching card by set code:', error);
-      throw error;
+      return { card: null };
     }
+  }
+
+  /**
+   * Search card by either Card ID or Set Code
+   * Intelligently detects which type of search to perform
+   * Returns card, set info, and detected language
+   */
+  static async searchByCodeOrSetCode(code: string): Promise<{
+    card: Card | null;
+    setInfo: any | null;
+    detectedLanguage: string;
+    originalSetCode: string;
+    error?: string;
+  }> {
+    const trimmedCode = code.trim();
+
+    // Check if it looks like a set code (contains a dash like "LDK2-FRK40")
+    if (trimmedCode.includes('-')) {
+      const detectedLanguage = this.detectLanguageFromSetCode(trimmedCode);
+      const result = await this.getCardBySetCode(trimmedCode);
+      if (result.card) {
+        // Find the specific set info for this set code (try normalized version for API match)
+        const normalizedCode = this.normalizeSetCode(trimmedCode);
+        const setInfo = result.card.card_sets?.find(
+          (s: any) => s.set_code.toLowerCase() === normalizedCode.toLowerCase()
+        );
+        return {
+          card: result.card,
+          setInfo: setInfo || null,
+          detectedLanguage,
+          originalSetCode: trimmedCode.toUpperCase()
+        };
+      }
+      return {
+        card: null,
+        setInfo: null,
+        detectedLanguage,
+        originalSetCode: trimmedCode.toUpperCase(),
+        error: result.error
+      };
+    }
+
+    // Otherwise, assume it's a card ID (numeric)
+    if (/^\d+$/.test(trimmedCode)) {
+      const card = await this.getCardById(trimmedCode);
+      return { card, setInfo: null, detectedLanguage: 'EN', originalSetCode: '' };
+    }
+
+    // If neither, try both approaches
+    // First try as card ID
+    const cardById = await this.getCardById(trimmedCode);
+    if (cardById) {
+      return { card: cardById, setInfo: null, detectedLanguage: 'EN', originalSetCode: '' };
+    }
+
+    // Then try as set code
+    const detectedLanguage = this.detectLanguageFromSetCode(trimmedCode);
+    const result = await this.getCardBySetCode(trimmedCode);
+    if (result.card) {
+      const normalizedCode = this.normalizeSetCode(trimmedCode);
+      const setInfo = result.card.card_sets?.find(
+        (s: any) => s.set_code.toLowerCase() === normalizedCode.toLowerCase()
+      );
+      return {
+        card: result.card,
+        setInfo: setInfo || null,
+        detectedLanguage,
+        originalSetCode: trimmedCode.toUpperCase()
+      };
+    }
+
+    return {
+      card: null,
+      setInfo: null,
+      detectedLanguage: 'EN',
+      originalSetCode: '',
+      error: result.error
+    };
   }
 
   /**

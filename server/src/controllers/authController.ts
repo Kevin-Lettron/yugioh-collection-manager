@@ -49,29 +49,31 @@ export class AuthController {
   }
 
   /**
-   * Login user
+   * Login user (with email or username)
    */
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email, password }: LoginRequest = req.body;
+      // 'email' field can contain either email or username
+      const identifier = email;
 
       // Validate input
-      if (!email || !password) {
-        throw new ValidationError('Email and password are required');
+      if (!identifier || !password) {
+        throw new ValidationError('Identifiant et mot de passe requis');
       }
 
-      // Find user by email
-      const user = await UserModel.findByEmail(email);
+      // Find user by email or username
+      const user = await UserModel.findByEmailOrUsername(identifier);
       if (!user) {
-        loggers.auth.login(0, email, false);
-        throw new UnauthorizedError('Invalid email or password');
+        loggers.auth.login(0, identifier, false);
+        throw new UnauthorizedError('Identifiant ou mot de passe invalide');
       }
 
       // Verify password
       const validPassword = await UserModel.verifyPassword(password, user.password_hash);
       if (!validPassword) {
-        loggers.auth.login(user.id, email, false);
-        throw new UnauthorizedError('Invalid email or password');
+        loggers.auth.login(user.id, identifier, false);
+        throw new UnauthorizedError('Identifiant ou mot de passe invalide');
       }
 
       // Generate JWT token
@@ -81,7 +83,7 @@ export class AuthController {
         username: user.username,
       });
 
-      loggers.auth.login(user.id, email, true);
+      loggers.auth.login(user.id, user.email, true);
 
       // Remove password_hash from response
       const { password_hash, ...userWithoutPassword } = user;
@@ -179,17 +181,21 @@ export class AuthController {
   /**
    * Search users by username
    */
-  static async searchUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async searchUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { q: query } = req.query;
+      const currentUserId = req.user?.id;
 
-      if (!query || typeof query !== 'string') {
-        throw new ValidationError('Search query is required');
+      // If no query provided, return recent users (excluding current user)
+      if (!query || typeof query !== 'string' || query.trim() === '') {
+        const users = await UserModel.getRecentUsers(20, currentUserId);
+        res.json(users);
+        return;
       }
 
-      const users = await UserModel.searchByUsername(query, 20);
+      const users = await UserModel.searchByUsername(query, 20, currentUserId);
 
-      res.json({ users });
+      res.json(users);
     } catch (error) {
       next(error);
     }

@@ -30,21 +30,21 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ error: string }>) => {
     if (error.response) {
-      const message = error.response.data?.error || 'An error occurred';
+      const message = error.response.data?.error || 'Une erreur est survenue';
 
       // Handle authentication errors
       if (error.response.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
-        toast.error('Session expired. Please login again.');
+        toast.error('Session expirée. Veuillez vous reconnecter.');
       } else {
         toast.error(message);
       }
     } else if (error.request) {
-      toast.error('Network error. Please check your connection.');
+      toast.error('Erreur réseau. Veuillez vérifier votre connexion.');
     } else {
-      toast.error('An unexpected error occurred.');
+      toast.error('Une erreur inattendue est survenue.');
     }
 
     return Promise.reject(error);

@@ -8,8 +8,42 @@ import { YGOProDeckService } from '../services/ygoprodeckService';
 
 export class CollectionController {
   /**
-   * Add card to collection by set code
+   * Search for a card by code (Card ID or Set Code)
+   * Returns card info, available sets/rarities, and detected language
+   */
+  static async searchCard(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { code } = req.query;
+
+      if (!code || typeof code !== 'string') {
+        throw new ValidationError('code parameter is required');
+      }
+
+      loggers.external.request('YGOProDeck', `/cardinfo.php?code=${code}`);
+      const result = await YGOProDeckService.searchByCodeOrSetCode(code);
+
+      if (!result.card) {
+        const errorMessage = result.error ||
+          `Carte avec le code '${code}' non trouvée. Essayez d'utiliser le Code Set (ex: SDP-F037) situé sous l'illustration de la carte.`;
+        throw new NotFoundError(errorMessage);
+      }
+
+      res.json({
+        card: result.card,
+        matchedSet: result.setInfo,
+        availableSets: result.card.card_sets || [],
+        detectedLanguage: result.detectedLanguage,
+        originalSetCode: result.originalSetCode,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Add card to collection by set code or card ID
    * Fetches from YGOProDeck API, upserts to cards table, then adds to user's collection
+   * Supports language detection from set code (e.g., LDK2-FRK40 -> French)
    */
   static async addCardByCode(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -17,9 +51,9 @@ export class CollectionController {
         throw new ValidationError('Not authenticated');
       }
 
-      const { set_code, rarity, quantity = 1 } = req.body;
+      const { card_code, set_code, rarity, quantity = 1, language } = req.body;
 
-      // Validate input
+      // Validate input - now only set_code and rarity are required
       if (!set_code || !rarity) {
         throw new ValidationError('set_code and rarity are required');
       }
@@ -28,32 +62,52 @@ export class CollectionController {
         throw new ValidationError('quantity must be between 1 and 100');
       }
 
-      // Fetch card from YGOProDeck API
-      loggers.external.request('YGOProDeck', `/cardinfo.php?set=${set_code}`);
-      const apiCard = await YGOProDeckService.getCardBySetCode(set_code);
+      // Detect language from set code if not provided
+      const cardLanguage = language || YGOProDeckService.detectLanguageFromSetCode(set_code);
 
-      if (!apiCard) {
-        throw new NotFoundError(`Card with set code '${set_code}' not found`);
+      let apiCard: Awaited<ReturnType<typeof YGOProDeckService.getCardById>> | null = null;
+      let searchError: string | undefined;
+
+      // If card_code is provided, try to fetch by ID first
+      if (card_code) {
+        loggers.external.request('YGOProDeck', `/cardinfo.php?id=${card_code}`);
+        apiCard = await YGOProDeckService.getCardById(card_code);
       }
 
-      // Verify the rarity is valid for this set code
-      const validRarities = YGOProDeckService.getRaritiesForSetCode(apiCard, set_code);
+      // If no card found by ID or no card_code provided, try by set_code
+      if (!apiCard) {
+        loggers.external.request('YGOProDeck', `/cardinfo.php?set=${set_code}`);
+        const result = await YGOProDeckService.getCardBySetCode(set_code);
+        apiCard = result.card;
+        searchError = result.error;
+      }
+
+      if (!apiCard) {
+        const errorMessage = searchError ||
+          `Carte non trouvée. Essayez d'utiliser le Code Set (ex: SDP-F037) situé sous l'illustration de la carte.`;
+        throw new NotFoundError(errorMessage);
+      }
+
+      // Normalize the set code for rarity validation (API only has English rarities)
+      const normalizedSetCode = YGOProDeckService.normalizeSetCode(set_code);
+      const validRarities = YGOProDeckService.getRaritiesForSetCode(apiCard, normalizedSetCode);
       if (validRarities.length > 0 && !validRarities.includes(rarity)) {
         throw new ValidationError(
-          `Invalid rarity '${rarity}' for set code '${set_code}'. Valid rarities: ${validRarities.join(', ')}`
+          `Rareté '${rarity}' invalide pour le code '${set_code}'. Raretés valides : ${validRarities.join(', ')}`
         );
       }
 
       // Upsert card in database
       const card = await CardModel.upsert(apiCard);
 
-      // Add to user's collection
+      // Add to user's collection with original set code and detected language
       const userCard = await UserCardModel.addToCollection(
         req.user.id,
         card.id,
-        set_code,
+        set_code.toUpperCase(), // Keep original set code (e.g., LDK2-FRK40)
         rarity,
-        quantity
+        quantity,
+        cardLanguage
       );
 
       loggers.collection.cardAdded(req.user.id, card.id, quantity);
@@ -61,6 +115,7 @@ export class CollectionController {
       res.status(201).json({
         message: 'Card added to collection',
         card: userCard,
+        language: cardLanguage,
       });
     } catch (error) {
       next(error);
@@ -156,7 +211,7 @@ export class CollectionController {
         throw new ValidationError('Not authenticated');
       }
 
-      const userCardId = parseInt(req.params.userCardId);
+      const userCardId = parseInt(req.params.id);
 
       if (isNaN(userCardId)) {
         throw new ValidationError('Invalid user card ID');
@@ -185,7 +240,7 @@ export class CollectionController {
         throw new ValidationError('Not authenticated');
       }
 
-      const userCardId = parseInt(req.params.userCardId);
+      const userCardId = parseInt(req.params.id);
       const { quantity } = req.body;
 
       if (isNaN(userCardId)) {

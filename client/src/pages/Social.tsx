@@ -6,9 +6,10 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Deck, User } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import AppNavbar from '../components/AppNavbar';
 
 const Social = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Tab state
@@ -54,7 +55,7 @@ const Social = () => {
   const fetchFollowing = async () => {
     try {
       const response = await api.get('/social/following');
-      const following = response.data;
+      const following = response.data.following || response.data || [];
       setFollowingIds(new Set(following.map((f: any) => f.following_id || f.id)));
     } catch (error) {
       console.error('Failed to fetch following:', error);
@@ -70,10 +71,13 @@ const Social = () => {
 
       const { data, total_pages } = response.data;
 
+      // Filter out current user's decks - only show other users' decks in the feed
+      const filteredData = data.filter((deck: Deck) => deck.user_id !== user?.id);
+
       if (page === 1) {
-        setDecks(data);
+        setDecks(filteredData);
       } else {
-        setDecks((prev) => [...prev, ...data]);
+        setDecks((prev) => [...prev, ...filteredData]);
       }
 
       setHasMoreDecks(page < total_pages);
@@ -102,7 +106,7 @@ const Social = () => {
     try {
       await api.post(`/social/follow/${userId}`);
       setFollowingIds((prev) => new Set([...prev, userId]));
-      toast.success('User followed!');
+      toast.success('Utilisateur suivi !');
     } catch (error) {
       console.error('Failed to follow user:', error);
     }
@@ -116,58 +120,29 @@ const Social = () => {
         newSet.delete(userId);
         return newSet;
       });
-      toast.success('User unfollowed');
+      toast.success('Utilisateur ne plus suivi');
     } catch (error) {
       console.error('Failed to unfollow user:', error);
     }
   };
 
-  const getDeckCardCount = (deck: Deck) => {
-    const mainCount = deck.main_deck?.reduce((sum, card) => sum + card.quantity, 0) || 0;
-    const extraCount = deck.extra_deck?.reduce((sum, card) => sum + card.quantity, 0) || 0;
+  const getDeckCardCount = (deck: any) => {
+    // Use pre-computed counts from API if available, otherwise calculate from arrays
+    const mainCount = deck.main_deck_count ?? deck.main_deck?.reduce((sum: number, card: any) => sum + card.quantity, 0) ?? 0;
+    const extraCount = deck.extra_deck_count ?? deck.extra_deck?.reduce((sum: number, card: any) => sum + card.quantity, 0) ?? 0;
     return { mainCount, extraCount };
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-blue-600">YuGiOh Manager</h1>
-              <div className="hidden md:flex space-x-4">
-                <Link to="/collection" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Collection
-                </Link>
-                <Link to="/decks" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Decks
-                </Link>
-                <Link to="/social" className="text-blue-600 font-semibold px-3 py-2 rounded-md">
-                  Social
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link to="/followers" className="text-gray-700 hover:text-blue-600 font-medium">
-                Followers
-              </Link>
-              <Link to="/profile" className="text-gray-700 hover:text-blue-600 font-medium">
-                {user?.username}
-              </Link>
-              <button onClick={logout} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNavbar />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Social Feed</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Fil d'actualités</h2>
 
           {/* Tabs */}
           <div className="flex space-x-4 border-b border-gray-200">
@@ -179,7 +154,7 @@ const Social = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              Public Decks
+              Decks publics
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -189,7 +164,7 @@ const Social = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              Find Users
+              Trouver des utilisateurs
             </button>
           </div>
         </div>
@@ -226,7 +201,7 @@ const Social = () => {
                     <div className="p-4">
                       <h3 className="font-bold text-xl text-gray-800 mb-1">{deck.name}</h3>
                       <p className="text-sm text-gray-600 mb-3">
-                        by{' '}
+                        par{' '}
                         <span className="text-blue-600 hover:text-blue-700 cursor-pointer">
                           {deck.user?.username}
                         </span>
@@ -234,12 +209,12 @@ const Social = () => {
 
                       <div className="space-y-1 text-sm text-gray-600 mb-4">
                         <div className="flex justify-between">
-                          <span>Main:</span>
-                          <span className="font-semibold">{mainCount} cards</span>
+                          <span>Principal :</span>
+                          <span className="font-semibold">{mainCount} cartes</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Extra:</span>
-                          <span className="font-semibold">{extraCount} cards</span>
+                          <span>Extra :</span>
+                          <span className="font-semibold">{extraCount} cartes</span>
                         </div>
                       </div>
 
@@ -264,7 +239,7 @@ const Social = () => {
                         onClick={() => navigate(`/decks/${deck.id}`)}
                         className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
                       >
-                        View Deck
+                        Voir le deck
                       </button>
                     </div>
                   </div>
@@ -285,7 +260,7 @@ const Social = () => {
             {/* Empty state */}
             {!decksLoading && decks.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No public decks available yet.</p>
+                <p className="text-gray-600 text-lg">Aucun deck public disponible pour le moment.</p>
               </div>
             )}
           </div>
@@ -300,7 +275,7 @@ const Social = () => {
                 type="text"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search for users..."
+                placeholder="Rechercher des utilisateurs..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
             </div>
@@ -341,14 +316,14 @@ const Social = () => {
                           onClick={() => handleUnfollow(searchUser.id)}
                           className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                         >
-                          Unfollow
+                          Ne plus suivre
                         </button>
                       ) : (
                         <button
                           onClick={() => handleFollow(searchUser.id)}
                           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
                         >
-                          Follow
+                          Suivre
                         </button>
                       )}
                     </div>
@@ -367,13 +342,13 @@ const Social = () => {
             {/* Empty state */}
             {!usersLoading && users.length === 0 && userSearch && (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No users found matching "{userSearch}"</p>
+                <p className="text-gray-600 text-lg">Aucun utilisateur trouvé pour "{userSearch}"</p>
               </div>
             )}
 
             {!usersLoading && users.length === 0 && !userSearch && (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">Search for users to connect with</p>
+                <p className="text-gray-600 text-lg">Recherchez des utilisateurs pour vous connecter</p>
               </div>
             )}
           </div>

@@ -30,9 +30,9 @@ export class DeckModel {
     const result = await query(
       `SELECT d.*,
               u.id as user_id, u.username, u.email, u.profile_picture,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count,
-              (SELECT COUNT(*) FROM deck_comments WHERE deck_id = d.id) as comments_count
+              (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
+              (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
+              (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count
        FROM decks d
        JOIN users u ON d.user_id = u.id
        WHERE d.id = $1`,
@@ -45,8 +45,8 @@ export class DeckModel {
 
     // Get main deck and extra deck cards
     const cardsResult = await query(
-      `SELECT dc.*,
-              c.id as card_db_id, c.card_id, c.name, c.type, c.frame_type, c.description,
+      `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -73,7 +73,7 @@ export class DeckModel {
     let userReaction: 'like' | 'dislike' | null = null;
     if (requestingUserId) {
       const reactionResult = await query(
-        `SELECT is_like FROM deck_reactions WHERE deck_id = $1 AND user_id = $2`,
+        `SELECT dr.is_like FROM deck_reactions dr WHERE dr.deck_id = $1 AND dr.user_id = $2`,
         [deckId, requestingUserId]
       );
       if (reactionResult.rows.length > 0) {
@@ -82,7 +82,7 @@ export class DeckModel {
 
       // Check if wishlisted
       const wishlistResult = await query(
-        `SELECT id FROM deck_wishlists WHERE deck_id = $1 AND user_id = $2`,
+        `SELECT dw.id FROM deck_wishlists dw WHERE dw.original_deck_id = $1 AND dw.user_id = $2`,
         [deckId, requestingUserId]
       );
       deck.is_wishlisted = wishlistResult.rows.length > 0;
@@ -154,9 +154,11 @@ export class DeckModel {
     values.push(limit, offset);
     const result = await query(
       `SELECT d.*,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count,
-              (SELECT COUNT(*) FROM deck_comments WHERE deck_id = d.id) as comments_count
+              COALESCE((SELECT COUNT(*) FROM deck_reactions WHERE deck_reactions.deck_id = d.id AND is_like = true), 0) as likes_count,
+              COALESCE((SELECT COUNT(*) FROM deck_reactions WHERE deck_reactions.deck_id = d.id AND is_like = false), 0) as dislikes_count,
+              COALESCE((SELECT COUNT(*) FROM deck_comments WHERE deck_comments.deck_id = d.id), 0) as comments_count,
+              COALESCE((SELECT SUM(quantity) FROM deck_cards WHERE deck_cards.deck_id = d.id AND is_extra_deck = false), 0) as main_deck_count,
+              COALESCE((SELECT SUM(quantity) FROM deck_cards WHERE deck_cards.deck_id = d.id AND is_extra_deck = true), 0) as extra_deck_count
        FROM decks d
        WHERE ${whereClause}
        ORDER BY d.updated_at DESC
@@ -164,18 +166,49 @@ export class DeckModel {
       values
     );
 
-    const data = result.rows.map((row) => ({
-      id: row.id,
-      user_id: row.user_id,
-      name: row.name,
-      cover_image: row.cover_image,
-      is_public: row.is_public,
-      respect_banlist: row.respect_banlist,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      likes_count: parseInt(row.likes_count || 0),
-      dislikes_count: parseInt(row.dislikes_count || 0),
-      comments_count: parseInt(row.comments_count || 0),
+    // Fetch cards for each deck
+    const data = await Promise.all(result.rows.map(async (row) => {
+      // Get main deck and extra deck cards
+      const cardsResult = await query(
+        `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
+                c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+                c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
+                c.card_sets, c.card_images, c.card_prices, c.banlist_info,
+                c.linkval, c.linkmarkers, c.scale
+         FROM deck_cards dc
+         JOIN cards c ON dc.card_id = c.id
+         WHERE dc.deck_id = $1
+         ORDER BY c.name`,
+        [row.id]
+      );
+
+      const mainDeck: DeckCard[] = [];
+      const extraDeck: DeckCard[] = [];
+
+      cardsResult.rows.forEach((cardRow) => {
+        const deckCard = this.parseDeckCard(cardRow);
+        if (cardRow.is_extra_deck) {
+          extraDeck.push(deckCard);
+        } else {
+          mainDeck.push(deckCard);
+        }
+      });
+
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        name: row.name,
+        cover_image: row.cover_image,
+        is_public: row.is_public,
+        respect_banlist: row.respect_banlist,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        likes_count: parseInt(row.likes_count || '0'),
+        dislikes_count: parseInt(row.dislikes_count || '0'),
+        comments_count: parseInt(row.comments_count || '0'),
+        main_deck: mainDeck,
+        extra_deck: extraDeck,
+      };
     }));
 
     return {
@@ -232,9 +265,11 @@ export class DeckModel {
     values.push(limit, offset);
     const result = await query(
       `SELECT d.*, u.username, u.email, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
-              (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count,
-              (SELECT COUNT(*) FROM deck_comments WHERE deck_id = d.id) as comments_count
+              (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
+              (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
+              (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count,
+              (SELECT COALESCE(SUM(dc.quantity), 0) FROM deck_cards dc WHERE dc.deck_id = d.id AND dc.is_extra_deck = false) as main_deck_count,
+              (SELECT COALESCE(SUM(dc.quantity), 0) FROM deck_cards dc WHERE dc.deck_id = d.id AND dc.is_extra_deck = true) as extra_deck_count
        FROM decks d
        JOIN users u ON d.user_id = u.id
        WHERE ${whereClause}
@@ -263,6 +298,8 @@ export class DeckModel {
       likes_count: parseInt(row.likes_count || 0),
       dislikes_count: parseInt(row.dislikes_count || 0),
       comments_count: parseInt(row.comments_count || 0),
+      main_deck_count: parseInt(row.main_deck_count || 0),
+      extra_deck_count: parseInt(row.extra_deck_count || 0),
     }));
 
     return {
@@ -339,6 +376,111 @@ export class DeckModel {
     );
 
     return result.rows.length > 0;
+  }
+
+  /**
+   * Generate or get share token for a deck
+   */
+  static async generateShareToken(deckId: number, userId: number): Promise<string | null> {
+    // Verify deck ownership
+    const deckResult = await query(
+      `SELECT id, share_token FROM decks WHERE id = $1 AND user_id = $2`,
+      [deckId, userId]
+    );
+
+    if (deckResult.rows.length === 0) {
+      return null;
+    }
+
+    // If token already exists, return it
+    if (deckResult.rows[0].share_token) {
+      return deckResult.rows[0].share_token;
+    }
+
+    // Generate new token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+
+    await query(
+      `UPDATE decks SET share_token = $1 WHERE id = $2`,
+      [token, deckId]
+    );
+
+    return token;
+  }
+
+  /**
+   * Remove share token (disable sharing)
+   */
+  static async removeShareToken(deckId: number, userId: number): Promise<boolean> {
+    const result = await query(
+      `UPDATE decks SET share_token = NULL WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [deckId, userId]
+    );
+
+    return result.rows.length > 0;
+  }
+
+  /**
+   * Get deck by share token (for guest access)
+   */
+  static async findByShareToken(shareToken: string): Promise<Deck | null> {
+    const result = await query(
+      `SELECT d.*,
+              u.id as owner_user_id, u.username, u.profile_picture
+       FROM decks d
+       JOIN users u ON d.user_id = u.id
+       WHERE d.share_token = $1`,
+      [shareToken]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    const deck = result.rows[0];
+
+    // Get main deck and extra deck cards
+    const cardsResult = await query(
+      `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
+              c.card_sets, c.card_images, c.card_prices, c.banlist_info,
+              c.linkval, c.linkmarkers, c.scale
+       FROM deck_cards dc
+       JOIN cards c ON dc.card_id = c.id
+       WHERE dc.deck_id = $1
+       ORDER BY c.name`,
+      [deck.id]
+    );
+
+    const mainDeck: DeckCard[] = [];
+    const extraDeck: DeckCard[] = [];
+
+    cardsResult.rows.forEach((row) => {
+      const deckCard = this.parseDeckCard(row);
+      if (row.is_extra_deck) {
+        extraDeck.push(deckCard);
+      } else {
+        mainDeck.push(deckCard);
+      }
+    });
+
+    return {
+      id: deck.id,
+      user_id: deck.user_id,
+      name: deck.name,
+      cover_image: deck.cover_image,
+      is_public: deck.is_public,
+      respect_banlist: deck.respect_banlist,
+      created_at: deck.created_at,
+      updated_at: deck.updated_at,
+      user: {
+        id: deck.owner_user_id,
+        username: deck.username,
+        profile_picture: deck.profile_picture,
+      },
+      main_deck: mainDeck,
+      extra_deck: extraDeck,
+    } as Deck;
   }
 
   /**
@@ -427,19 +569,51 @@ export class DeckModel {
       }
     }
 
-    // Add or update card
-    await query(
-      `INSERT INTO deck_cards (deck_id, card_id, quantity, is_extra_deck)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (deck_id, card_id, is_extra_deck)
-       DO UPDATE SET quantity = deck_cards.quantity + $3`,
-      [deckId, cardId, quantity, isExtraDeck]
+    // Check if card already exists in deck
+    const existingCard = await query(
+      `SELECT id FROM deck_cards WHERE deck_id = $1 AND card_id = $2 AND is_extra_deck = $3`,
+      [deckId, cardId, isExtraDeck]
     );
+
+    if (existingCard.rows.length > 0) {
+      // Update existing card
+      await query(
+        `UPDATE deck_cards SET quantity = $1 WHERE deck_id = $2 AND card_id = $3 AND is_extra_deck = $4`,
+        [quantity, deckId, cardId, isExtraDeck]
+      );
+    } else {
+      // Insert new card
+      await query(
+        `INSERT INTO deck_cards (deck_id, card_id, quantity, is_extra_deck)
+         VALUES ($1, $2, $3, $4)`,
+        [deckId, cardId, quantity, isExtraDeck]
+      );
+    }
 
     // Update deck timestamp
     await query(`UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [deckId]);
 
     return { success: true };
+  }
+
+  /**
+   * Clear all cards from deck
+   */
+  static async clearCards(deckId: number, userId: number): Promise<boolean> {
+    // Verify deck ownership
+    const deckResult = await query(
+      `SELECT id FROM decks WHERE id = $1 AND user_id = $2`,
+      [deckId, userId]
+    );
+
+    if (deckResult.rows.length === 0) {
+      return false;
+    }
+
+    await query(`DELETE FROM deck_cards WHERE deck_id = $1`, [deckId]);
+    await query(`UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [deckId]);
+
+    return true;
   }
 
   /**
@@ -593,13 +767,13 @@ export class DeckModel {
     return {
       id: row.id,
       deck_id: row.deck_id,
-      card_id: row.card_id,
+      card_id: row.deck_card_card_id, // FK to cards.id (number) - used for saving
       quantity: row.quantity,
       is_extra_deck: row.is_extra_deck,
       created_at: row.created_at,
       card: {
-        id: row.card_db_id,
-        card_id: row.card_id,
+        id: row.card_db_id, // cards.id (number) - the database ID
+        card_id: row.card_api_id, // cards.card_id (string) - the YGOProDeck API ID
         name: row.name,
         type: row.type,
         frame_type: row.frame_type,

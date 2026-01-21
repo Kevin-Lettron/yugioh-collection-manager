@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Follow } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import AppNavbar from '../components/AppNavbar';
 
 const Followers = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
   const [followers, setFollowers] = useState<Follow[]>([]);
   const [following, setFollowing] = useState<Follow[]>([]);
@@ -25,12 +27,16 @@ const Followers = () => {
         api.get('/social/following'),
       ]);
 
-      setFollowers(followersRes.data);
-      setFollowing(followingRes.data);
+      // Extract arrays from response (API returns { followers: [...], total: ... })
+      const followersData = followersRes.data.followers || followersRes.data || [];
+      const followingData = followingRes.data.following || followingRes.data || [];
+
+      setFollowers(followersData);
+      setFollowing(followingData);
 
       // Create set of user IDs we're following
-      const followingUserIds = new Set(
-        followingRes.data.map((f: Follow) => f.following_id || f.following?.id)
+      const followingUserIds = new Set<number>(
+        followingData.map((f: Follow) => f.following_id || f.following?.id || f.id)
       );
       setFollowingIds(followingUserIds);
     } catch (error) {
@@ -44,7 +50,7 @@ const Followers = () => {
     try {
       await api.post(`/social/follow/${userId}`);
       setFollowingIds((prev) => new Set([...prev, userId]));
-      toast.success('User followed!');
+      toast.success('Utilisateur suivi !');
       // Refresh data to get updated lists
       fetchData();
     } catch (error) {
@@ -60,7 +66,7 @@ const Followers = () => {
         newSet.delete(userId);
         return newSet;
       });
-      toast.success('User unfollowed');
+      toast.success('Utilisateur ne plus suivi');
       // Refresh data to get updated lists
       fetchData();
     } catch (error) {
@@ -68,19 +74,19 @@ const Followers = () => {
     }
   };
 
-  const renderUserCard = (followRecord: Follow, isFollowerTab: boolean) => {
-    // In followers tab, show the follower user
-    // In following tab, show the following user
-    const displayUser = isFollowerTab ? followRecord.follower : followRecord.following;
+  const renderUserCard = (followRecord: any, isFollowerTab: boolean) => {
+    // The API returns user data directly (not nested in follower/following objects)
+    // So followRecord IS the user, or it has follower/following nested
+    const displayUser = followRecord.follower || followRecord.following || followRecord;
 
-    if (!displayUser) return null;
+    if (!displayUser || !displayUser.id) return null;
 
     const isFollowing = followingIds.has(displayUser.id);
     const isSelf = displayUser.id === user?.id;
 
     return (
       <div
-        key={followRecord.id}
+        key={displayUser.id}
         className="bg-white rounded-lg shadow p-4 flex items-center space-x-4 hover:shadow-md transition"
       >
         {/* Avatar */}
@@ -103,7 +109,7 @@ const Followers = () => {
           <h3 className="font-bold text-gray-800 text-lg">{displayUser.username}</h3>
           <p className="text-sm text-gray-600">{displayUser.email}</p>
           <p className="text-xs text-gray-500 mt-1">
-            Joined {new Date(displayUser.created_at).toLocaleDateString()}
+            Inscrit le {new Date(displayUser.created_at).toLocaleDateString()}
           </p>
         </div>
 
@@ -116,24 +122,24 @@ const Followers = () => {
                   onClick={() => handleUnfollow(displayUser.id)}
                   className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                 >
-                  Unfollow
+                  Ne plus suivre
                 </button>
               ) : (
                 <button
                   onClick={() => handleFollow(displayUser.id)}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
                 >
-                  Follow Back
+                  Suivre en retour
                 </button>
               )}
             </>
           )}
-          <Link
-            to={`/profile/${displayUser.id}`}
-            className="text-blue-600 hover:text-blue-700 text-sm text-center"
+          <button
+            onClick={() => navigate(`/profile/${displayUser.id}`)}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition text-sm font-semibold"
           >
-            View Profile
-          </Link>
+            Voir le profil
+          </button>
         </div>
       </div>
     );
@@ -142,40 +148,13 @@ const Followers = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-blue-600">YuGiOh Manager</h1>
-              <div className="hidden md:flex space-x-4">
-                <Link to="/collection" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Collection
-                </Link>
-                <Link to="/decks" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Decks
-                </Link>
-                <Link to="/social" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Social
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link to="/profile" className="text-gray-700 hover:text-blue-600 font-medium">
-                {user?.username}
-              </Link>
-              <button onClick={logout} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNavbar />
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Social Connections</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Connexions sociales</h2>
 
           {/* Tabs */}
           <div className="flex space-x-4 border-b border-gray-200">
@@ -187,7 +166,7 @@ const Followers = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              Followers ({followers.length})
+              Abonnés ({followers.length})
             </button>
             <button
               onClick={() => setActiveTab('following')}
@@ -197,7 +176,7 @@ const Followers = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              Following ({following.length})
+              Abonnements ({following.length})
             </button>
           </div>
         </div>
@@ -229,16 +208,16 @@ const Followers = () => {
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">No followers yet</h3>
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">Aucun abonné pour le moment</h3>
                     <p className="mt-2 text-sm text-gray-500">
-                      Share your public decks to gain followers!
+                      Partagez vos decks publics pour gagner des abonnés !
                     </p>
                     <div className="mt-6">
                       <Link
                         to="/social"
                         className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
                       >
-                        Explore Social Feed
+                        Explorer le fil d'actualités
                       </Link>
                     </div>
                   </div>
@@ -266,16 +245,16 @@ const Followers = () => {
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">Not following anyone yet</h3>
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">Vous ne suivez personne pour le moment</h3>
                     <p className="mt-2 text-sm text-gray-500">
-                      Discover users and follow them to see their decks in your feed
+                      Découvrez des utilisateurs et suivez-les pour voir leurs decks dans votre fil
                     </p>
                     <div className="mt-6">
                       <Link
                         to="/social"
                         className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
                       >
-                        Find Users to Follow
+                        Trouver des utilisateurs à suivre
                       </Link>
                     </div>
                   </div>

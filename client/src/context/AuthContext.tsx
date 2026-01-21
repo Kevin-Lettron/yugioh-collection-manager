@@ -24,7 +24,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (token) {
         try {
           const response = await api.get('/auth/profile');
-          setUser(response.data);
+          // API returns { user, followerCount, followingCount }
+          setUser(response.data.user || response.data);
         } catch (error) {
           localStorage.removeItem('token');
         }

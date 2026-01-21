@@ -45,16 +45,23 @@ CREATE TABLE IF NOT EXISTS user_cards (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
-    set_code VARCHAR(50), -- e.g., "LDK2-FRK01"
+    set_code VARCHAR(50), -- Original set code as printed on card (e.g., "LDK2-FRK01" for French)
     rarity VARCHAR(50), -- Common, Rare, Super Rare, Ultra Rare, etc.
+    language VARCHAR(10) DEFAULT 'EN', -- Card language: EN, FR, DE, IT, PT, SP, JP, KR
     quantity INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, card_id, set_code, rarity)
+    UNIQUE(user_id, card_id, set_code, rarity, language)
 );
 
 CREATE INDEX idx_user_cards_user_id ON user_cards(user_id);
 CREATE INDEX idx_user_cards_card_id ON user_cards(card_id);
+CREATE INDEX idx_user_cards_language ON user_cards(language);
+
+-- Migration: Add language column if table already exists
+-- ALTER TABLE user_cards ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN';
+-- ALTER TABLE user_cards DROP CONSTRAINT IF EXISTS user_cards_user_id_card_id_set_code_rarity_key;
+-- ALTER TABLE user_cards ADD CONSTRAINT user_cards_unique UNIQUE(user_id, card_id, set_code, rarity, language);
 
 -- Decks
 CREATE TABLE IF NOT EXISTS decks (
@@ -64,6 +71,7 @@ CREATE TABLE IF NOT EXISTS decks (
     cover_image VARCHAR(255),
     is_public BOOLEAN DEFAULT TRUE,
     respect_banlist BOOLEAN DEFAULT TRUE,
+    share_token VARCHAR(64) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,7 +87,8 @@ CREATE TABLE IF NOT EXISTS deck_cards (
     card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     quantity INTEGER DEFAULT 1,
     is_extra_deck BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(deck_id, card_id, is_extra_deck)
 );
 
 CREATE INDEX idx_deck_cards_deck_id ON deck_cards(deck_id);

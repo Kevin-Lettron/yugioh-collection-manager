@@ -89,20 +89,20 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [user, fetchNotifications]);
 
   const getNotificationMessage = (notification: Notification): string => {
-    const username = notification.from_user?.username || 'Someone';
+    const username = notification.from_user?.username || 'Quelqu\'un';
     switch (notification.type) {
       case 'follow':
-        return `${username} started following you`;
+        return `${username} a commencé à vous suivre`;
       case 'like':
-        return `${username} liked your deck`;
+        return `${username} a aimé votre deck`;
       case 'dislike':
-        return `${username} disliked your deck`;
+        return `${username} n'a pas aimé votre deck`;
       case 'comment':
-        return `${username} commented on your deck`;
+        return `${username} a commenté votre deck`;
       case 'reply':
-        return `${username} replied to your comment`;
+        return `${username} a répondu à votre commentaire`;
       default:
-        return 'New notification';
+        return 'Nouvelle notification';
     }
   };
 

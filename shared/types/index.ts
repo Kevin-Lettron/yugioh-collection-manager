@@ -54,12 +54,15 @@ export interface BanlistInfo {
   ban_goat?: 'Banned' | 'Limited' | 'Semi-Limited';
 }
 
+export type CardLanguage = 'EN' | 'FR' | 'DE' | 'IT' | 'PT' | 'SP' | 'JP' | 'KR';
+
 export interface UserCard {
   id: number;
   user_id: number;
   card_id: number;
   set_code: string;
   rarity: string;
+  language: CardLanguage;
   quantity: number;
   created_at: Date;
   updated_at: Date;

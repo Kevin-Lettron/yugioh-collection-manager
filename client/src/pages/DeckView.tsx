@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { Deck, DeckComment } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import AppNavbar from '../components/AppNavbar';
 
 const DeckView = () => {
   const { deckId } = useParams<{ deckId: string }>();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -28,10 +29,10 @@ const DeckView = () => {
   const fetchDeck = async () => {
     try {
       const response = await api.get(`/decks/${deckId}`);
-      setDeck(response.data);
+      setDeck(response.data.deck);
     } catch (error) {
       console.error('Failed to fetch deck:', error);
-      toast.error('Failed to load deck');
+      toast.error('Impossible de charger le deck');
       navigate('/decks');
     } finally {
       setLoading(false);
@@ -41,9 +42,10 @@ const DeckView = () => {
   const fetchComments = async () => {
     try {
       const response = await api.get(`/comments/deck/${deckId}`);
-      setComments(response.data);
+      setComments(response.data.comments || response.data || []);
     } catch (error) {
       console.error('Failed to fetch comments:', error);
+      setComments([]);
     }
   };
 
@@ -100,13 +102,13 @@ const DeckView = () => {
     e.preventDefault();
 
     if (!commentText.trim()) {
-      toast.error('Please enter a comment');
+      toast.error('Veuillez entrer un commentaire');
       return;
     }
 
     try {
       await api.post(`/comments/deck/${deckId}`, { content: commentText });
-      toast.success('Comment added!');
+      toast.success('Commentaire ajouté !');
       setCommentText('');
       fetchComments();
     } catch (error) {
@@ -116,7 +118,7 @@ const DeckView = () => {
 
   const handleAddReply = async (commentId: number) => {
     if (!replyText.trim()) {
-      toast.error('Please enter a reply');
+      toast.error('Veuillez entrer une réponse');
       return;
     }
 
@@ -125,7 +127,7 @@ const DeckView = () => {
         content: replyText,
         parent_comment_id: commentId,
       });
-      toast.success('Reply added!');
+      toast.success('Réponse ajoutée !');
       setReplyText('');
       setReplyingTo(null);
       fetchComments();
@@ -135,13 +137,13 @@ const DeckView = () => {
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!confirm('Are you sure you want to delete this comment?')) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
       return;
     }
 
     try {
       await api.delete(`/comments/${commentId}`);
-      toast.success('Comment deleted');
+      toast.success('Commentaire supprimé');
       fetchComments();
     } catch (error) {
       console.error('Failed to delete comment:', error);
@@ -151,7 +153,7 @@ const DeckView = () => {
   const handleCopyToWishlist = async () => {
     try {
       await api.post(`/social/wishlist/${deckId}`);
-      toast.success('Deck added to wishlist!');
+      toast.success('Deck ajouté à la wishlist !');
       setDeck((prev) => (prev ? { ...prev, is_wishlisted: true } : null));
     } catch (error) {
       console.error('Failed to add to wishlist:', error);
@@ -161,7 +163,7 @@ const DeckView = () => {
   const handleRemoveFromWishlist = async () => {
     try {
       await api.delete(`/social/wishlist/${deckId}`);
-      toast.success('Deck removed from wishlist');
+      toast.success('Deck retiré de la wishlist');
       setDeck((prev) => (prev ? { ...prev, is_wishlisted: false } : null));
     } catch (error) {
       console.error('Failed to remove from wishlist:', error);
@@ -180,9 +182,9 @@ const DeckView = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Deck not found</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Deck introuvable</h2>
           <Link to="/decks" className="text-blue-600 hover:text-blue-700">
-            Back to Decks
+            Retour aux decks
           </Link>
         </div>
       </div>
@@ -196,34 +198,7 @@ const DeckView = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-blue-600">YuGiOh Manager</h1>
-              <div className="hidden md:flex space-x-4">
-                <Link to="/collection" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Collection
-                </Link>
-                <Link to="/decks" className="text-blue-600 font-semibold px-3 py-2 rounded-md">
-                  Decks
-                </Link>
-                <Link to="/social" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">
-                  Social
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link to="/profile" className="text-gray-700 hover:text-blue-600 font-medium">
-                {user?.username}
-              </Link>
-              <button onClick={logout} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNavbar />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -233,17 +208,17 @@ const DeckView = () => {
             <div>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">{deck.name}</h2>
               <p className="text-gray-600">
-                by{' '}
+                par{' '}
                 <Link to={`/profile/${deck.user_id}`} className="text-blue-600 hover:text-blue-700">
                   {deck.user?.username}
                 </Link>
               </p>
               <div className="flex items-center space-x-4 mt-4">
                 <span className={deck.is_public ? 'text-green-600' : 'text-gray-600'}>
-                  {deck.is_public ? 'Public' : 'Private'}
+                  {deck.is_public ? 'Public' : 'Privé'}
                 </span>
                 <span className={deck.respect_banlist ? 'text-green-600' : 'text-orange-600'}>
-                  {deck.respect_banlist ? 'Banlist Compliant' : 'Banlist Ignored'}
+                  {deck.respect_banlist ? 'Conforme à la banlist' : 'Banlist ignorée'}
                 </span>
               </div>
             </div>
@@ -254,7 +229,7 @@ const DeckView = () => {
                   to={`/decks/${deckId}/edit`}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-center"
                 >
-                  Edit Deck
+                  Modifier le deck
                 </Link>
               )}
               {!isOwner && (
@@ -264,14 +239,14 @@ const DeckView = () => {
                       onClick={handleRemoveFromWishlist}
                       className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold"
                     >
-                      Remove from Wishlist
+                      Retirer de la wishlist
                     </button>
                   ) : (
                     <button
                       onClick={handleCopyToWishlist}
                       className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition font-semibold"
                     >
-                      Add to Wishlist
+                      Ajouter à la wishlist
                     </button>
                   )}
                 </>
@@ -283,7 +258,7 @@ const DeckView = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             <div className="bg-gray-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-gray-800">{mainDeckCount}</p>
-              <p className="text-sm text-gray-600">Main Deck</p>
+              <p className="text-sm text-gray-600">Deck Principal</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-gray-800">{extraDeckCount}</p>
@@ -291,11 +266,11 @@ const DeckView = () => {
             </div>
             <div className="bg-gray-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
-              <p className="text-sm text-gray-600">Likes</p>
+              <p className="text-sm text-gray-600">J'aime</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-gray-800">{deck.comments_count || 0}</p>
-              <p className="text-sm text-gray-600">Comments</p>
+              <p className="text-sm text-gray-600">Commentaires</p>
             </div>
           </div>
 
@@ -312,7 +287,7 @@ const DeckView = () => {
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
               </svg>
-              <span>Like</span>
+              <span>J'aime</span>
             </button>
 
             <button
@@ -326,7 +301,7 @@ const DeckView = () => {
               <svg className="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
               </svg>
-              <span>Dislike</span>
+              <span>Je n'aime pas</span>
             </button>
           </div>
         </div>
@@ -336,7 +311,7 @@ const DeckView = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Main Deck */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Main Deck ({mainDeckCount})</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Deck Principal ({mainDeckCount})</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                 {deck.main_deck?.map((deckCard) => (
                   <div key={deckCard.id} className="relative">
@@ -355,7 +330,7 @@ const DeckView = () => {
                 ))}
               </div>
               {(!deck.main_deck || deck.main_deck.length === 0) && (
-                <p className="text-center text-gray-600 py-8">No cards in main deck</p>
+                <p className="text-center text-gray-600 py-8">Aucune carte dans le deck principal</p>
               )}
             </div>
 
@@ -380,7 +355,7 @@ const DeckView = () => {
                 ))}
               </div>
               {(!deck.extra_deck || deck.extra_deck.length === 0) && (
-                <p className="text-center text-gray-600 py-8">No cards in extra deck</p>
+                <p className="text-center text-gray-600 py-8">Aucune carte dans l'extra deck</p>
               )}
             </div>
           </div>
@@ -389,12 +364,12 @@ const DeckView = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Comments</h3>
+                <h3 className="text-xl font-bold text-gray-800">Commentaires</h3>
                 <button
                   onClick={() => setShowComments(!showComments)}
                   className="text-blue-600 hover:text-blue-700 text-sm"
                 >
-                  {showComments ? 'Hide' : 'Show'}
+                  {showComments ? 'Masquer' : 'Afficher'}
                 </button>
               </div>
 
@@ -407,13 +382,13 @@ const DeckView = () => {
                       onChange={(e) => setCommentText(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                       rows={3}
-                      placeholder="Add a comment..."
+                      placeholder="Ajouter un commentaire..."
                     />
                     <button
                       type="submit"
                       className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
                     >
-                      Post Comment
+                      Publier le commentaire
                     </button>
                   </form>
 
@@ -435,14 +410,14 @@ const DeckView = () => {
                                 onClick={() => setReplyingTo(comment.id)}
                                 className="text-blue-600 hover:text-blue-700"
                               >
-                                Reply
+                                Répondre
                               </button>
                               {user?.id === comment.user_id && (
                                 <button
                                   onClick={() => handleDeleteComment(comment.id)}
                                   className="text-red-600 hover:text-red-700"
                                 >
-                                  Delete
+                                  Supprimer
                                 </button>
                               )}
                             </div>
@@ -455,20 +430,20 @@ const DeckView = () => {
                                   onChange={(e) => setReplyText(e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-sm"
                                   rows={2}
-                                  placeholder="Write a reply..."
+                                  placeholder="Écrire une réponse..."
                                 />
                                 <div className="flex space-x-2 mt-2">
                                   <button
                                     onClick={() => handleAddReply(comment.id)}
                                     className="bg-blue-600 text-white px-4 py-1 rounded text-xs hover:bg-blue-700"
                                   >
-                                    Reply
+                                    Répondre
                                   </button>
                                   <button
                                     onClick={() => setReplyingTo(null)}
                                     className="bg-gray-200 text-gray-700 px-4 py-1 rounded text-xs hover:bg-gray-300"
                                   >
-                                    Cancel
+                                    Annuler
                                   </button>
                                 </div>
                               </div>
@@ -492,7 +467,7 @@ const DeckView = () => {
                                           onClick={() => handleDeleteComment(reply.id)}
                                           className="text-red-600 hover:text-red-700"
                                         >
-                                          Delete
+                                          Supprimer
                                         </button>
                                       )}
                                     </div>
@@ -507,7 +482,7 @@ const DeckView = () => {
 
                     {comments.length === 0 && (
                       <p className="text-center text-gray-600 py-8">
-                        No comments yet. Be the first to comment!
+                        Aucun commentaire pour le moment. Soyez le premier à commenter !
                       </p>
                     )}
                   </div>

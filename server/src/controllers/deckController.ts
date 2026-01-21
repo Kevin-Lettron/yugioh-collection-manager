@@ -228,6 +228,33 @@ export class DeckController {
   }
 
   /**
+   * Clear all cards from deck
+   */
+  static async clearDeckCards(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      const deckId = parseInt(req.params.id);
+
+      if (isNaN(deckId)) {
+        throw new ValidationError('Invalid deck ID');
+      }
+
+      const cleared = await DeckModel.clearCards(deckId, req.user.id);
+
+      if (!cleared) {
+        throw new NotFoundError('Deck not found or you do not have permission');
+      }
+
+      res.json({ message: 'All cards removed from deck successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Remove card from deck
    */
   static async removeCardFromDeck(
@@ -339,6 +366,86 @@ export class DeckController {
         mainDeckCount: validation.mainDeckCount,
         extraDeckCount: validation.extraDeckCount,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Generate share link for a deck
+   */
+  static async generateShareLink(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      const deckId = parseInt(req.params.id);
+
+      if (isNaN(deckId)) {
+        throw new ValidationError('Invalid deck ID');
+      }
+
+      const shareToken = await DeckModel.generateShareToken(deckId, req.user.id);
+
+      if (!shareToken) {
+        throw new NotFoundError('Deck not found or you do not have permission');
+      }
+
+      res.json({
+        message: 'Share link generated successfully',
+        share_token: shareToken,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Remove share link for a deck
+   */
+  static async removeShareLink(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      const deckId = parseInt(req.params.id);
+
+      if (isNaN(deckId)) {
+        throw new ValidationError('Invalid deck ID');
+      }
+
+      const removed = await DeckModel.removeShareToken(deckId, req.user.id);
+
+      if (!removed) {
+        throw new NotFoundError('Deck not found or you do not have permission');
+      }
+
+      res.json({ message: 'Share link removed successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get deck by share token (guest access - no auth required)
+   */
+  static async getSharedDeck(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { shareToken } = req.params;
+
+      if (!shareToken) {
+        throw new ValidationError('Share token is required');
+      }
+
+      const deck = await DeckModel.findByShareToken(shareToken);
+
+      if (!deck) {
+        throw new NotFoundError('Shared deck not found or link has expired');
+      }
+
+      res.json({ deck });
     } catch (error) {
       next(error);
     }
