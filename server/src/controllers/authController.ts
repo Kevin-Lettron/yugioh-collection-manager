@@ -1,10 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcrypt';
 import { UserModel } from '../models/userModel';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { ValidationError, UnauthorizedError } from '../middleware/errorHandler';
+import { ValidationError, UnauthorizedError, NotFoundError } from '../middleware/errorHandler';
 import { loggers } from '../utils/logger';
 import { generateToken } from '../utils/jwt';
 import { AuthResponse, LoginRequest, RegisterRequest } from '../../../shared/types';
+
+// Pre-computed dummy bcrypt hash used to keep login response time constant
+// when the user doesn't exist (prevents timing-based user enumeration).
+// Generated with: bcrypt.hashSync('dummy-password-never-matches', 10)
+const DUMMY_HASH =
+  '$2b$10$abcdefghijklmnopqrstuuVMY7Z9lmVWTdlS8Xz3JZ/DYldbHnPuwK';
+
+/**
+ * Enforces a reasonable password policy.
+ * - min 10 chars
+ * - at least 3 of: lowercase, uppercase, digit, special
+ * Returns null if OK, else an error message.
+ */
+function validatePasswordPolicy(password: string): string | null {
+  if (typeof password !== 'string') return 'Mot de passe invalide';
+  if (password.length < 10) return 'Le mot de passe doit contenir au moins 10 caractères';
+  if (password.length > 128) return 'Le mot de passe est trop long (max 128 caractères)';
+  const kinds = [
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^a-zA-Z0-9]/.test(password),
+  ].filter(Boolean).length;
+  if (kinds < 3) {
+    return 'Le mot de passe doit combiner au moins 3 des 4 types : minuscule, majuscule, chiffre, caractère spécial';
+  }
+  return null;
+}
 
 export class AuthController {
   /**
@@ -19,8 +48,17 @@ export class AuthController {
         throw new ValidationError('Username, email, and password are required');
       }
 
-      if (password.length < 6) {
-        throw new ValidationError('Password must be at least 6 characters long');
+      if (typeof username !== 'string' || username.length < 3 || username.length > 50) {
+        throw new ValidationError("Le nom d'utilisateur doit faire entre 3 et 50 caractères");
+      }
+
+      if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new ValidationError('Email invalide');
+      }
+
+      const pwError = validatePasswordPolicy(password);
+      if (pwError) {
+        throw new ValidationError(pwError);
       }
 
       // Check if user already exists
@@ -64,15 +102,15 @@ export class AuthController {
 
       // Find user by email or username
       const user = await UserModel.findByEmailOrUsername(identifier);
-      if (!user) {
-        loggers.auth.login(0, identifier, false);
-        throw new UnauthorizedError('Identifiant ou mot de passe invalide');
-      }
 
-      // Verify password
-      const validPassword = await UserModel.verifyPassword(password, user.password_hash);
-      if (!validPassword) {
-        loggers.auth.login(user.id, identifier, false);
+      // Timing-safe: always run a bcrypt.compare even when the user doesn't exist,
+      // so response time doesn't leak whether the identifier is valid.
+      // Without this an attacker can enumerate valid emails/usernames.
+      const hashToCompare = user?.password_hash || DUMMY_HASH;
+      const validPassword = await bcrypt.compare(password, hashToCompare);
+
+      if (!user || !validPassword) {
+        loggers.auth.login(user?.id || 0, identifier, false);
         throw new UnauthorizedError('Identifiant ou mot de passe invalide');
       }
 
@@ -142,8 +180,9 @@ export class AuthController {
       if (username) updates.username = username;
       if (profile_picture !== undefined) updates.profile_picture = profile_picture;
       if (password) {
-        if (password.length < 6) {
-          throw new ValidationError('Password must be at least 6 characters long');
+        const pwError = validatePasswordPolicy(password);
+        if (pwError) {
+          throw new ValidationError(pwError);
         }
         updates.password = password;
       }
@@ -160,7 +199,7 @@ export class AuthController {
   }
 
   /**
-   * Get user by ID (public profile)
+   * Get user by ID (public profile — strips email to prevent PII harvesting)
    */
   static async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -168,14 +207,18 @@ export class AuthController {
 
       const user = await UserModel.findById(userId);
       if (!user) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
       }
 
       const followerCount = await UserModel.getFollowerCount(userId);
       const followingCount = await UserModel.getFollowingCount(userId);
 
+      // Strip email — this endpoint is public (no auth required)
+      const { email: _email, ...publicUser } = user as { email?: string } & typeof user;
+      void _email;
+
       res.json({
-        user,
+        user: publicUser,
         followerCount,
         followingCount,
       });

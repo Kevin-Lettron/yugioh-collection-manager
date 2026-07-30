@@ -8,6 +8,12 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -38,4 +44,24 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-500;
+}
+
+/* Focus indicator pulse animation for in-page camera tap-to-focus */
+@keyframes focusPulse {
+  0% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-focus-pulse {
+  animation: focusPulse 1.2s ease-out forwards;
 }

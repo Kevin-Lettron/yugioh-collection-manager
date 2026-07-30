@@ -193,7 +193,7 @@ const AppNavbar = () => {
 
               {/* Notification Dropdown */}
               {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
+                <div className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-1rem))] sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
                     <h3 className="font-semibold text-gray-800">Notifications</h3>

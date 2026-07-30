@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { getRequiredEnv } from '../utils/env';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -23,7 +24,7 @@ export const authenticateToken = (
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
+    const jwtSecret = getRequiredEnv('JWT_SECRET');
     const decoded = jwt.verify(token, jwtSecret) as {
       id: number;
       email: string;
@@ -52,7 +53,7 @@ export const optionalAuth = (
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
+    const jwtSecret = getRequiredEnv('JWT_SECRET');
     const decoded = jwt.verify(token, jwtSecret) as {
       id: number;
       email: string;

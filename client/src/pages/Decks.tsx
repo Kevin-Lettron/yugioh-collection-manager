@@ -134,14 +134,14 @@ const Decks = () => {
         {activeTab === 'mydecks' ? (
           <>
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-gray-800">Mes Decks</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Mes Decks</h2>
                 <p className="text-gray-600 mt-1">{decks.length} deck(s)</p>
               </div>
               <Link
                 to="/decks/new"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+                className="bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition font-semibold whitespace-nowrap text-center"
               >
                 + Creer un deck
               </Link>

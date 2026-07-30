@@ -67,7 +67,7 @@ export class FollowModel {
 
     // Get followers with user details
     const result = await query(
-      `SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.follower_id = u.id
        WHERE f.following_id = $1
@@ -99,7 +99,7 @@ export class FollowModel {
 
     // Get following with user details
     const result = await query(
-      `SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.following_id = u.id
        WHERE f.follower_id = $1
@@ -143,7 +143,7 @@ export class FollowModel {
    */
   static async getMutualFollowers(userId: number): Promise<User[]> {
     const result = await query(
-      `SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at
+      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at
        FROM users u
        WHERE u.id IN (
          SELECT f1.following_id

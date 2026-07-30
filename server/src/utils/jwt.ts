@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getRequiredEnv } from './env';
 
 interface JWTPayload {
   id: number;
@@ -7,13 +8,13 @@ interface JWTPayload {
 }
 
 export const generateToken = (payload: JWTPayload): string => {
-  const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
-
+  const secret = getRequiredEnv('JWT_SECRET');
+  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
   // @ts-ignore - TypeScript has issues with jwt.sign return type
-  return jwt.sign(payload, secret, { expiresIn: '7d' });
+  return jwt.sign(payload, secret, { expiresIn });
 };
 
 export const verifyToken = (token: string): JWTPayload => {
-  const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
+  const secret = getRequiredEnv('JWT_SECRET');
   return jwt.verify(token, secret) as JWTPayload;
 };

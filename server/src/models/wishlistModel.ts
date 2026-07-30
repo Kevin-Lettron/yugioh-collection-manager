@@ -66,7 +66,7 @@ export class WishlistModel {
       `SELECT dw.*,
               d.id as deck_id, d.name as deck_name, d.cover_image, d.user_id as deck_user_id,
               d.is_public, d.respect_banlist, d.created_at as deck_created_at, d.updated_at as deck_updated_at,
-              u.username as deck_owner_username, u.email as deck_owner_email, u.profile_picture as deck_owner_picture,
+              u.username as deck_owner_username, u.profile_picture as deck_owner_picture,
               u.created_at as deck_owner_created_at, u.updated_at as deck_owner_updated_at,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions WHERE deck_id = d.id AND is_like = false) as dislikes_count

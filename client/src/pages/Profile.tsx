@@ -250,13 +250,13 @@ const Profile = () => {
           {/* Right Column - Edit Form */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Informations du compte</h3>
                 {!editing && (
                   <button
                     onClick={() => setEditing(true)}
                     data-edit-profile
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold whitespace-nowrap"
                   >
                     Modifier le profil
                   </button>

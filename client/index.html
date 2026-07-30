@@ -1,9 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1e1b4b" />
+    <meta name="description" content="Gère ta collection Yu-Gi-Oh, construis tes decks et partage avec la communauté." />
+
+    <!-- Content Security Policy — defense-in-depth against XSS.
+         'self' + inline styles (Tailwind), YGOProDeck for card images, blob:/data: for previews. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.ygoprodeck.com https://ygoprodeck.com; connect-src 'self' https://*.devtunnels.ms wss://*.devtunnels.ms https://db.ygoprodeck.com https://images.ygoprodeck.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="YGO Collection" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <title>YuGiOh Collection Manager</title>
   </head>
   <body>

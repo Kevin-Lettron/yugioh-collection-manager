@@ -3,6 +3,10 @@ import { Card } from '../../../shared/types';
 
 const API_BASE_URL = process.env.YGOPRODECK_API_URL || 'https://db.ygoprodeck.com/api/v7';
 
+// Shared axios instance with a hard timeout so a slow YGOProDeck doesn't
+// hang Node workers indefinitely.
+const ygoHttp = axios.create({ timeout: 5000 });
+
 interface YGOProDeckCard {
   id: number;
   name: string;
@@ -40,7 +44,7 @@ export class YGOProDeckService {
     }
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/cardsets.php`);
+      const response = await ygoHttp.get(`${API_BASE_URL}/cardsets.php`);
       if (response.data) {
         cardSetsCache = response.data;
         cardSetsCacheTime = now;
@@ -157,7 +161,7 @@ export class YGOProDeckService {
       const normalizedSetCode = this.normalizeSetCode(setCode);
 
       // Search for cards in this set by name
-      const response = await axios.get(`${API_BASE_URL}/cardinfo.php`, {
+      const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
         params: {
           cardset: setName,
           misc: 'yes',
@@ -282,7 +286,7 @@ export class YGOProDeckService {
    */
   static async getCardByName(name: string): Promise<Card | null> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/cardinfo.php`, {
+      const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
         params: {
           name: name,
           misc: 'yes',
@@ -305,7 +309,7 @@ export class YGOProDeckService {
    */
   static async getCardById(id: string): Promise<Card | null> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/cardinfo.php`, {
+      const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
         params: {
           id: id,
           misc: 'yes',
@@ -328,7 +332,7 @@ export class YGOProDeckService {
    */
   static async searchCards(query: string, limit: number = 20): Promise<Card[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/cardinfo.php`, {
+      const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
         params: {
           fname: query,
           misc: 'yes',

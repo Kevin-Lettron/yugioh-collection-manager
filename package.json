@@ -1,0 +1,16 @@
+{
+  "name": "yugioh-collection-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo racine : lance backend + frontend en parallèle",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -5,6 +5,12 @@ import { loggers } from '../utils/logger';
 import { UserCardModel } from '../models/userCardModel';
 import { CardModel } from '../models/cardModel';
 import { YGOProDeckService } from '../services/ygoprodeckService';
+import {
+  scanCard as scanCardService,
+  getRemainingScanCalls,
+  getMaxScanCalls,
+  getScanCallCount,
+} from '../services/cardScanService';
 
 export class CollectionController {
   /**
@@ -228,6 +234,65 @@ export class CollectionController {
       loggers.collection.cardRemoved(req.user.id, userCardId);
 
       res.json({ message: 'Card removed from collection' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Scan a card photo with Claude Vision to detect its set code.
+   * Photo is processed in memory only, never stored on disk.
+   */
+  static async scanCard(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      if (!req.file) {
+        throw new ValidationError('Photo manquante (champ "photo" requis)');
+      }
+
+      const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowed.includes(req.file.mimetype)) {
+        throw new ValidationError('Format non supporté (JPEG, PNG, WebP ou GIF uniquement)');
+      }
+
+      const mediaType = (req.file.mimetype === 'image/jpg' ? 'image/jpeg' : req.file.mimetype) as
+        | 'image/jpeg'
+        | 'image/png'
+        | 'image/webp'
+        | 'image/gif';
+
+      const base64 = req.file.buffer.toString('base64');
+      const description = typeof req.body?.description === 'string' ? req.body.description : undefined;
+
+      loggers.external.request('Claude Vision', '/scan', {
+        size: req.file.size,
+        hasDescription: !!description,
+      });
+
+      const result = await scanCardService(base64, mediaType, description);
+
+      res.json({
+        ...result,
+        remainingScans: getRemainingScanCalls(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Return the current scan quota for the user.
+   */
+  static async getScanStatus(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({
+        remaining: getRemainingScanCalls(),
+        max: getMaxScanCalls(),
+        used: getScanCallCount(),
+      });
     } catch (error) {
       next(error);
     }

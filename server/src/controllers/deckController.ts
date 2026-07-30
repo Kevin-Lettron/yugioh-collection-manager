@@ -5,7 +5,7 @@ import { loggers } from '../utils/logger';
 import { DeckModel } from '../models/deckModel';
 import { CardModel } from '../models/cardModel';
 import { UserCardModel } from '../models/userCardModel';
-import { buildDeckWithAI, getApiCallCount, getMaxApiCalls, getRemainingCalls, resetApiCallCount } from '../services/claudeService';
+import { buildDeckWithAI, getApiCallCount, getMaxApiCalls, getRemainingCalls } from '../services/claudeService';
 
 export class DeckController {
   /**
@@ -554,28 +554,4 @@ export class DeckController {
     }
   }
 
-  /**
-   * Reset AI API call counter (admin only - for testing)
-   */
-  static async resetAICounter(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) {
-        throw new ValidationError('Not authenticated');
-      }
-
-      // For testing purposes - in production you'd want to restrict this to admins
-      resetApiCallCount();
-
-      loggers.api.request('POST', '/decks/ai/reset', req.user.id);
-
-      res.json({
-        message: 'Compteur API réinitialisé',
-        callCount: getApiCallCount(),
-        maxCalls: getMaxApiCalls(),
-        remainingCalls: getRemainingCalls(),
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
 }

@@ -7,9 +7,12 @@ node_modules/
 /coverage
 **/coverage/
 
-# Production
+# Production build artifacts (any nested location)
 /build
 /dist
+**/dist/
+**/dev-dist/
+**/build/
 
 # Environment variables
 .env

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken, optionalAuth } from '../middleware/authMiddleware';
+import { aiLimiter } from '../middleware/rateLimit';
 import { DeckController } from '../controllers/deckController';
 
 const router = Router();
@@ -24,9 +25,10 @@ router.put('/:id/cards/:cardId', authenticateToken, DeckController.updateCardQua
 router.post('/:id/share', authenticateToken, DeckController.generateShareLink);
 router.delete('/:id/share', authenticateToken, DeckController.removeShareLink);
 
-// AI routes
+// AI routes (rate-limited per user to cap Anthropic spend)
 router.get('/ai/status', authenticateToken, DeckController.getAIStatus);
-router.post('/ai/build', authenticateToken, DeckController.buildWithAI);
-router.post('/ai/reset', authenticateToken, DeckController.resetAICounter);
+router.post('/ai/build', authenticateToken, aiLimiter, DeckController.buildWithAI);
+// Note: /ai/reset was removed — it was reachable by any authenticated user
+// and could drain the Anthropic budget. Counter resets on server restart.
 
 export default router;

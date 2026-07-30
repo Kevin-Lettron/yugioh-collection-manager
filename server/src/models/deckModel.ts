@@ -29,7 +29,7 @@ export class DeckModel {
   static async findById(deckId: number, requestingUserId?: number): Promise<Deck | null> {
     const result = await query(
       `SELECT d.*,
-              u.id as user_id, u.username, u.email, u.profile_picture,
+              u.id as user_id, u.username, u.profile_picture,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
               (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count
@@ -264,7 +264,7 @@ export class DeckModel {
     // Get paginated results
     values.push(limit, offset);
     const result = await query(
-      `SELECT d.*, u.username, u.email, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
+      `SELECT d.*, u.username, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
               (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count,
@@ -379,12 +379,16 @@ export class DeckModel {
   }
 
   /**
-   * Generate or get share token for a deck
+   * Generate or get share token for a deck.
+   * Tokens now expire after 30 days — a leaked token stops working automatically.
+   * Regenerated (with new expiration) if the existing one has expired.
    */
   static async generateShareToken(deckId: number, userId: number): Promise<string | null> {
     // Verify deck ownership
     const deckResult = await query(
-      `SELECT id, share_token FROM decks WHERE id = $1 AND user_id = $2`,
+      `SELECT id, share_token, share_token_expires_at
+         FROM decks
+        WHERE id = $1 AND user_id = $2`,
       [deckId, userId]
     );
 
@@ -392,18 +396,25 @@ export class DeckModel {
       return null;
     }
 
-    // If token already exists, return it
-    if (deckResult.rows[0].share_token) {
-      return deckResult.rows[0].share_token;
+    const existingToken = deckResult.rows[0].share_token as string | null;
+    const existingExpiry = deckResult.rows[0].share_token_expires_at as Date | null;
+    const stillValid = existingToken && existingExpiry && new Date(existingExpiry) > new Date();
+
+    if (stillValid) {
+      return existingToken;
     }
 
-    // Generate new token
+    // Generate a fresh token with a 30-day expiration
     const crypto = require('crypto');
     const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     await query(
-      `UPDATE decks SET share_token = $1 WHERE id = $2`,
-      [token, deckId]
+      `UPDATE decks
+          SET share_token = $1,
+              share_token_expires_at = $2
+        WHERE id = $3`,
+      [token, expiresAt, deckId]
     );
 
     return token;
@@ -414,7 +425,11 @@ export class DeckModel {
    */
   static async removeShareToken(deckId: number, userId: number): Promise<boolean> {
     const result = await query(
-      `UPDATE decks SET share_token = NULL WHERE id = $1 AND user_id = $2 RETURNING id`,
+      `UPDATE decks
+          SET share_token = NULL,
+              share_token_expires_at = NULL
+        WHERE id = $1 AND user_id = $2
+      RETURNING id`,
       [deckId, userId]
     );
 
@@ -422,7 +437,9 @@ export class DeckModel {
   }
 
   /**
-   * Get deck by share token (for guest access)
+   * Get deck by share token (for guest access).
+   * Expired tokens return null — same shape as "not found" so we don't leak that
+   * a token was valid in the past.
    */
   static async findByShareToken(shareToken: string): Promise<Deck | null> {
     const result = await query(
@@ -430,7 +447,8 @@ export class DeckModel {
               u.id as owner_user_id, u.username, u.profile_picture
        FROM decks d
        JOIN users u ON d.user_id = u.id
-       WHERE d.share_token = $1`,
+       WHERE d.share_token = $1
+         AND (d.share_token_expires_at IS NULL OR d.share_token_expires_at > NOW())`,
       [shareToken]
     );
 

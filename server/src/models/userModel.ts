@@ -92,7 +92,7 @@ export class UserModel {
     }
 
     const result = await query(
-      `SELECT id, username, email, profile_picture, created_at, updated_at
+      `SELECT id, username, profile_picture, created_at, updated_at
        FROM users
        WHERE username ILIKE $1
        ORDER BY username
@@ -199,7 +199,7 @@ export class UserModel {
   static async getRecentUsers(limit: number = 20, excludeUserId?: number): Promise<User[]> {
     if (excludeUserId) {
       const result = await query(
-        `SELECT id, username, email, profile_picture, created_at, updated_at
+        `SELECT id, username, profile_picture, created_at, updated_at
          FROM users
          WHERE id != $1
          ORDER BY created_at DESC
@@ -210,7 +210,7 @@ export class UserModel {
     }
 
     const result = await query(
-      `SELECT id, username, email, profile_picture, created_at, updated_at
+      `SELECT id, username, profile_picture, created_at, updated_at
        FROM users
        ORDER BY created_at DESC
        LIMIT $1`,

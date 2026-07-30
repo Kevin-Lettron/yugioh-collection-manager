@@ -203,17 +203,17 @@ const DeckView = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Deck Header */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{deck.name}</h2>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div className="min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 break-words">{deck.name}</h2>
               <p className="text-gray-600">
                 par{' '}
                 <Link to={`/profile/${deck.user_id}`} className="text-blue-600 hover:text-blue-700">
                   {deck.user?.username}
                 </Link>
               </p>
-              <div className="flex items-center space-x-4 mt-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm sm:text-base">
                 <span className={deck.is_public ? 'text-green-600' : 'text-gray-600'}>
                   {deck.is_public ? 'Public' : 'Privé'}
                 </span>
@@ -223,11 +223,11 @@ const DeckView = () => {
               </div>
             </div>
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-2 shrink-0">
               {isOwner && (
                 <Link
                   to={`/decks/${deckId}/edit`}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-center"
+                  className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-center whitespace-nowrap"
                 >
                   Modifier le deck
                 </Link>
@@ -237,14 +237,14 @@ const DeckView = () => {
                   {deck.is_wishlisted ? (
                     <button
                       onClick={handleRemoveFromWishlist}
-                      className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold"
+                      className="bg-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold whitespace-nowrap"
                     >
                       Retirer de la wishlist
                     </button>
                   ) : (
                     <button
                       onClick={handleCopyToWishlist}
-                      className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition font-semibold"
+                      className="bg-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-green-700 transition font-semibold whitespace-nowrap"
                     >
                       Ajouter à la wishlist
                     </button>
