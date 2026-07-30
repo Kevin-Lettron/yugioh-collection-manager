@@ -182,6 +182,44 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
                 autoCapitalize="characters"
               />
 
+              {result.availableSets.length > 0 && (
+                <>
+                  <Text style={styles.hint}>
+                    Ou choisir parmi {result.availableSets.length} set{result.availableSets.length > 1 ? 's' : ''} disponible{result.availableSets.length > 1 ? 's' : ''} :
+                  </Text>
+                  <View style={styles.setsList}>
+                    {result.availableSets.map((s) => {
+                      const selected = setCode === s.set_code;
+                      return (
+                        <TouchableOpacity
+                          key={`${s.set_code}-${s.set_rarity}`}
+                          style={[styles.setRow, selected && styles.setRowSelected]}
+                          onPress={() => {
+                            setSetCode(s.set_code);
+                            setRarity(s.set_rarity);
+                          }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.setCode, selected && styles.setCodeSelected]}>
+                              {s.set_code}
+                            </Text>
+                            {s.set_name ? (
+                              <Text
+                                style={[styles.setName, selected && styles.setNameSelected]}
+                                numberOfLines={1}>
+                                {s.set_name}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <Text style={[styles.setRarity, selected && styles.setRaritySelected]}>
+                            {s.set_rarity}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
               <Text style={styles.label}>Rareté</Text>
               <View style={styles.rarityChips}>
                 {(result.availableSets.length > 0
@@ -322,4 +360,28 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   addBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  setsList: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    maxHeight: 260,
+    overflow: 'hidden',
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    gap: 8,
+  },
+  setRowSelected: { backgroundColor: '#ede9fe' },
+  setCode: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  setCodeSelected: { color: '#5b21b6' },
+  setName: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  setNameSelected: { color: '#6d28d9' },
+  setRarity: { fontSize: 11, color: '#6b7280', fontWeight: '600' },
+  setRaritySelected: { color: '#5b21b6' },
 });

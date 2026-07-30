@@ -63,9 +63,19 @@ mobile/
 - [x] Confirmation scan avec formulaire pré-rempli (set, rareté détectée, langue détectée, quantité) + ajout collection
 - [x] Types locaux `src/types.ts` (miroir de `shared/types/`) + service `src/services/collectionApi.ts` + hook `useDebounce`
 
-Non fait (à revoir plus tard si utile) :
-- Filtres avancés type/attribut/rareté (le search par nom suffit en mobile UX)
-- Édition quantité inline dans la liste (pour l'instant : retirer + ré-ajouter)
+### Phase 3.5 — Compléter la Collection (parité ISO web) — FAIT
+- [x] Filtres avancés type/attribut/rareté via `FiltersModal.tsx` (chips scrollable, bouton reset, badge count sur bouton Filtres, chips actifs affichés au-dessus de la liste)
+- [x] Édition quantité inline (+/-) sur chaque card de la liste avec optimistic update + rollback en cas d'erreur ; passage à 0 = confirmation retrait
+- [x] Dropdown des sets disponibles dans `AddCardModal.tsx` (liste cliquable avec set_code + set_name + rareté, pré-remplit set + rareté au tap)
+- [x] Détail carte enrichi `CardDetailModal.tsx` :
+  - Attribut coloré par élément (DARK gris, LIGHT jaune, FIRE rouge, WATER bleu, EARTH beige, WIND vert, DIVINE doré) + label FR
+  - Link markers ("Flèches Lien : Top-Left, ...")
+  - Archetype
+  - Banlist TCG / OCG chips colorés selon statut
+  - Pendulum scale
+  - Stats ATK/DEF colorés (rouge / bleu)
+
+Collection = 100% ISO web. Prochaine phase autorisée : Decks.
 
 ### Phase 4 — Decks (jour 5-8)
 - [ ] Liste decks `app/(tabs)/decks.tsx`

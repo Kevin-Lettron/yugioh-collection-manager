@@ -20,10 +20,12 @@ import { useDebounce } from '@/hooks/useDebounce';
 import type { UserCard } from '@/types';
 import AddCardModal from '@/components/AddCardModal';
 import CardDetailModal from '@/components/CardDetailModal';
+import FiltersModal, { type CollectionFilterValues } from '@/components/FiltersModal';
 
 const PAGE_SIZE = 30;
 const NUM_COLUMNS = 2;
 const CARD_MARGIN = 8;
+const EMPTY_FILTERS: CollectionFilterValues = { type: '', attribute: '', rarity: '' };
 
 export default function CollectionScreen() {
   const { user, logout } = useAuth();
@@ -39,8 +41,13 @@ export default function CollectionScreen() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
 
+  const [filters, setFilters] = useState<CollectionFilterValues>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
+
+  const activeFilterCount =
+    (filters.type ? 1 : 0) + (filters.attribute ? 1 : 0) + (filters.rarity ? 1 : 0);
 
   const fetchPage = useCallback(
     async (targetPage: number, replace: boolean) => {
@@ -51,6 +58,9 @@ export default function CollectionScreen() {
           page: targetPage,
           limit: PAGE_SIZE,
           search: debouncedSearch || undefined,
+          type: filters.type || undefined,
+          attribute: filters.attribute || undefined,
+          rarity: filters.rarity || undefined,
         });
         setTotal(res.total);
         setTotalPages(res.total_pages);
@@ -64,7 +74,7 @@ export default function CollectionScreen() {
         setRefreshing(false);
       }
     },
-    [debouncedSearch]
+    [debouncedSearch, filters]
   );
 
   useEffect(() => {
@@ -86,6 +96,38 @@ export default function CollectionScreen() {
     setShowAdd(false);
     fetchPage(1, true);
   }, [fetchPage]);
+
+  const updateQty = useCallback(async (card: UserCard, delta: number) => {
+    const next = card.quantity + delta;
+    if (next < 1) {
+      Alert.alert('Retirer ?', `${card.card?.name || 'Carte'} sera retirée.`, [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await collectionApi.remove(card.id);
+              setCards((prev) => prev.filter((c) => c.id !== card.id));
+              setTotal((t) => Math.max(0, t - 1));
+            } catch (err: any) {
+              Alert.alert('Erreur', err?.response?.data?.error || 'Suppression échouée');
+            }
+          },
+        },
+      ]);
+      return;
+    }
+    // Optimistic update
+    setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, quantity: next } : c)));
+    try {
+      await collectionApi.setQuantity(card.id, next);
+    } catch (err: any) {
+      // Rollback
+      setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, quantity: card.quantity } : c)));
+      Alert.alert('Erreur', err?.response?.data?.error || 'Mise à jour échouée');
+    }
+  }, []);
 
   const cardWidth = useMemo(() => {
     const screen = Dimensions.get('window').width;
@@ -111,13 +153,27 @@ export default function CollectionScreen() {
         <Text style={styles.cardName} numberOfLines={1}>
           {item.card?.name || `Carte #${item.card_id}`}
         </Text>
-        <View style={styles.cardMetaRow}>
-          <Text style={styles.cardMetaText} numberOfLines={1}>
-            {item.rarity}
-          </Text>
-          <View style={styles.qtyBadge}>
-            <Text style={styles.qtyBadgeText}>x{item.quantity}</Text>
-          </View>
+        <Text style={styles.cardMetaText} numberOfLines={1}>
+          {item.rarity} · {item.language}
+        </Text>
+        <View style={styles.qtyRow}>
+          <TouchableOpacity
+            style={styles.qtyBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              updateQty(item, -1);
+            }}>
+            <Text style={styles.qtyBtnText}>−</Text>
+          </TouchableOpacity>
+          <Text style={styles.qtyValue}>{item.quantity}</Text>
+          <TouchableOpacity
+            style={styles.qtyBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              updateQty(item, 1);
+            }}>
+            <Text style={styles.qtyBtnText}>+</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -161,7 +217,40 @@ export default function CollectionScreen() {
           autoCapitalize="none"
           returnKeyType="search"
         />
+        <TouchableOpacity
+          style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
+          onPress={() => setShowFilters(true)}>
+          <Text style={[styles.filtersBtnText, activeFilterCount > 0 && styles.filtersBtnTextActive]}>
+            Filtres {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {activeFilterCount > 0 && (
+        <View style={styles.activeFiltersRow}>
+          {filters.type ? (
+            <ActiveFilterChip
+              label={filters.type}
+              onClear={() => setFilters((f) => ({ ...f, type: '' }))}
+            />
+          ) : null}
+          {filters.attribute ? (
+            <ActiveFilterChip
+              label={filters.attribute}
+              onClear={() => setFilters((f) => ({ ...f, attribute: '' }))}
+            />
+          ) : null}
+          {filters.rarity ? (
+            <ActiveFilterChip
+              label={filters.rarity}
+              onClear={() => setFilters((f) => ({ ...f, rarity: '' }))}
+            />
+          ) : null}
+          <TouchableOpacity onPress={() => setFilters(EMPTY_FILTERS)}>
+            <Text style={styles.resetLink}>Reset</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {loading && cards.length === 0 ? (
         <View style={styles.emptyState}>
@@ -170,8 +259,8 @@ export default function CollectionScreen() {
       ) : cards.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>
-            {debouncedSearch
-              ? 'Aucune carte trouvée pour cette recherche.'
+            {debouncedSearch || activeFilterCount > 0
+              ? 'Aucune carte ne correspond aux critères.'
               : 'Aucune carte dans ta collection.'}
           </Text>
           <TouchableOpacity onPress={() => setShowAdd(true)}>
@@ -184,7 +273,7 @@ export default function CollectionScreen() {
           keyExtractor={(item) => String(item.id)}
           numColumns={NUM_COLUMNS}
           renderItem={renderCard}
-          contentContainerStyle={{ padding: CARD_MARGIN / 2 }}
+          contentContainerStyle={{ padding: CARD_MARGIN / 2, paddingBottom: 40 }}
           columnWrapperStyle={{ gap: CARD_MARGIN }}
           ItemSeparatorComponent={() => <View style={{ height: CARD_MARGIN }} />}
           refreshControl={
@@ -221,9 +310,32 @@ export default function CollectionScreen() {
           }}
         />
       )}
+
+      {showFilters && (
+        <FiltersModal
+          visible={showFilters}
+          initial={filters}
+          onClose={() => setShowFilters(false)}
+          onApply={(v) => {
+            setFilters(v);
+            setShowFilters(false);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
+
+const ActiveFilterChip = ({ label, onClear }: { label: string; onClear: () => void }) => (
+  <View style={styles.activeChip}>
+    <Text style={styles.activeChipText} numberOfLines={1}>
+      {label}
+    </Text>
+    <TouchableOpacity onPress={onClear} style={styles.activeChipClose}>
+      <Text style={styles.activeChipCloseText}>✕</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
@@ -259,8 +371,14 @@ const styles = StyleSheet.create({
   scanBtn: { backgroundColor: '#7c3aed' },
   addBtn: { backgroundColor: '#2563eb' },
   actionBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  searchWrap: { paddingHorizontal: 16, paddingVertical: 10 },
+  searchWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
   searchInput: {
+    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -270,6 +388,48 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     color: '#111827',
   },
+  filtersBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+  },
+  filtersBtnActive: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
+  filtersBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
+  filtersBtnTextActive: { color: '#fff' },
+  activeFiltersRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+  },
+  activeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ede9fe',
+    paddingLeft: 10,
+    paddingRight: 4,
+    paddingVertical: 4,
+    borderRadius: 999,
+    gap: 4,
+    maxWidth: 200,
+  },
+  activeChipText: { color: '#5b21b6', fontSize: 11, fontWeight: '600' },
+  activeChipClose: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#c4b5fd',
+  },
+  activeChipCloseText: { color: '#4c1d95', fontSize: 10, fontWeight: '700' },
+  resetLink: { color: '#dc2626', fontSize: 12, fontWeight: '600', marginLeft: 4 },
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -290,20 +450,25 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   cardImage: { backgroundColor: '#e5e7eb' },
-  cardMeta: { padding: 6 },
+  cardMeta: { padding: 6, gap: 4 },
   cardName: { fontSize: 12, fontWeight: '600', color: '#111827' },
-  cardMetaRow: {
-    marginTop: 4,
+  cardMetaText: { fontSize: 10, color: '#6b7280' },
+  qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 2,
   },
-  cardMetaText: { flex: 1, fontSize: 10, color: '#6b7280' },
-  qtyBadge: {
-    backgroundColor: '#7c3aed',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  qtyBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  qtyBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  qtyBtnText: { fontSize: 16, color: '#374151', fontWeight: '700' },
+  qtyValue: { fontSize: 13, fontWeight: '700', color: '#111827' },
 });
