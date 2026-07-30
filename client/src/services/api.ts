@@ -143,6 +143,8 @@ export interface AdminUser {
   username: string;
   email: string;
   role: 'user' | 'moderator' | 'admin';
+  is_active: boolean;
+  disabled_at: string | null;
   profile_picture?: string;
   created_at: string;
   updated_at: string;
@@ -195,6 +197,9 @@ export const adminApi = {
 
   updateUserRole: (id: number, role: 'user' | 'moderator' | 'admin') =>
     api.patch(`/admin/users/${id}/role`, { role }).then((r) => r.data),
+
+  toggleUserActive: (id: number, is_active: boolean) =>
+    api.patch(`/admin/users/${id}/status`, { is_active }).then((r) => r.data),
 
   deleteUser: (id: number) => api.delete(`/admin/users/${id}`).then((r) => r.data),
 

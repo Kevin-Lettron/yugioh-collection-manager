@@ -89,7 +89,8 @@ export class AdminController {
 
       values.push(limit, offset);
       const usersResult = await query(
-        `SELECT u.id, u.username, u.email, u.role, u.profile_picture, u.created_at, u.updated_at,
+        `SELECT u.id, u.username, u.email, u.role, u.profile_picture,
+                u.is_active, u.disabled_at, u.created_at, u.updated_at,
                 (SELECT COUNT(*) FROM decks WHERE user_id = u.id) AS deck_count,
                 (SELECT COUNT(*) FROM user_cards WHERE user_id = u.id) AS card_count
            FROM users u
@@ -117,7 +118,8 @@ export class AdminController {
       if (isNaN(userId)) throw new ValidationError('Invalid user ID');
 
       const result = await query(
-        `SELECT u.id, u.username, u.email, u.role, u.profile_picture, u.created_at, u.updated_at,
+        `SELECT u.id, u.username, u.email, u.role, u.profile_picture,
+                u.is_active, u.disabled_at, u.created_at, u.updated_at,
                 (SELECT COUNT(*) FROM decks WHERE user_id = u.id) AS deck_count,
                 (SELECT COUNT(*) FROM user_cards WHERE user_id = u.id) AS card_count,
                 (SELECT COUNT(*) FROM deck_comments WHERE user_id = u.id) AS comment_count,
@@ -161,6 +163,54 @@ export class AdminController {
       if (result.rows.length === 0) throw new NotFoundError('User not found');
 
       auditLog(req.user!.id, 'update_role', `user:${userId}`, { newRole: role });
+      res.json({ user: result.rows[0] });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async toggleUserActive(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = parseInt(req.params.id);
+      const { is_active } = req.body;
+
+      if (isNaN(userId)) throw new ValidationError('Invalid user ID');
+      if (typeof is_active !== 'boolean') {
+        throw new ValidationError('is_active must be a boolean');
+      }
+
+      // Cannot disable yourself (lockout protection)
+      if (req.user!.id === userId && !is_active) {
+        throw new ForbiddenError('You cannot disable your own account.');
+      }
+
+      // Cannot disable another admin (safety)
+      const check = await query('SELECT username, role FROM users WHERE id = $1', [userId]);
+      if (check.rows.length === 0) throw new NotFoundError('User not found');
+      if (!is_active && check.rows[0].role === 'admin') {
+        throw new ForbiddenError(
+          'Cannot disable another admin. Demote them to "user" first.'
+        );
+      }
+
+      const result = await query(
+        `UPDATE users
+            SET is_active = $1,
+                disabled_at = CASE WHEN $1 = false THEN NOW() ELSE NULL END,
+                updated_at = NOW()
+          WHERE id = $2
+      RETURNING id, username, is_active, disabled_at`,
+        [is_active, userId]
+      );
+
+      auditLog(req.user!.id, is_active ? 'enable_user' : 'disable_user', `user:${userId}`, {
+        username: check.rows[0].username,
+      });
+
       res.json({ user: result.rows[0] });
     } catch (error) {
       next(error);

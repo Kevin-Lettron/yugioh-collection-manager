@@ -8,6 +8,8 @@ export interface User {
   email: string;
   profile_picture?: string;
   role?: UserRole;
+  is_active?: boolean;
+  disabled_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }

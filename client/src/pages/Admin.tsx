@@ -199,8 +199,24 @@ const UsersTab = ({ currentUserId }: { currentUserId: number }) => {
     }
   };
 
+  const handleToggleActive = async (userId: number, username: string, currentlyActive: boolean) => {
+    const action = currentlyActive ? 'Désactiver' : 'Réactiver';
+    const nextState = !currentlyActive;
+    const message = currentlyActive
+      ? `Désactiver ${username} ?\n\nSon compte sera bloqué immédiatement (ses tokens actuels ne fonctionneront plus, il ne pourra plus se connecter). Ses données restent intactes — action réversible.`
+      : `Réactiver ${username} ?\n\nIl pourra à nouveau se connecter.`;
+    if (!confirm(message)) return;
+    try {
+      await adminApi.toggleUserActive(userId, nextState);
+      toast.success(`${username} ${nextState ? 'réactivé' : 'désactivé'}`);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || `Erreur ${action}`);
+    }
+  };
+
   const handleDelete = async (userId: number, username: string) => {
-    if (!confirm(`Supprimer définitivement ${username} ?\n\nToutes ses données (decks, cartes, commentaires) seront perdues.`)) return;
+    if (!confirm(`⚠️ SUPPRESSION DÉFINITIVE ⚠️\n\nSupprimer ${username} ?\n\nToutes ses données (decks, cartes, commentaires) seront PERDUES.\n\nSi tu veux juste bloquer son accès temporairement, utilise "Désactiver" à la place.\n\nAction IRRÉVERSIBLE. Tape OK pour confirmer.`)) return;
     try {
       await adminApi.deleteUser(userId);
       toast.success(`${username} supprimé`);
@@ -243,6 +259,7 @@ const UsersTab = ({ currentUserId }: { currentUserId: number }) => {
                 <th className="py-2 px-3 text-left">Username</th>
                 <th className="py-2 px-3 text-left">Email</th>
                 <th className="py-2 px-3 text-left">Rôle</th>
+                <th className="py-2 px-3 text-left">Statut</th>
                 <th className="py-2 px-3 text-right">Decks</th>
                 <th className="py-2 px-3 text-right">Cartes</th>
                 <th className="py-2 px-3 text-left">Inscrit</th>
@@ -251,7 +268,10 @@ const UsersTab = ({ currentUserId }: { currentUserId: number }) => {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b hover:bg-gray-50">
+                <tr
+                  key={u.id}
+                  className={`border-b hover:bg-gray-50 ${!u.is_active ? 'opacity-60 bg-red-50/30' : ''}`}
+                >
                   <td className="py-2 px-3">{u.id}</td>
                   <td className="py-2 px-3 font-medium">{u.username}</td>
                   <td className="py-2 px-3 text-gray-600">{u.email}</td>
@@ -271,16 +291,43 @@ const UsersTab = ({ currentUserId }: { currentUserId: number }) => {
                       <option value="admin">admin</option>
                     </select>
                   </td>
+                  <td className="py-2 px-3">
+                    {u.is_active ? (
+                      <span className="inline-block px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">
+                        Actif
+                      </span>
+                    ) : (
+                      <span
+                        className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-semibold"
+                        title={u.disabled_at ? `Désactivé le ${new Date(u.disabled_at).toLocaleString('fr-FR')}` : ''}
+                      >
+                        Désactivé
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 px-3 text-right font-mono">{u.deck_count}</td>
                   <td className="py-2 px-3 text-right font-mono">{u.card_count}</td>
                   <td className="py-2 px-3 text-gray-500 text-xs">
                     {new Date(u.created_at).toLocaleDateString('fr-FR')}
                   </td>
-                  <td className="py-2 px-3 text-right">
+                  <td className="py-2 px-3 text-right space-x-2 whitespace-nowrap">
+                    <button
+                      onClick={() => handleToggleActive(u.id, u.username, u.is_active)}
+                      disabled={u.id === currentUserId}
+                      className={`text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed ${
+                        u.is_active ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
+                      }`}
+                      title={u.is_active
+                        ? 'Bloque le login, préserve les données (réversible)'
+                        : 'Réactive le compte'}
+                    >
+                      {u.is_active ? 'Désactiver' : 'Réactiver'}
+                    </button>
                     <button
                       onClick={() => handleDelete(u.id, u.username)}
                       disabled={u.id === currentUserId}
                       className="text-red-600 hover:text-red-800 text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Suppression définitive avec toutes les données"
                     >
                       Supprimer
                     </button>

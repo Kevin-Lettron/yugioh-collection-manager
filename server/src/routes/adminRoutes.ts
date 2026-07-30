@@ -14,8 +14,9 @@ router.get('/stats', AdminController.getStats);
 // ── Users
 router.get('/users', AdminController.listUsers);
 router.get('/users/:id', AdminController.getUserDetail);
-// Role changes and user deletion = strict admin only (no moderators)
+// Role changes, disable and user deletion = strict admin only (no moderators)
 router.patch('/users/:id/role', requireStrictAdmin, AdminController.updateUserRole);
+router.patch('/users/:id/status', requireStrictAdmin, AdminController.toggleUserActive);
 router.delete('/users/:id', requireStrictAdmin, AdminController.deleteUser);
 
 // ── Decks

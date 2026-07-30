@@ -115,6 +115,13 @@ export class AuthController {
         throw new UnauthorizedError('Identifiant ou mot de passe invalide');
       }
 
+      // Block disabled accounts. We do this AFTER validating credentials so
+      // an attacker who doesn't know the password can't probe account status.
+      if (user.is_active === false) {
+        loggers.auth.login(user.id, identifier, false);
+        throw new UnauthorizedError('Compte désactivé. Contactez un administrateur.');
+      }
+
       // Generate JWT token
       const token = generateToken({
         id: user.id,
