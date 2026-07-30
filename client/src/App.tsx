@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import AdminTopbar from './components/AdminTopbar';
 
 // Pages (will be created next)
 import Login from './pages/Login';
@@ -144,6 +145,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+          <AdminTopbar />
           <AppRoutes />
           <Toaster position="top-right" />
         </NotificationProvider>

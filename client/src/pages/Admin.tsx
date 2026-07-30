@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { adminApi, AdminStats, AdminUser, AdminDeck, AdminComment } from '../services/api';
@@ -7,11 +7,20 @@ import AppNavbar from '../components/AppNavbar';
 import { useDebounce } from '../hooks/useDebounce';
 
 type Tab = 'dashboard' | 'users' | 'decks' | 'comments';
+const VALID_TABS: Tab[] = ['dashboard', 'users', 'decks', 'comments'];
 
 const Admin = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read tab from ?tab=xxx query param, default to dashboard
+  const urlTab = searchParams.get('tab') as Tab | null;
+  const tab: Tab = urlTab && VALID_TABS.includes(urlTab) ? urlTab : 'dashboard';
+
+  const setTab = (newTab: Tab) => {
+    setSearchParams({ tab: newTab }, { replace: true });
+  };
 
   // Guard: redirect if not admin/moderator
   useEffect(() => {
