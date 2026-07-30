@@ -62,60 +62,6 @@ export const getImageUrl = (path: string | null | undefined): string => {
   return `${API_URL}${path}`;
 };
 
-// Card scan with Claude Vision (photo never stored server-side)
-export interface ScanResult {
-  success: boolean;
-  code?: string;
-  name?: string;
-  confidence?: number;
-  card?: any;
-  availableRarities?: string[];
-  officialImage?: string;
-  detectedLanguage?: string;
-  notes?: string;
-  error?: string;
-  remainingScans?: number;
-}
-
-export const scanCard = async (photo: Blob, description?: string): Promise<ScanResult> => {
-  const formData = new FormData();
-  formData.append('photo', photo, 'scan.jpg');
-  if (description && description.trim()) {
-    formData.append('description', description.trim());
-  }
-  const response = await api.post<ScanResult>('/collection/scan', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return response.data;
-};
-
-export const getScanStatus = async (): Promise<{ remaining: number; max: number; used: number }> => {
-  const response = await api.get('/collection/scan/status');
-  return response.data;
-};
-
-// Client-side debug logger. Uses fetch with keepalive so events survive tab kills.
-export const debugLog = (event: string, data?: Record<string, unknown>): void => {
-  const token = localStorage.getItem('token');
-  if (!token) return;
-  try {
-    fetch(`${API_URL}/api/debug/log`, {
-      method: 'POST',
-      keepalive: true,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        event,
-        data: data || {},
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch(() => {});
-  } catch {
-    /* ignore */
-  }
-};
 
 // ─────────────────────────────────────────────────────────────
 // Admin API — endpoints under /api/admin, all require admin role
