@@ -100,3 +100,66 @@ export const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   JP: 'Japonais',
   KR: 'Coréen',
 };
+
+// ─── Deck types ────────────────────────────────────────
+
+export interface DeckUser {
+  id: number;
+  username: string;
+  profile_picture?: string;
+}
+
+export interface DeckCard {
+  id: number;
+  deck_id: number;
+  card_id: number;
+  quantity: number;
+  is_extra_deck: boolean;
+  card?: Card;
+}
+
+export interface Deck {
+  id: number;
+  user_id: number;
+  name: string;
+  cover_image?: string;
+  is_public: boolean;
+  respect_banlist: boolean;
+  is_shared?: boolean;
+  share_token?: string;
+  created_at: string;
+  updated_at: string;
+  user?: DeckUser;
+  main_deck?: DeckCard[];
+  extra_deck?: DeckCard[];
+  likes_count?: number;
+  dislikes_count?: number;
+  comments_count?: number;
+  user_reaction?: 'like' | 'dislike' | null;
+  is_wishlisted?: boolean;
+}
+
+export interface DeckComment {
+  id: number;
+  user_id: number;
+  deck_id: number;
+  parent_comment_id?: number | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user?: DeckUser;
+  replies?: DeckComment[];
+  replies_count?: number;
+}
+
+export interface DeckValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings?: string[];
+}
+
+export interface AIStatus {
+  remaining: number;
+  max: number;
+  used: number;
+}

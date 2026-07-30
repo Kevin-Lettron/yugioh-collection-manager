@@ -77,12 +77,19 @@ mobile/
 
 Collection = 100% ISO web. Prochaine phase autorisée : Decks.
 
-### Phase 4 — Decks (jour 5-8)
-- [ ] Liste decks `app/(tabs)/decks.tsx`
-- [ ] Détail deck `app/deck/[id].tsx` : main/extra deck, likes, commentaires
-- [ ] Editor deck `app/deck/edit/[id].tsx` : DnD cartes, validation, banlist
-- [ ] AI Deck Builder (Claude API)
-- [ ] Partage lien deck (deep link `/deck/share/:token`)
+### Phase 4 — Decks (jour 5-8) — FAIT
+- [x] Types Deck + `src/services/deckApi.ts` (CRUD, cards, share, reactions, comments, AI)
+- [x] Liste decks `app/(tabs)/decks.tsx` : cards avec stats Main/Extra (rouge si hors limites), badges public/shared/banlist, delete inline
+- [x] Nouveau deck `app/deck/new.tsx` : form Nom + toggles public/banlist → redirect vers editor
+- [x] Détail deck `app/deck/[id].tsx` (read-only) : cartes main/extra, reactions like/dislike, share natif, commentaires (poster + supprimer les siens), bouton "Éditer" si owner
+- [x] Editor deck `app/deck/edit/[id].tsx` : rename on-blur, toggles public/banlist immédiat, stats colorées 40-60/≤15, validation errors banlist, boutons "+ Main" / "+ Extra" (ouvrent modal collection filtrée), tap carte → menu (±1, retirer), Vider deck, Delete
+- [x] `AddCardsFromCollectionModal.tsx` : liste collection filtrée (extra vs main via type), search debounced, tap = ajout direct
+- [x] AI Deck Builder `AIBuilderModal.tsx` : prompt libre, toggle banlist, status remaining, résultat added/skipped/notes
+- [x] Partage : bouton `↗` dans view + editor → gen share token si absent → Share.share() natif (WhatsApp/SMS/Copy/etc)
+- [x] Tab Decks ajouté dans `(tabs)/_layout.tsx` avec icônes 🃏 (Collection) et 📚 (Decks)
+- [x] typedRoutes désactivé dans app.json (blocait les chemins dynamiques `/deck/${id}`)
+
+Non porté (view public `/deck/share/:token` accessible sans auth) : le web sert déjà cette page — l'URL native fonctionne via deep link ouvert dans le navigateur, pas d'écran mobile dédié pour l'instant. Peut être ajouté plus tard si besoin.
 
 ### Phase 5 — Social (jour 9-10)
 - [ ] Feed social `app/(tabs)/social.tsx`
