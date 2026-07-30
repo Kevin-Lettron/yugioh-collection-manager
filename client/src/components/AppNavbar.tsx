@@ -17,7 +17,6 @@ const AppNavbar = () => {
   // Notifications
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   // Refs for click outside detection
   const profileMenuRef = useRef<HTMLDivElement>(null);

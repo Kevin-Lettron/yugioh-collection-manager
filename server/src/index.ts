@@ -108,10 +108,12 @@ io.on('connection', (socket) => {
 // Make io available in routes
 app.set('io', io);
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check — reachable both at /health (server-local) and /api/health (via nginx public)
+const healthHandler = (_req: any, res: any) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // API Routes
 import authRoutes from './routes/authRoutes';

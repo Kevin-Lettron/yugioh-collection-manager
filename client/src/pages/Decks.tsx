@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { Deck, DeckFilters } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -15,7 +14,6 @@ interface WishlistItem {
 }
 
 const Decks = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'mydecks' | 'wishlist'>('mydecks');
   const [decks, setDecks] = useState<Deck[]>([]);

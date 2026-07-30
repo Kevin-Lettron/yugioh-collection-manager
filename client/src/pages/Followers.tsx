@@ -74,7 +74,7 @@ const Followers = () => {
     }
   };
 
-  const renderUserCard = (followRecord: any, isFollowerTab: boolean) => {
+  const renderUserCard = (followRecord: any, _isFollowerTab: boolean) => {
     // The API returns user data directly (not nested in follower/following objects)
     // So followRecord IS the user, or it has follower/following nested
     const displayUser = followRecord.follower || followRecord.following || followRecord;

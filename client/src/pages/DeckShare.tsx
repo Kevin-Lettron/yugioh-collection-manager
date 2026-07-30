@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Deck, DeckCard, UserCard, CardLanguage } from '../../../shared/types';
+import { Deck, DeckCard } from '../../../shared/types';
 import api from '../services/api';
-
-const LANGUAGE_LABELS: Record<CardLanguage, string> = {
-  EN: 'Anglais',
-  FR: 'Francais',
-  DE: 'Allemand',
-  IT: 'Italien',
-  PT: 'Portugais',
-  SP: 'Espagnol',
-  JP: 'Japonais',
-  KR: 'Coreen',
-};
 
 const DeckShare = () => {
   const { shareToken } = useParams<{ shareToken: string }>();

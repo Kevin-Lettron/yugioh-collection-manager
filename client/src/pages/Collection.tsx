@@ -1,6 +1,4 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserCard, CollectionFilters, Card, CardLanguage } from '../../../shared/types';
@@ -30,7 +28,6 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
 };
 
 const Collection = () => {
-  const { user } = useAuth();
   const [cards, setCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);

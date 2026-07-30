@@ -1,6 +1,5 @@
 import { useState, useEffect, FormEvent, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Deck, Card, DeckCard, UserCard, CollectionFilters, CardLanguage } from '../../../shared/types';
@@ -53,7 +52,6 @@ interface DeckCardWithCollection extends DeckCard {
 
 const DeckEditor = () => {
   const { deckId } = useParams<{ deckId?: string }>();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const isEditing = !!deckId;
 
