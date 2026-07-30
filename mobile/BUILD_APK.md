@@ -13,12 +13,12 @@ Build cloud gratuit via EAS (pas besoin d'Android Studio installé sur ton PC).
 Dans un terminal PowerShell, depuis `C:\laragon\www\New-YugiohCollection\mobile` :
 
 ```powershell
-npx eas login
+npx eas-cli login
 ```
 → Rentre l'email + mot de passe de ton compte Expo.
 
 ```powershell
-npx eas build --profile preview --platform android
+npx eas-cli build --profile preview --platform android
 ```
 
 **Questions posées la première fois :**
@@ -49,7 +49,7 @@ https://expo.dev/artifacts/eas/xxxxxxxx.apk
 À chaque nouvelle version :
 
 1. Modifier `version` dans [`app.json`](app.json) (ex : `"1.0.0"` → `"1.0.1"`)
-2. Relancer `npx eas build --profile preview --platform android`
+2. Relancer `npx eas-cli build --profile preview --platform android`
 3. Télécharger + installer le nouveau APK — Android va proposer de mettre à jour l'app existante
 
 ## Deux profils disponibles
@@ -61,7 +61,8 @@ Voir [`eas.json`](eas.json) pour les configs détaillées.
 
 ## Debug si problème
 
-- **`eas login` demande TOTP mais tu n'as pas configuré 2FA** → il te propose "One-time password sent to your email"
+- **`npx eas ...` échoue avec `could not determine executable to run`** → le vrai nom du package npm est `eas-cli` (pas `eas`). Utiliser `npx eas-cli ...`
+- **`eas-cli login` demande TOTP mais tu n'as pas configuré 2FA** → il te propose "One-time password sent to your email"
 - **Build échoue avec `Missing keystore`** → laisser EAS générer la keystore (répondre Yes)
 - **Build échoue avec erreurs JS/TS** → lance `npx tsc --noEmit` en local pour reproduire, corrige, recommence
 - **APK crash au boot après install** → vérifie que tu es bien sur SDK 54 (voir [`package.json`](package.json)), pas SDK 57
