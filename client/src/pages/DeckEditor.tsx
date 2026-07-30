@@ -911,7 +911,7 @@ const DeckEditor = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Deck Settings & Search */}
           <div className="lg:col-span-1 space-y-6">
             {/* Deck Settings */}
@@ -1101,7 +1101,7 @@ const DeckEditor = () => {
               <h3 className="text-xl font-bold text-gray-800 mb-4">
                 Deck Principal ({mainDeckCount} cartes)
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 sm:gap-2">
                 {mainDeck.map((deckCard) => {
                   const totalInDeck = deckCard.card?.name ? getCardCountByName(deckCard.card.name) : 0;
                   return (
@@ -1175,7 +1175,7 @@ const DeckEditor = () => {
               <h3 className="text-xl font-bold text-gray-800 mb-4">
                 Extra Deck ({extraDeckCount} cartes)
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 sm:gap-2">
                 {extraDeck.map((deckCard) => {
                   const totalInDeck = deckCard.card?.name ? getCardCountByName(deckCard.card.name) : 0;
                   return (

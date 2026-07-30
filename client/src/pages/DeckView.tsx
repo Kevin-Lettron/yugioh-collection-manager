@@ -255,22 +255,22 @@ const DeckView = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-800">{mainDeckCount}</p>
-              <p className="text-sm text-gray-600">Deck Principal</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-6">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-gray-800">{mainDeckCount}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Deck Principal</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-800">{extraDeckCount}</p>
-              <p className="text-sm text-gray-600">Extra Deck</p>
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-gray-800">{extraDeckCount}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Extra Deck</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
-              <p className="text-sm text-gray-600">J'aime</p>
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
+              <p className="text-xs sm:text-sm text-gray-600">J'aime</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-800">{deck.comments_count || 0}</p>
-              <p className="text-sm text-gray-600">Commentaires</p>
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-gray-800">{deck.comments_count || 0}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Commentaires</p>
             </div>
           </div>
 

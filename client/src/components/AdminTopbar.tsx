@@ -22,7 +22,7 @@ const AdminTopbar = () => {
 
   return (
     <div className="bg-gray-900 text-gray-300 text-xs border-b border-gray-800 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-8 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 h-9 sm:h-8 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left side: admin logo + quick links */}
         <div className="flex items-center gap-1 sm:gap-3 min-w-0 overflow-x-auto">
           <Link

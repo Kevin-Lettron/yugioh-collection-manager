@@ -481,7 +481,7 @@ const Collection = () => {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
           {cards.map((userCard) => (
             <div
               key={userCard.id}
@@ -493,9 +493,9 @@ const Collection = () => {
                 className="w-full h-auto cursor-pointer hover:opacity-90 transition"
                 onClick={() => setSelectedCardDetail(userCard)}
               />
-              <div className="p-3">
+              <div className="p-2 sm:p-3">
                 <h3
-                  className="font-semibold text-sm text-gray-800 truncate cursor-pointer hover:text-blue-600"
+                  className="font-semibold text-xs sm:text-sm text-gray-800 truncate cursor-pointer hover:text-blue-600"
                   onClick={() => setSelectedCardDetail(userCard)}
                 >
                   {userCard.card?.name}
@@ -607,7 +607,7 @@ const Collection = () => {
       {/* Add Card Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-800">Ajouter une carte</h3>
               <button
