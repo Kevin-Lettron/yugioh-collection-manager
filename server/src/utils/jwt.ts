@@ -1,10 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { getRequiredEnv } from './env';
+import { UserRole } from '../../../shared/types';
 
-interface JWTPayload {
+export interface JWTPayload {
   id: number;
   email: string;
   username: string;
+  role?: UserRole;
 }
 
 export const generateToken = (payload: JWTPayload): string => {

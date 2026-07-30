@@ -75,6 +75,7 @@ export class AuthController {
         id: user.id,
         email: user.email,
         username: user.username,
+        role: user.role,
       });
 
       loggers.auth.register(user.id, user.email, user.username);
@@ -119,6 +120,7 @@ export class AuthController {
         id: user.id,
         email: user.email,
         username: user.username,
+        role: user.role,
       });
 
       loggers.auth.login(user.id, user.email, true);

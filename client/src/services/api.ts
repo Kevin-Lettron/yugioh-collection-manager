@@ -117,5 +117,99 @@ export const debugLog = (event: string, data?: Record<string, unknown>): void =>
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// Admin API — endpoints under /api/admin, all require admin role
+// ─────────────────────────────────────────────────────────────
+
+export interface AdminStats {
+  users: number;
+  activeUsers7d: number;
+  decks: number;
+  totalCardsInCollections: number;
+  uniqueCardEntries: number;
+  comments: number;
+  roleBreakdown: { role: string; count: number }[];
+  recentSignups: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+    created_at: string;
+  }[];
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  role: 'user' | 'moderator' | 'admin';
+  profile_picture?: string;
+  created_at: string;
+  updated_at: string;
+  deck_count: number;
+  card_count: number;
+}
+
+export interface AdminDeck {
+  id: number;
+  name: string;
+  is_public: boolean;
+  respect_banlist: boolean;
+  is_shared: boolean;
+  created_at: string;
+  updated_at: string;
+  user_id: number;
+  username: string;
+  user_role: string;
+  card_count: number;
+  likes: number;
+  comments: number;
+}
+
+export interface AdminComment {
+  id: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  parent_comment_id: number | null;
+  user_id: number;
+  username: string;
+  deck_id: number;
+  deck_name: string;
+}
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const adminApi = {
+  stats: () => api.get<AdminStats>('/admin/stats').then((r) => r.data),
+
+  listUsers: (params: { page?: number; limit?: number; search?: string; role?: string } = {}) =>
+    api.get<PaginationMeta & { users: AdminUser[] }>('/admin/users', { params }).then((r) => r.data),
+
+  getUser: (id: number) => api.get<{ user: AdminUser }>(`/admin/users/${id}`).then((r) => r.data.user),
+
+  updateUserRole: (id: number, role: 'user' | 'moderator' | 'admin') =>
+    api.patch(`/admin/users/${id}/role`, { role }).then((r) => r.data),
+
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`).then((r) => r.data),
+
+  listDecks: (params: { page?: number; limit?: number; search?: string } = {}) =>
+    api.get<PaginationMeta & { decks: AdminDeck[] }>('/admin/decks', { params }).then((r) => r.data),
+
+  deleteDeck: (id: number) => api.delete(`/admin/decks/${id}`).then((r) => r.data),
+
+  forceUnshareDeck: (id: number) => api.post(`/admin/decks/${id}/unshare`).then((r) => r.data),
+
+  listComments: (params: { page?: number; limit?: number; search?: string } = {}) =>
+    api.get<PaginationMeta & { comments: AdminComment[] }>('/admin/comments', { params }).then((r) => r.data),
+
+  deleteComment: (id: number) => api.delete(`/admin/comments/${id}`).then((r) => r.data),
+};
+
 export default api;
 export { API_URL };

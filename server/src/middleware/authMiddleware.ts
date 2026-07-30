@@ -1,12 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { getRequiredEnv } from '../utils/env';
+import { UserRole } from '../../../shared/types';
+import { query } from '../config/database';
 
 export interface AuthRequest extends Request {
   user?: {
     id: number;
     email: string;
     username: string;
+    role?: UserRole;
   };
 }
 
@@ -29,6 +32,7 @@ export const authenticateToken = (
       id: number;
       email: string;
       username: string;
+      role?: UserRole;
     };
 
     req.user = decoded;
@@ -58,6 +62,7 @@ export const optionalAuth = (
       id: number;
       email: string;
       username: string;
+      role?: UserRole;
     };
 
     req.user = decoded;
@@ -66,4 +71,65 @@ export const optionalAuth = (
   }
 
   next();
+};
+
+/**
+ * Require the requesting user to have role='admin' or 'moderator'.
+ * ALWAYS re-fetches the role from the DB (never trusts the JWT alone) so
+ * revocation is instant — a demoted admin loses access immediately, without
+ * needing to wait for their token to expire.
+ */
+export const requireAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const result = await query('SELECT role FROM users WHERE id = $1', [req.user.id]);
+    const role = result.rows[0]?.role as UserRole | undefined;
+
+    if (role !== 'admin' && role !== 'moderator') {
+      res.status(403).json({ error: 'Admin access required' });
+      return;
+    }
+
+    req.user.role = role;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to verify admin access' });
+  }
+};
+
+/**
+ * Stricter variant — admin only, moderators denied.
+ */
+export const requireStrictAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const result = await query('SELECT role FROM users WHERE id = $1', [req.user.id]);
+    const role = result.rows[0]?.role as UserRole | undefined;
+
+    if (role !== 'admin') {
+      res.status(403).json({ error: 'Admin access required' });
+      return;
+    }
+
+    req.user.role = role;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to verify admin access' });
+  }
 };

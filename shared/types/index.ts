@@ -1,10 +1,13 @@
 // Shared types between client and server
 
+export type UserRole = 'user' | 'moderator' | 'admin';
+
 export interface User {
   id: number;
   username: string;
   email: string;
   profile_picture?: string;
+  role?: UserRole;
   created_at: Date;
   updated_at: Date;
 }

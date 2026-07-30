@@ -131,10 +131,12 @@ const AppNavbar = () => {
 
   const isActivePath = (path: string) => location.pathname === path;
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'moderator';
   const navLinks = [
     { to: '/collection', label: 'Collection' },
     { to: '/decks', label: 'Decks' },
     { to: '/social', label: 'Social' },
+    ...(isAdmin ? [{ to: '/admin', label: '⚙️ Admin' }] : []),
   ];
 
   return (

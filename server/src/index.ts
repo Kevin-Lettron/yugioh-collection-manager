@@ -124,6 +124,7 @@ import reactionRoutes from './routes/reactionRoutes';
 import commentRoutes from './routes/commentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import debugRoutes from './routes/debugRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
@@ -132,6 +133,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/reactions', reactionRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Debug routes (dev only — writes arbitrary client events to server logs)
 if (process.env.NODE_ENV !== 'production') {

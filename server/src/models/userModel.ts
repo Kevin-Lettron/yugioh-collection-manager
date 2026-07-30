@@ -12,7 +12,7 @@ export class UserModel {
     const result = await query(
       `INSERT INTO users (username, email, password_hash)
        VALUES ($1, $2, $3)
-       RETURNING id, username, email, profile_picture, created_at, updated_at`,
+       RETURNING id, username, email, profile_picture, role, created_at, updated_at`,
       [username, email, hashedPassword]
     );
 
@@ -24,7 +24,7 @@ export class UserModel {
    */
   static async findByEmail(email: string): Promise<(User & { password_hash: string }) | null> {
     const result = await query(
-      `SELECT id, username, email, password_hash, profile_picture, created_at, updated_at
+      `SELECT id, username, email, password_hash, profile_picture, role, created_at, updated_at
        FROM users
        WHERE email = $1`,
       [email]
@@ -38,7 +38,7 @@ export class UserModel {
    */
   static async findByEmailOrUsername(identifier: string): Promise<(User & { password_hash: string }) | null> {
     const result = await query(
-      `SELECT id, username, email, password_hash, profile_picture, created_at, updated_at
+      `SELECT id, username, email, password_hash, profile_picture, role, created_at, updated_at
        FROM users
        WHERE email = $1 OR username = $1`,
       [identifier]
@@ -52,7 +52,7 @@ export class UserModel {
    */
   static async findById(id: number): Promise<User | null> {
     const result = await query(
-      `SELECT id, username, email, profile_picture, created_at, updated_at
+      `SELECT id, username, email, profile_picture, role, created_at, updated_at
        FROM users
        WHERE id = $1`,
       [id]
@@ -66,7 +66,7 @@ export class UserModel {
    */
   static async findByUsername(username: string): Promise<User | null> {
     const result = await query(
-      `SELECT id, username, email, profile_picture, created_at, updated_at
+      `SELECT id, username, email, profile_picture, role, created_at, updated_at
        FROM users
        WHERE username = $1`,
       [username]

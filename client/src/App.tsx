@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Social from './pages/Social';
 import Followers from './pages/Followers';
+import Admin from './pages/Admin';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -119,6 +120,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Followers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Admin />
           </ProtectedRoute>
         }
       />
