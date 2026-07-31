@@ -12,8 +12,8 @@ describe('Button Component', () => {
     it('renders with default props', () => {
       render(<Button>Default Button</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-blue-600'); // primary variant
-      expect(button).toHaveClass('px-4', 'py-2'); // md size
+      expect(button).toHaveClass('cyber-btn'); // variante primaire
+      expect(button).toHaveClass('px-4', 'py-2'); // taille md
     });
   });
 
@@ -21,25 +21,27 @@ describe('Button Component', () => {
     it('renders primary variant correctly', () => {
       render(<Button variant="primary">Primary</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-blue-600', 'text-white');
+      // La primaire n'ajoute aucun modificateur : c'est le .cyber-btn nu (or).
+      expect(button).toHaveClass('cyber-btn');
+      expect(button).not.toHaveClass('cyber-btn--violet', 'cyber-btn--danger', 'cyber-btn--ghost');
     });
 
     it('renders secondary variant correctly', () => {
       render(<Button variant="secondary">Secondary</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-gray-200', 'text-gray-900');
+      expect(button).toHaveClass('cyber-btn', 'cyber-btn--violet');
     });
 
     it('renders danger variant correctly', () => {
       render(<Button variant="danger">Danger</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-red-600', 'text-white');
+      expect(button).toHaveClass('cyber-btn', 'cyber-btn--danger');
     });
 
     it('renders ghost variant correctly', () => {
       render(<Button variant="ghost">Ghost</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-transparent', 'text-gray-700');
+      expect(button).toHaveClass('cyber-btn', 'cyber-btn--ghost');
     });
   });
 
@@ -47,19 +49,19 @@ describe('Button Component', () => {
     it('renders small size correctly', () => {
       render(<Button size="sm">Small</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('px-3', 'py-1.5', 'text-sm');
+      expect(button).toHaveClass('cyber-btn--sm', 'px-3', 'py-1.5', 'text-xs');
     });
 
     it('renders medium size correctly', () => {
       render(<Button size="md">Medium</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('px-4', 'py-2', 'text-base');
+      expect(button).toHaveClass('px-4', 'py-2', 'text-sm');
     });
 
     it('renders large size correctly', () => {
       render(<Button size="lg">Large</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('px-6', 'py-3', 'text-lg');
+      expect(button).toHaveClass('px-6', 'py-3', 'text-base');
     });
   });
 
@@ -69,7 +71,7 @@ describe('Button Component', () => {
       const button = screen.getByRole('button');
 
       expect(button).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Chargement…')).toBeInTheDocument();
       expect(button).toBeDisabled();
     });
 
@@ -90,7 +92,7 @@ describe('Button Component', () => {
     it('shows original content when not loading', () => {
       render(<Button isLoading={false}>Submit</Button>);
       expect(screen.getByText('Submit')).toBeInTheDocument();
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByText('Chargement…')).not.toBeInTheDocument();
     });
   });
 
@@ -99,7 +101,8 @@ describe('Button Component', () => {
       render(<Button disabled>Disabled</Button>);
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
-      expect(button).toHaveClass('disabled:opacity-50', 'disabled:cursor-not-allowed');
+      // L'etat desactive est porte par .cyber-btn:disabled dans theme.css.
+      expect(button).toHaveClass('cyber-btn');
     });
 
     it('is disabled when isLoading is true', () => {
@@ -158,7 +161,8 @@ describe('Button Component', () => {
     it('has proper focus styles', () => {
       render(<Button>Focus me</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('focus:outline-none', 'focus:ring-2');
+      // Le focus est porte par .cyber-btn:focus-visible (contour cyan) dans theme.css.
+      expect(button).toHaveClass('cyber-btn');
     });
 
     it('is focusable', () => {
@@ -207,7 +211,7 @@ describe('Button Component', () => {
     it('merges custom className with default classes', () => {
       render(<Button className="custom-class" variant="primary">Button</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('custom-class', 'bg-blue-600');
+      expect(button).toHaveClass('custom-class', 'cyber-btn');
     });
   });
 

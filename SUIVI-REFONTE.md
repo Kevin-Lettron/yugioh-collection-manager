@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — étapes 2 et 4 terminées (thème + icônes)
+**Dernière mise à jour :** 2026-07-31 — étape 3 terminée (composants ui/)
 
 ---
 
@@ -80,7 +80,13 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
         l'utilisateur n'a rien choisi ; met à jour `theme-color` pour la barre d'état mobile
       - `src/components/ThemeToggle.tsx` dans la navbar
       - `App.tsx` : `ThemeProvider` en racine + toasts aux couleurs du thème
-- [ ] **Étape 3** — Web : bouton cyber + composants `ui/`
+- [x] **Étape 3** — Web : bouton cyber + composants `ui/`
+      - `Button` consomme `.cyber-btn` : variantes primaire (or) / secondaire (violet) /
+        danger / fantôme, props `glitch` (réservé à l'action principale) et `tag`
+      - `Card`, `Modal` → biseaux `cyber-tile` ; `Input`, `Select` → liseré d'accent à gauche,
+        angles droits ; `Badge` → coins coupés au lieu de la pilule
+      - `Button` et `Input` reçoivent un `type` par défaut (`button` / `text`) : deux tests
+        l'exigeaient déjà et échouaient avant cette refonte
 - [x] **Étape 4** — Web : motifs SVG Yu-Gi-Oh (`src/components/decor/Icons.tsx`)
       — marque du Millénium, carte, deck, scan, social, recherche, filtres, ajout, alerte, validé,
       lune, soleil. Toutes en `currentColor`, grille 24, angles vifs.
@@ -88,7 +94,7 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 - [ ] **Étape 6** — Mobile : palette + ThemeContext + hook
 - [ ] **Étape 7** — Mobile : CyberButton + composants partagés
 - [ ] **Étape 8** — Mobile : 16 écrans et modales
-- [ ] **Étape 9** — Tests `ui/` web à remettre à jour (ils assertent `bg-blue-600` etc.)
+- [x] **Étape 9** — Tests `ui/` web mis à jour (faite en même temps que l'étape 3)
 - [ ] **Étape 10** — Typecheck + tests + build de vérification
 
 ## 5. Points de vigilance
@@ -102,6 +108,11 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 - Mobile : pas de police custom (nécessiterait `expo-font` + fichiers). Le style « cyber »
   passe par les majuscules, le `letterSpacing` et les biseaux.
 - Chaque étape terminée = commit + push, avec ce fichier mis à jour.
+- **La suite de tests web était déjà largement rouge avant la refonte** : 197 échecs sur 456 au
+  commit de départ (mocks d'API manquants sur les tests de pages, doublons de libellés dans
+  `Toggle`, sélecteur `closest('div')` dans `Modal`). Après l'étape 3 : **195 échecs** — les
+  seuls tests que la refonte a invalidés ont été mis à jour, et deux échecs préexistants sont
+  corrigés au passage. Ces 195 restants sont hors périmètre de la refonte.
 
 ## 6. Comment reprendre ailleurs
 

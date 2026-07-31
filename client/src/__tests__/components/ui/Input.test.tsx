@@ -17,7 +17,7 @@ describe('Input Component', () => {
     it('renders with default styles', () => {
       render(<Input />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('rounded-lg', 'border', 'px-4', 'py-2');
+      expect(input).toHaveClass('border', 'border-l-2', 'px-4', 'py-2');
     });
   });
 
@@ -220,7 +220,7 @@ describe('Input Component', () => {
     it('has proper focus styles', () => {
       render(<Input />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('focus:outline-none', 'focus:ring-2');
+      expect(input).toHaveClass('focus:outline-none', 'focus:ring-1');
     });
 
     it('is focusable', () => {
@@ -303,7 +303,7 @@ describe('Input Component', () => {
     it('merges custom className with default classes', () => {
       render(<Input className="my-custom-class" />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('my-custom-class', 'rounded-lg');
+      expect(input).toHaveClass('my-custom-class', 'border-l-2');
     });
   });
 });

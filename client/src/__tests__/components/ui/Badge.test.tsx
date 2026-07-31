@@ -16,7 +16,7 @@ describe('Badge Component', () => {
     it('applies base styles', () => {
       render(<Badge>Badge</Badge>);
       const badge = screen.getByText('Badge');
-      expect(badge).toHaveClass('inline-flex', 'items-center', 'font-semibold', 'rounded-full', 'border');
+      expect(badge).toHaveClass('inline-flex', 'items-center', 'font-semibold', 'cyber-cut-sm', 'border');
     });
   });
 

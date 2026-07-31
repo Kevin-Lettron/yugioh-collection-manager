@@ -88,7 +88,7 @@ const Modal: React.FC<ModalProps> = ({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-lg shadow-xl transform transition-all duration-200 max-h-[90vh] flex flex-col`}
+        className={`relative w-full ${sizeClasses[size]} bg-white cyber-tile border border-gray-300 shadow-glow transform transition-all duration-200 max-h-[90vh] flex flex-col`}
       >
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">

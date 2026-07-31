@@ -17,12 +17,13 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     },
     ref
   ) => {
-    const baseStyles = 'bg-white rounded-lg';
+    // `cyber-tile` remplace l'arrondi par deux coins biseautés (cf. charte §5).
+    const baseStyles = 'bg-white cyber-tile';
 
     const variantStyles = {
       default: 'border border-gray-200',
       bordered: 'border-2 border-gray-300',
-      elevated: 'shadow-lg',
+      elevated: 'shadow-glow',
     };
 
     const paddingStyles = {

@@ -32,11 +32,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
     const hasError = !!error;
 
-    const baseSelectStyles = 'block w-full rounded-lg border px-4 py-2 pr-10 text-gray-900 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 appearance-none bg-white';
+    const baseSelectStyles = 'block w-full border border-l-2 px-4 py-2 pr-10 min-h-[44px] text-gray-800 transition-colors duration-200 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 appearance-none bg-gray-50';
 
     const stateStyles = hasError
-      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+      ? 'border-red-500 border-l-red-500 focus:border-red-500 focus:ring-red-500'
+      : 'border-gray-300 border-l-blue-600 focus:border-blue-600 focus:ring-blue-600';
 
     const selectClasses = `${baseSelectStyles} ${stateStyles} ${className}`;
 

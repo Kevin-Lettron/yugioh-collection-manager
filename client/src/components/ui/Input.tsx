@@ -19,6 +19,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       className = '',
       id,
       disabled,
+      // Un <input> sans type explicite se comporte comme `text` mais ne le
+      // déclare pas : on l'expose pour que le DOM soit lisible et testable.
+      type = 'text',
       ...props
     },
     ref
@@ -26,11 +29,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
     const hasError = !!error;
 
-    const baseInputStyles = 'block w-full rounded-lg border px-4 py-2 text-gray-900 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500';
+    // Champ anguleux à liseré d'accent sur le bord gauche (cf. charte §5).
+    const baseInputStyles = 'block w-full border border-l-2 bg-gray-50 px-4 py-2 min-h-[44px] text-gray-800 transition-colors duration-200 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500';
 
     const stateStyles = hasError
-      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+      ? 'border-red-500 border-l-red-500 focus:border-red-500 focus:ring-red-500'
+      : 'border-gray-300 border-l-blue-600 focus:border-blue-600 focus:ring-blue-600';
 
     const paddingStyles = leftIcon && rightIcon
       ? 'pl-10 pr-10'
@@ -61,6 +65,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            type={type}
             className={inputClasses}
             disabled={disabled}
             aria-invalid={hasError}

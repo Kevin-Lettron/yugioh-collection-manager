@@ -15,7 +15,9 @@ const Badge: React.FC<BadgeProps> = ({
   children,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center font-semibold rounded-full border';
+  // Coins coupés à 5 px plutôt qu'une pilule : cohérent avec les biseaux (charte §5).
+  const baseStyles =
+    'inline-flex items-center font-semibold uppercase tracking-wider cyber-cut-sm border';
 
   const variantStyles = {
     Forbidden: 'bg-red-100 text-red-800 border-red-200',
