@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { deckApi } from '@/services/deckApi';
 import type { AIStatus } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 type Props = {
   visible: boolean;
@@ -24,6 +26,8 @@ type Props = {
 };
 
 export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Props) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const [prompt, setPrompt] = useState('');
   const [respectBanlist, setRespectBanlist] = useState(true);
   const [status, setStatus] = useState<AIStatus | null>(null);
@@ -95,7 +99,7 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
                 value={prompt}
                 onChangeText={setPrompt}
                 placeholder="Ton prompt…"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textMuted}
                 multiline
                 editable={!building}
                 autoFocus
@@ -109,7 +113,7 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
                 <Switch
                   value={respectBanlist}
                   onValueChange={setRespectBanlist}
-                  trackColor={{ true: '#7c3aed' }}
+                  trackColor={{ true: colors.gold }}
                 />
               </View>
 
@@ -123,7 +127,7 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
                 disabled={!prompt.trim() || building}>
                 {building ? (
                   <>
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onGold} />
                     <Text style={styles.buildBtnText}>Génération… (~10-30s)</Text>
                   </>
                 ) : (
@@ -158,39 +162,40 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
     gap: 12,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111827' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 22, color: '#6b7280' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
   body: { padding: 16, gap: 12 },
   statusBox: {
     padding: 10,
-    backgroundColor: '#ede9fe',
+    backgroundColor: t.colors.panel2,
     borderRadius: 8,
   },
-  statusText: { fontSize: 12, color: '#5b21b6', fontWeight: '600', textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '700', color: '#111827', marginTop: 4 },
-  hint: { fontSize: 12, color: '#6b7280', marginBottom: 4 },
+  statusText: { fontSize: 12, color: t.colors.gold, fontWeight: '600', textAlign: 'center' },
+  label: { fontSize: 14, fontWeight: '700', color: t.colors.text, marginTop: 4 },
+  hint: { fontSize: 12, color: t.colors.textMuted, marginBottom: 4 },
   textArea: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     padding: 14,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
     minHeight: 120,
     textAlignVertical: 'top',
   },
@@ -198,23 +203,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 8,
   },
-  toggleTitle: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  toggleHint: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  toggleTitle: { fontSize: 13, fontWeight: '600', color: t.colors.text },
+  toggleHint: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
   warning: {
     fontSize: 12,
-    color: '#92400e',
-    backgroundColor: '#fef3c7',
+    color: t.colors.gold,
+    backgroundColor: t.colors.panel2,
     padding: 10,
     borderRadius: 8,
   },
   buildBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -222,17 +227,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  buildBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  buildBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
   resultBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 16,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d1fae5',
+    borderColor: t.colors.success,
     gap: 6,
   },
-  resultTitle: { fontSize: 16, fontWeight: '700', color: '#166534' },
-  resultLine: { fontSize: 14, color: '#111827' },
-  resultLineWarn: { fontSize: 13, color: '#92400e' },
-  resultNotes: { fontSize: 12, color: '#6b7280', fontStyle: 'italic', marginTop: 6 },
+  resultTitle: { fontSize: 16, fontWeight: '700', color: t.colors.success },
+  resultLine: { fontSize: 14, color: t.colors.text },
+  resultLineWarn: { fontSize: 13, color: t.colors.gold },
+  resultNotes: { fontSize: 12, color: t.colors.textMuted, fontStyle: 'italic', marginTop: 6 },
 });

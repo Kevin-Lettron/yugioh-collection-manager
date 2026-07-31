@@ -13,8 +13,12 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export default function LoginScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -75,7 +79,7 @@ export default function LoginScreen() {
             onPress={handleSubmit}
             disabled={!canSubmit}>
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onGold} />
             ) : (
               <Text style={styles.buttonText}>Se connecter</Text>
             )}
@@ -93,54 +97,55 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 16,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: t.colors.camera,
     shadowOpacity: 0.05,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  title: { fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  title: { fontSize: 28, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: t.colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 24,
   },
-  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 14, fontWeight: '500', color: t.colors.text, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: t.colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
-    color: '#111827',
+    backgroundColor: t.colors.panel,
+    color: t.colors.text,
   },
   button: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: t.colors.onGold, fontSize: 16, fontWeight: '600' },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
     marginTop: 20,
   },
-  footerText: { color: '#6b7280', fontSize: 14 },
-  footerLink: { color: '#7c3aed', fontSize: 14, fontWeight: '600' },
+  footerText: { color: t.colors.textMuted, fontSize: 14 },
+  footerLink: { color: t.colors.gold, fontSize: 14, fontWeight: '600' },
 });

@@ -13,6 +13,8 @@ import {
 import { collectionApi } from '@/services/collectionApi';
 import type { UserCard } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 type Props = {
   visible: boolean;
@@ -38,6 +40,8 @@ const banlistColor = (status?: string) => {
 };
 
 export default function CardDetailModal({ visible, userCard, onClose, onDeleted }: Props) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const [deleting, setDeleting] = useState(false);
   const card = userCard.card;
   const attr = card?.attribute ? attributeColors[card.attribute] : null;
@@ -200,7 +204,7 @@ export default function CardDetailModal({ visible, userCard, onClose, onDeleted 
             onPress={handleDelete}
             disabled={deleting}>
             {deleting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onGold} />
             ) : (
               <Text style={styles.deleteBtnText}>Retirer de la collection</Text>
             )}
@@ -211,42 +215,49 @@ export default function CardDetailModal({ visible, userCard, onClose, onDeleted 
   );
 }
 
-const InfoCell = ({ label, value }: { label: string; value: string }) => (
+const InfoCell = ({ label, value }: { label: string; value: string }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.infoCell}>
     <Text style={styles.infoLabel}>{label}</Text>
     <Text style={styles.infoValue}>{value}</Text>
   </View>
-);
+  );
+};
 
-const MetaLine = ({ label, value }: { label: string; value: string }) => (
+const MetaLine = ({ label, value }: { label: string; value: string }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.metaLine}>
     <Text style={styles.metaLabel}>{label} : </Text>
     <Text style={styles.metaValue}>{value}</Text>
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
     gap: 12,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 22, color: '#6b7280' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
   body: { padding: 16, gap: 12 },
   cardImage: {
     width: '100%',
     height: 400,
     alignSelf: 'center',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: t.colors.panel2,
     borderRadius: 10,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -255,50 +266,50 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  chipType: { backgroundColor: '#ede9fe' },
-  chipRace: { backgroundColor: '#dbeafe' },
-  chipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  chipType: { backgroundColor: t.colors.panel2 },
+  chipRace: { backgroundColor: t.colors.panel2 },
+  chipText: { fontSize: 12, fontWeight: '600', color: t.colors.text },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  stat: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  stat: { fontSize: 14, fontWeight: '600', color: t.colors.text },
   metaLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' },
-  metaLabel: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  metaValue: { fontSize: 13, color: '#111827' },
+  metaLabel: { fontSize: 13, color: t.colors.textMuted, fontWeight: '600' },
+  metaValue: { fontSize: 13, color: t.colors.text },
   banRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   banChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   banChipText: { fontSize: 12, fontWeight: '700' },
   descBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 6,
   },
-  descTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  descText: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  descTitle: { fontSize: 13, fontWeight: '700', color: t.colors.text },
+  descText: { fontSize: 13, color: t.colors.text, lineHeight: 18 },
   collectionBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  collectionTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  collectionTitle: { fontSize: 14, fontWeight: '700', color: t.colors.text, marginBottom: 8 },
   collectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   infoCell: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#f9fafb',
+    backgroundColor: t.colors.bg,
     padding: 10,
     borderRadius: 8,
   },
-  infoLabel: { fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: '600' },
-  infoValue: { fontSize: 14, color: '#111827', fontWeight: '600', marginTop: 2 },
+  infoLabel: { fontSize: 10, color: t.colors.textMuted, textTransform: 'uppercase', fontWeight: '600' },
+  infoValue: { fontSize: 14, color: t.colors.text, fontWeight: '600', marginTop: 2 },
   deleteBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: t.colors.danger,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  deleteBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  deleteBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
 });

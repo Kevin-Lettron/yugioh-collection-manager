@@ -15,8 +15,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { deckApi } from '@/services/deckApi';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export default function NewDeckScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const router = useRouter();
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -61,7 +65,7 @@ export default function NewDeckScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Ex : Dragons Nobles"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textMuted}
             autoFocus
             returnKeyType="done"
             onSubmitEditing={handleCreate}
@@ -72,7 +76,7 @@ export default function NewDeckScreen() {
               <Text style={styles.toggleTitle}>Deck public</Text>
               <Text style={styles.toggleHint}>Visible dans le feed social</Text>
             </View>
-            <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: '#7c3aed' }} />
+            <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: colors.gold }} />
           </View>
 
           <View style={styles.toggleRow}>
@@ -83,7 +87,7 @@ export default function NewDeckScreen() {
             <Switch
               value={respectBanlist}
               onValueChange={setRespectBanlist}
-              trackColor={{ true: '#7c3aed' }}
+              trackColor={{ true: colors.gold }}
             />
           </View>
 
@@ -92,7 +96,7 @@ export default function NewDeckScreen() {
             onPress={handleCreate}
             disabled={!canCreate}>
             {creating ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onGold} />
             ) : (
               <Text style={styles.createBtnText}>Créer le deck</Text>
             )}
@@ -103,50 +107,51 @@ export default function NewDeckScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
   },
   closeBtn: { padding: 4, width: 30 },
-  closeText: { fontSize: 22, color: '#6b7280' },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
   body: { padding: 16, gap: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 13, fontWeight: '600', color: t.colors.text },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 12,
   },
-  toggleTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  toggleHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  toggleTitle: { fontSize: 14, fontWeight: '600', color: t.colors.text },
+  toggleHint: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
   createBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
   },
-  createBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  createBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
 });

@@ -16,6 +16,8 @@ import {
 import { collectionApi, type SearchResult } from '@/services/collectionApi';
 import type { CardLanguage } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 type Props = {
   visible: boolean;
@@ -31,6 +33,8 @@ const RARITIES = [
 ];
 
 export default function AddCardModal({ visible, onClose, onAdded }: Props) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [result, setResult] = useState<SearchResult | null>(null);
@@ -131,7 +135,7 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="LDK2-FRK40"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="characters"
               autoCorrect={false}
               onSubmitEditing={handleSearch}
@@ -144,7 +148,7 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
                 (searchLoading || !searchQuery.trim()) && { opacity: 0.5 },
               ]}>
               {searchLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.onGold} />
               ) : (
                 <Text style={styles.searchBtnText}>Chercher</Text>
               )}
@@ -178,7 +182,7 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
                 value={setCode}
                 onChangeText={(v) => setSetCode(v.toUpperCase())}
                 placeholder="LDK2-FRK40"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="characters"
               />
 
@@ -278,7 +282,7 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
                 onPress={handleAdd}
                 disabled={!canAdd}>
                 {adding ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.onGold} />
                 ) : (
                   <Text style={styles.addBtnText}>Ajouter à ma collection</Text>
                 )}
@@ -291,80 +295,81 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
     gap: 12,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 22, color: '#6b7280' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
   body: { padding: 16, gap: 12 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 4 },
-  hint: { fontSize: 11, color: '#9ca3af' },
+  label: { fontSize: 13, fontWeight: '600', color: t.colors.text, marginTop: 4 },
+  hint: { fontSize: 11, color: t.colors.textMuted },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
   searchRow: { flexDirection: 'row', gap: 8 },
   searchBtn: {
-    backgroundColor: '#2563eb',
+    backgroundColor: t.colors.cyan,
     paddingHorizontal: 16,
     borderRadius: 10,
     justifyContent: 'center',
   },
-  searchBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  searchBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
   previewBox: {
     flexDirection: 'row',
     gap: 12,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
   previewImage: { width: 70, height: 100 },
-  previewName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  previewMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  previewName: { fontSize: 15, fontWeight: '700', color: t.colors.text },
+  previewMeta: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
   rarityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   rarityChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  rarityChipSelected: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  rarityChipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  rarityChipTextSelected: { color: '#fff' },
+  rarityChipSelected: { backgroundColor: t.colors.gold, borderColor: t.colors.gold },
+  rarityChipText: { fontSize: 12, color: t.colors.text, fontWeight: '500' },
+  rarityChipTextSelected: { color: t.colors.onGold },
   addBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 12,
   },
-  addBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  addBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
   setsList: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     maxHeight: 260,
     overflow: 'hidden',
   },
@@ -374,14 +379,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: t.colors.border,
     gap: 8,
   },
-  setRowSelected: { backgroundColor: '#ede9fe' },
-  setCode: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  setCodeSelected: { color: '#5b21b6' },
-  setName: { fontSize: 11, color: '#6b7280', marginTop: 2 },
-  setNameSelected: { color: '#6d28d9' },
-  setRarity: { fontSize: 11, color: '#6b7280', fontWeight: '600' },
-  setRaritySelected: { color: '#5b21b6' },
+  setRowSelected: { backgroundColor: t.colors.panel2 },
+  setCode: { fontSize: 13, fontWeight: '700', color: t.colors.text },
+  setCodeSelected: { color: t.colors.gold },
+  setName: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
+  setNameSelected: { color: t.colors.gold },
+  setRarity: { fontSize: 11, color: t.colors.textMuted, fontWeight: '600' },
+  setRaritySelected: { color: t.colors.gold },
 });

@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export type CollectionFilterValues = {
   type: string;
@@ -68,6 +70,8 @@ const RARITIES = [
 ];
 
 export default function FiltersModal({ visible, initial, onClose, onApply }: Props) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const [values, setValues] = useState<CollectionFilterValues>(initial);
 
   const toggle = (key: keyof CollectionFilterValues, v: string) =>
@@ -149,16 +153,22 @@ export default function FiltersModal({ visible, initial, onClose, onApply }: Pro
   );
 }
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.section}>
     <Text style={styles.sectionTitle}>{title}</Text>
     {children}
   </View>
-);
+  );
+};
 
-const ChipRow = ({ children }: { children: React.ReactNode }) => (
+const ChipRow = ({ children }: { children: React.ReactNode }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.chipRow}>{children}</View>
-);
+  );
+};
 
 const Chip = ({
   label,
@@ -168,51 +178,55 @@ const Chip = ({
   label: string;
   selected: boolean;
   onPress: () => void;
-}) => (
+}) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <TouchableOpacity
     style={[styles.chip, selected && styles.chipSelected]}
     onPress={onPress}>
     <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
   </TouchableOpacity>
-);
+  );
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 22, color: '#6b7280' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
   body: { padding: 16, gap: 24 },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: t.colors.text },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  chipSelected: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  chipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  chipTextSelected: { color: '#fff' },
+  chipSelected: { backgroundColor: t.colors.gold, borderColor: t.colors.gold },
+  chipText: { fontSize: 12, color: t.colors.text, fontWeight: '500' },
+  chipTextSelected: { color: t.colors.onGold },
   footer: {
     flexDirection: 'row',
     gap: 8,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    borderTopColor: t.colors.border,
+    backgroundColor: t.colors.panel,
   },
   footerBtn: {
     flex: 1,
@@ -220,8 +234,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  footerBtnGhost: { backgroundColor: '#e5e7eb' },
-  footerBtnGhostText: { color: '#374151', fontSize: 15, fontWeight: '600' },
-  footerBtnPrimary: { backgroundColor: '#7c3aed' },
-  footerBtnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  footerBtnGhost: { backgroundColor: t.colors.panel2 },
+  footerBtnGhostText: { color: t.colors.text, fontSize: 15, fontWeight: '600' },
+  footerBtnPrimary: { backgroundColor: t.colors.gold },
+  footerBtnPrimaryText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
 });

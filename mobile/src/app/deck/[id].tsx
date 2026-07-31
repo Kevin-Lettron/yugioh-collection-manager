@@ -20,8 +20,12 @@ import { useAuth } from '@/context/AuthContext';
 import { deckApi } from '@/services/deckApi';
 import type { Deck, DeckComment } from '@/types';
 import { API_URL } from '@/config';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export default function DeckViewScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const deckId = Number(id);
   const router = useRouter();
@@ -135,7 +139,7 @@ export default function DeckViewScreen() {
   if (loading || !deck) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#7c3aed" />
+        <ActivityIndicator size="large" color={colors.gold} />
       </View>
     );
   }
@@ -268,7 +272,7 @@ export default function DeckViewScreen() {
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Ajouter un commentaire…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textMuted}
               multiline
               editable={!postingComment}
             />
@@ -280,7 +284,7 @@ export default function DeckViewScreen() {
               onPress={handlePostComment}
               disabled={!commentText.trim() || postingComment}>
               {postingComment ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={colors.onGold} size="small" />
               ) : (
                 <Text style={styles.commentPostBtnText}>Poster</Text>
               )}
@@ -313,77 +317,84 @@ export default function DeckViewScreen() {
   );
 }
 
-const Badge = ({ label, color }: { label: string; color: string }) => (
+const Badge = ({ label, color }: { label: string; color: string }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={[styles.badge, { backgroundColor: color }]}>
     <Text style={styles.badgeText}>{label}</Text>
   </View>
-);
+  );
+};
 
-const StatCell = ({ label, value }: { label: string; value: number }) => (
+const StatCell = ({ label, value }: { label: string; value: number }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.statCell}>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 24, color: '#374151' },
+  iconBtnText: { fontSize: 24, color: t.colors.text },
   body: { padding: 12, gap: 12, paddingBottom: 40 },
   metaBar: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaAuthor: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
+  metaAuthor: { fontSize: 13, color: t.colors.textMuted, fontWeight: '600' },
   metaBadges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  badgeText: { fontSize: 10, fontWeight: '700', color: '#374151' },
+  badgeText: { fontSize: 10, fontWeight: '700', color: t.colors.text },
   statsGrid: { flexDirection: 'row', gap: 6 },
   statCell: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  statValue: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  statLabel: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  statValue: { fontSize: 20, fontWeight: '700', color: t.colors.text },
+  statLabel: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
   reactionsRow: { flexDirection: 'row', gap: 8 },
   reactBtn: {
     flex: 1,
     padding: 10,
     borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  reactBtnLikeActive: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
-  reactBtnDislikeActive: { backgroundColor: '#dc2626', borderColor: '#dc2626' },
-  reactBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  reactBtnTextActive: { color: '#fff' },
+  reactBtnLikeActive: { backgroundColor: t.colors.success, borderColor: t.colors.success },
+  reactBtnDislikeActive: { backgroundColor: t.colors.danger, borderColor: t.colors.danger },
+  reactBtnText: { fontSize: 13, fontWeight: '600', color: t.colors.text },
+  reactBtnTextActive: { color: t.colors.onGold },
   editBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
   },
-  editBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginTop: 8 },
+  editBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: t.colors.text, marginTop: 8 },
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   cardBox: { width: '23.5%', aspectRatio: 0.686, position: 'relative' },
-  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: '#e5e7eb' },
+  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: t.colors.panel2 },
   qtyOverlay: {
     position: 'absolute',
     top: 2,
@@ -393,41 +404,41 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 3,
   },
-  qtyOverlayText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  emptyDeck: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic' },
+  qtyOverlayText: { color: t.colors.onGold, fontSize: 10, fontWeight: '700' },
+  emptyDeck: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic' },
   commentInputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
   commentInput: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
     minHeight: 40,
     maxHeight: 100,
   },
   commentPostBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
   },
-  commentPostBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  noComments: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic', textAlign: 'center', padding: 12 },
+  commentPostBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '600' },
+  noComments: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic', textAlign: 'center', padding: 12 },
   commentBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 4,
   },
   commentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  commentAuthor: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  commentDate: { fontSize: 11, color: '#9ca3af' },
-  commentText: { fontSize: 14, color: '#374151' },
-  commentDelete: { fontSize: 11, color: '#dc2626', marginTop: 4, fontWeight: '600' },
+  commentAuthor: { fontSize: 13, fontWeight: '700', color: t.colors.text },
+  commentDate: { fontSize: 11, color: t.colors.textMuted },
+  commentText: { fontSize: 14, color: t.colors.text },
+  commentDelete: { fontSize: 11, color: t.colors.danger, marginTop: 4, fontWeight: '600' },
 });

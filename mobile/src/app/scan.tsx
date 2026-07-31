@@ -17,6 +17,8 @@ import { useRouter } from 'expo-router';
 import { collectionApi } from '@/services/collectionApi';
 import type { CardLanguage, ScanCandidate, ScanMode, ScanResult, VisionReading } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 /** Résumé lisible de ce que l'IA a lu sur la photo, pour comparaison visuelle. */
 function readingSummary(reading?: VisionReading): string | null {
@@ -40,6 +42,8 @@ function readingSummary(reading?: VisionReading): string | null {
 type Step = 'camera' | 'preview' | 'analyzing' | 'confirm' | 'noresult';
 
 export default function ScanScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -158,7 +162,7 @@ export default function ScanScreen() {
   if (!permission) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#7c3aed" />
+        <ActivityIndicator color={colors.gold} />
       </View>
     );
   }
@@ -228,7 +232,7 @@ export default function ScanScreen() {
               onPress={capture}
               disabled={capturing}>
               {capturing ? (
-                <ActivityIndicator color="#111" />
+                <ActivityIndicator color={colors.text} />
               ) : (
                 <View style={styles.captureBtnInner} />
               )}
@@ -268,7 +272,7 @@ export default function ScanScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Précisions sur la carte…"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={2}
           />
@@ -290,7 +294,7 @@ export default function ScanScreen() {
   if (step === 'analyzing') {
     return (
       <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#7c3aed" />
+        <ActivityIndicator size="large" color={colors.gold} />
         <Text style={styles.title}>Analyse en cours…</Text>
         <Text style={styles.subtitle}>Claude Vision inspecte la carte (~5-10s)</Text>
       </SafeAreaView>
@@ -482,7 +486,7 @@ export default function ScanScreen() {
             onChangeText={(v) => setSetCode(v.toUpperCase())}
             autoCapitalize="characters"
             placeholder="LDK2-FRK40"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textMuted}
           />
 
           <Text style={styles.label}>Rareté</Text>
@@ -537,7 +541,7 @@ export default function ScanScreen() {
               onPress={confirmAdd}
               disabled={!setCode || !rarity || adding}>
               {adding ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.onGold} />
               ) : (
                 <Text style={styles.primaryBtnText}>Ajouter</Text>
               )}
@@ -551,12 +555,13 @@ export default function ScanScreen() {
   return null;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: t.colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 30,
@@ -568,109 +573,109 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 0 : 12,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
   closeBtn: { padding: 4, width: 30 },
-  closeText: { fontSize: 22, color: '#6b7280' },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  subtitle: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
+  title: { fontSize: 20, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
+  subtitle: { fontSize: 14, color: t.colors.textMuted, textAlign: 'center' },
   body: { padding: 16, gap: 12 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 4 },
-  hint: { fontSize: 11, color: '#9ca3af' },
+  label: { fontSize: 13, fontWeight: '600', color: t.colors.text, marginTop: 4 },
+  hint: { fontSize: 11, color: t.colors.textMuted },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
   previewImage: {
     width: '100%',
     height: 300,
     borderRadius: 10,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: t.colors.panel2,
   },
   identifiedBox: {
     flexDirection: 'row',
     gap: 12,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
   identifiedImage: { width: 80, height: 115 },
   warnBox: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: t.colors.panel2,
     borderWidth: 1,
-    borderColor: '#f59e0b',
+    borderColor: t.colors.gold,
     borderRadius: 10,
     padding: 12,
     gap: 4,
   },
-  warnTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
-  warnText: { fontSize: 12, color: '#92400e' },
+  warnTitle: { fontSize: 13, fontWeight: '700', color: t.colors.gold },
+  warnText: { fontSize: 12, color: t.colors.gold },
   readBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     borderRadius: 10,
     padding: 12,
     gap: 4,
   },
-  readTitle: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  readText: { fontSize: 13, color: '#111827' },
+  readTitle: { fontSize: 12, fontWeight: '600', color: t.colors.textMuted },
+  readText: { fontSize: 13, color: t.colors.text },
   candidateRow: {
     flexDirection: 'row',
     gap: 12,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     alignItems: 'center',
   },
   candidateImage: { width: 48, height: 70 },
-  identifiedName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  identifiedMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  remaining: { fontSize: 11, color: '#9ca3af', textAlign: 'right' },
+  identifiedName: { fontSize: 16, fontWeight: '700', color: t.colors.text },
+  identifiedMeta: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+  remaining: { fontSize: 11, color: t.colors.textMuted, textAlign: 'right' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
   },
-  chipSelected: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  chipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  chipTextSelected: { color: '#fff' },
+  chipSelected: { backgroundColor: t.colors.gold, borderColor: t.colors.gold },
+  chipText: { fontSize: 12, color: t.colors.text, fontWeight: '500' },
+  chipTextSelected: { color: t.colors.onGold },
   rowBtns: { flexDirection: 'row', gap: 8, marginTop: 12 },
   primaryBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  primaryBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
   secondaryBtn: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: t.colors.panel2,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  secondaryBtnText: { color: '#374151', fontSize: 15, fontWeight: '600' },
-  link: { color: '#7c3aed', fontSize: 14, fontWeight: '600', marginTop: 8 },
+  secondaryBtnText: { color: t.colors.text, fontSize: 15, fontWeight: '600' },
+  link: { color: t.colors.gold, fontSize: 14, fontWeight: '600', marginTop: 8 },
 
   // Camera-specific
-  cameraContainer: { flex: 1, backgroundColor: '#000' },
+  cameraContainer: { flex: 1, backgroundColor: t.colors.camera },
   cameraOverlay: { flex: 1, justifyContent: 'space-between' },
   cameraHeader: {
     flexDirection: 'row',
@@ -679,7 +684,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  cameraTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  cameraTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   closeBtnDark: {
     width: 40,
     height: 40,
@@ -688,7 +693,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeTextDark: { color: '#fff', fontSize: 22 },
+  closeTextDark: { color: '#FFFFFF', fontSize: 22 },
   cameraFrame: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frameCard: {
     width: '78%',
@@ -701,7 +706,7 @@ const styles = StyleSheet.create({
     width: '80%',
     height: 64,
     borderWidth: 2,
-    borderColor: '#7c3aed',
+    borderColor: t.colors.gold,
     borderRadius: 8,
     backgroundColor: 'rgba(124,58,237,0.12)',
   },
@@ -714,8 +719,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  modeChipActive: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  modeText: { color: '#fff', fontSize: 13, fontWeight: '500' },
+  modeChipActive: { backgroundColor: t.colors.gold, borderColor: t.colors.gold },
+  modeText: { color: t.colors.onGold, fontSize: 13, fontWeight: '500' },
   modeTextActive: { fontWeight: '700' },
   cameraFooter: {
     alignItems: 'center',
@@ -724,7 +729,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   cameraHint: {
-    color: '#fff',
+    // Posé sur un voile noir au-dessus de l'aperçu caméra : blanc réel.
+    color: '#FFFFFF',
     fontSize: 13,
     textAlign: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -736,7 +742,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
@@ -746,8 +752,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderWidth: 2,
-    borderColor: '#111',
+    borderColor: t.colors.camera,
   },
 });

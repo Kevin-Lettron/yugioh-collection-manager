@@ -19,8 +19,12 @@ import type { Deck, DeckCard, UserCard } from '@/types';
 import { API_URL } from '@/config';
 import AddCardsFromCollectionModal from '@/components/AddCardsFromCollectionModal';
 import AIBuilderModal from '@/components/AIBuilderModal';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export default function DeckEditorScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const deckId = Number(id);
   const router = useRouter();
@@ -197,7 +201,7 @@ export default function DeckEditorScreen() {
   if (loading || !deck) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#7c3aed" />
+        <ActivityIndicator size="large" color={colors.gold} />
       </View>
     );
   }
@@ -228,7 +232,7 @@ export default function DeckEditorScreen() {
           onChangeText={setNameInput}
           onBlur={saveName}
           placeholder="Nom du deck"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.textMuted}
           returnKeyType="done"
           onSubmitEditing={saveName}
         />
@@ -242,7 +246,7 @@ export default function DeckEditorScreen() {
           <Switch
             value={deck.is_public}
             onValueChange={(v) => toggleSetting('is_public', v)}
-            trackColor={{ true: '#7c3aed' }}
+            trackColor={{ true: colors.gold }}
           />
         </View>
 
@@ -254,7 +258,7 @@ export default function DeckEditorScreen() {
           <Switch
             value={deck.respect_banlist}
             onValueChange={(v) => toggleSetting('respect_banlist', v)}
-            trackColor={{ true: '#7c3aed' }}
+            trackColor={{ true: colors.gold }}
           />
         </View>
 
@@ -277,7 +281,7 @@ export default function DeckEditorScreen() {
         {/* Validation errors */}
         {validating && (
           <View style={styles.errorBox}>
-            <ActivityIndicator color="#7c3aed" size="small" />
+            <ActivityIndicator color={colors.gold} size="small" />
             <Text style={styles.errorText}>Validation…</Text>
           </View>
         )}
@@ -295,17 +299,17 @@ export default function DeckEditorScreen() {
         {/* Actions */}
         <View style={styles.actionsGrid}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#2563eb' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.cyan }]}
             onPress={() => setPickerOpen('main')}>
             <Text style={styles.actionBtnText}>+ Main</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#7c3aed' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.gold }]}
             onPress={() => setPickerOpen('extra')}>
             <Text style={styles.actionBtnText}>+ Extra</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#6366f1' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.violet }]}
             onPress={() => setAiOpen(true)}>
             <Text style={styles.actionBtnText}>🤖 AI</Text>
           </TouchableOpacity>
@@ -399,70 +403,71 @@ export default function DeckEditorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 24, color: '#374151' },
+  iconBtnText: { fontSize: 24, color: t.colors.text },
   body: { padding: 12, gap: 12, paddingBottom: 40 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 13, fontWeight: '600', color: t.colors.text },
   nameInput: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 8,
   },
-  toggleTitle: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  toggleHint: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  toggleTitle: { fontSize: 13, fontWeight: '600', color: t.colors.text },
+  toggleHint: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
   statsRow: { flexDirection: 'row', gap: 8 },
   statBadge: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 10,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d1fae5',
+    borderColor: t.colors.success,
   },
-  statBadgeBad: { borderColor: '#fecaca' },
-  statLabel: { fontSize: 10, color: '#6b7280', fontWeight: '700', textTransform: 'uppercase' },
-  statValue: { fontSize: 22, fontWeight: '700', color: '#16a34a', marginVertical: 2 },
-  statValueBad: { color: '#dc2626' },
-  statHint: { fontSize: 10, color: '#9ca3af' },
+  statBadgeBad: { borderColor: t.colors.danger },
+  statLabel: { fontSize: 10, color: t.colors.textMuted, fontWeight: '700', textTransform: 'uppercase' },
+  statValue: { fontSize: 22, fontWeight: '700', color: t.colors.success, marginVertical: 2 },
+  statValueBad: { color: t.colors.danger },
+  statHint: { fontSize: 10, color: t.colors.textMuted },
   errorBox: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: t.colors.panel2,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: t.colors.danger,
     padding: 10,
     borderRadius: 8,
     gap: 4,
   },
-  errorTitle: { fontSize: 12, fontWeight: '700', color: '#991b1b' },
-  errorText: { fontSize: 12, color: '#991b1b' },
+  errorTitle: { fontSize: 12, fontWeight: '700', color: t.colors.danger },
+  errorText: { fontSize: 12, color: t.colors.danger },
   actionsGrid: { flexDirection: 'row', gap: 6 },
   actionBtn: {
     flex: 1,
@@ -470,18 +475,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  actionBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '700' },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginTop: 8 },
-  sectionAction: { fontSize: 12, color: '#dc2626', fontWeight: '600' },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: t.colors.text, marginTop: 8 },
+  sectionAction: { fontSize: 12, color: t.colors.danger, fontWeight: '600' },
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   cardBox: { width: '23.5%', aspectRatio: 0.686, position: 'relative' },
-  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: '#e5e7eb' },
+  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: t.colors.panel2 },
   qtyOverlay: {
     position: 'absolute',
     top: 2,
@@ -491,14 +496,14 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 3,
   },
-  qtyOverlayText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  emptyDeck: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic', padding: 12 },
+  qtyOverlayText: { color: t.colors.onGold, fontSize: 10, fontWeight: '700' },
+  emptyDeck: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic', padding: 12 },
   deleteBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: t.colors.danger,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 16,
   },
-  deleteBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  deleteBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
 });

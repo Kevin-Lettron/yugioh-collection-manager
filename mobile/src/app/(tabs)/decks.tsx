@@ -13,8 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { deckApi } from '@/services/deckApi';
 import type { Deck } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 export default function DecksScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const router = useRouter();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(false);
@@ -140,7 +144,7 @@ export default function DecksScreen() {
 
       {loading && decks.length === 0 ? (
         <View style={styles.empty}>
-          <ActivityIndicator size="large" color="#7c3aed" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       ) : decks.length === 0 ? (
         <View style={styles.empty}>
@@ -174,7 +178,9 @@ const StatBadge = ({
   value: number;
   hint: string;
   ok: boolean;
-}) => (
+}) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
   <View style={styles.statBadge}>
     <Text style={styles.statBadgeLabel}>{label}</Text>
     <Text style={[styles.statBadgeValue, !ok && styles.statBadgeValueBad]}>
@@ -182,10 +188,12 @@ const StatBadge = ({
     </Text>
     <Text style={styles.statBadgeHint}>{hint}</Text>
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -194,15 +202,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  title: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  title: { fontSize: 22, fontWeight: '700', color: t.colors.text },
+  subtitle: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
   newBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: t.colors.gold,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
   },
-  newBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  newBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '600' },
   empty: {
     flex: 1,
     alignItems: 'center',
@@ -210,41 +218,41 @@ const styles = StyleSheet.create({
     padding: 40,
     gap: 12,
   },
-  emptyText: { fontSize: 15, color: '#6b7280' },
-  emptyLink: { fontSize: 14, color: '#7c3aed', fontWeight: '600' },
+  emptyText: { fontSize: 15, color: t.colors.textMuted },
+  emptyLink: { fontSize: 14, color: t.colors.gold, fontWeight: '600' },
   deckCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: t.colors.border,
     gap: 10,
   },
   deckHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  deckName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  deckName: { fontSize: 16, fontWeight: '700', color: t.colors.text },
   deckBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
   },
-  badgePublic: { backgroundColor: '#d1fae5' },
-  badgeShared: { backgroundColor: '#fef3c7' },
-  badgeBanlist: { backgroundColor: '#ede9fe' },
-  badgeText: { fontSize: 10, fontWeight: '600', color: '#374151' },
+  badgePublic: { backgroundColor: t.colors.panel2 },
+  badgeShared: { backgroundColor: t.colors.panel2 },
+  badgeBanlist: { backgroundColor: t.colors.panel2 },
+  badgeText: { fontSize: 10, fontWeight: '600', color: t.colors.text },
   deleteIcon: { fontSize: 20 },
   deckStats: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statBadge: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: t.colors.bg,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     alignItems: 'center',
   },
-  statBadgeLabel: { fontSize: 9, color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' },
-  statBadgeValue: { fontSize: 16, fontWeight: '700', color: '#16a34a' },
-  statBadgeValueBad: { color: '#dc2626' },
-  statBadgeHint: { fontSize: 9, color: '#9ca3af' },
+  statBadgeLabel: { fontSize: 9, color: t.colors.textMuted, fontWeight: '600', textTransform: 'uppercase' },
+  statBadgeValue: { fontSize: 16, fontWeight: '700', color: t.colors.success },
+  statBadgeValueBad: { color: t.colors.danger },
+  statBadgeHint: { fontSize: 9, color: t.colors.textMuted },
   spacer: { flex: 1 },
-  deckMeta: { fontSize: 12, color: '#6b7280' },
+  deckMeta: { fontSize: 12, color: t.colors.textMuted },
 });

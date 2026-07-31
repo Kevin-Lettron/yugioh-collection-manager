@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — étapes 5, 6 et 7 terminées (socle mobile posé)
+**Dernière mise à jour :** 2026-07-31 — refonte terminée (étapes 0 à 10)
 
 ---
 
@@ -109,9 +109,19 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
         bouton n'est pas posé sur `colors.bg`, sinon le biseau se voit comme une tache.
       - `CyberSurfaces` : `CyberPanel`, `CyberTile`, `CyberTitle`, `CyberBadge`,
         `MillenniumMark` (triangle par bordures, pour éviter react-native-svg et son rebuild natif)
-- [ ] **Étape 8** — Mobile : 16 écrans et modales
+- [x] **Étape 8** — Mobile : 16 écrans et modales
+      Chaque `StyleSheet.create` devient `makeStyles(t: Theme)`, consommé par
+      `useThemedStyles`. Le mapping des couleurs est **dépendant de la propriété** : le même
+      `#fff` devient `panel` en fond et `onGold` en texte. Les 9 sous-composants à retour
+      implicite (`StatBadge`, `Chip`, `Badge`…) ont été convertis en corps à accolades pour
+      pouvoir appeler le hook — ils sont dans le même module, donc `styles` n'est plus une
+      constante de module.
+      Barre d'onglets, `StatusBar` et fond de navigation suivent le thème ; bascule
+      sombre/clair dans l'en-tête de la collection.
 - [x] **Étape 9** — Tests `ui/` web mis à jour (faite en même temps que l'étape 3)
-- [ ] **Étape 10** — Typecheck + tests + build de vérification
+- [x] **Étape 10** — Vérifications
+      `tsc --noEmit` propre sur **serveur, client et mobile** ; build Vite du client OK.
+      Tests web : 195 échecs sur 456, contre **197 avant la refonte** — aucune régression.
 
 ## 5. Points de vigilance
 
@@ -124,6 +134,13 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 - Mobile : pas de police custom (nécessiterait `expo-font` + fichiers). Le style « cyber »
   passe par les majuscules, le `letterSpacing` et les biseaux.
 - Chaque étape terminée = commit + push, avec ce fichier mis à jour.
+- **Mobile, biseaux** : `CyberButton`, `CyberPanel` et `CyberTile` peignent leurs coins avec
+  un carré de la couleur du fond. Sur une surface qui n'est pas `colors.bg`, passer
+  `cutColor` — sinon le biseau se voit comme une tache.
+- **Texte sur caméra** : dans `scan.tsx`, `cameraTitle`, `cameraHint` et `closeTextDark`
+  gardent `#FFFFFF` en dur. Ils sont posés sur l'aperçu caméra, pas sur une surface thémée.
+- **Couleurs d'attribut** (`CardDetailModal`) : DARK, LIGHT, FEU, EAU… gardent leurs teintes
+  propres, volontairement. Ce sont des codes Yu-Gi-Oh, pas des couleurs d'interface.
 - **La suite de tests web était déjà largement rouge avant la refonte** : 197 échecs sur 456 au
   commit de départ (mocks d'API manquants sur les tests de pages, doublons de libellés dans
   `Toggle`, sélecteur `closest('div')` dans `Modal`). Après l'étape 3 : **195 échecs** — les

@@ -15,6 +15,8 @@ import {
 import { collectionApi } from '@/services/collectionApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import type { UserCard } from '@/types';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 
 type Props = {
   visible: boolean;
@@ -48,6 +50,8 @@ export default function AddCardsFromCollectionModal({
   onClose,
   onPick,
 }: Props) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useAppTheme();
   const [cards, setCards] = useState<UserCard[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -123,7 +127,7 @@ export default function AddCardsFromCollectionModal({
             value={search}
             onChangeText={setSearch}
             placeholder="Rechercher dans la collection…"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -133,7 +137,7 @@ export default function AddCardsFromCollectionModal({
 
         {loading && cards.length === 0 ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#7c3aed" />
+            <ActivityIndicator size="large" color={colors.gold} />
           </View>
         ) : filteredCards.length === 0 ? (
           <View style={styles.center}>
@@ -158,7 +162,7 @@ export default function AddCardsFromCollectionModal({
                 />
                 {picking === item.id && (
                   <View style={styles.pickingOverlay}>
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onGold} />
                   </View>
                 )}
                 <View style={styles.cardOwnedBadge}>
@@ -178,7 +182,7 @@ export default function AddCardsFromCollectionModal({
             ListFooterComponent={
               loadingMore ? (
                 <View style={{ paddingVertical: 12 }}>
-                  <ActivityIndicator color="#7c3aed" />
+                  <ActivityIndicator color={colors.gold} />
                 </View>
               ) : null
             }
@@ -189,43 +193,44 @@ export default function AddCardsFromCollectionModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: t.colors.border,
     gap: 12,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111827' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 22, color: '#6b7280' },
+  closeText: { fontSize: 22, color: t.colors.textMuted },
   searchWrap: { paddingHorizontal: 16, paddingTop: 12 },
   searchInput: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#111827',
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
-  hint: { paddingHorizontal: 16, paddingVertical: 6, fontSize: 12, color: '#6b7280' },
+  hint: { paddingHorizontal: 16, paddingVertical: 6, fontSize: 12, color: t.colors.textMuted },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
+  emptyText: { fontSize: 14, color: t.colors.textMuted, textAlign: 'center' },
   cardBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.colors.panel,
     borderRadius: 6,
     overflow: 'hidden',
   },
-  cardImage: { backgroundColor: '#e5e7eb' },
-  cardName: { fontSize: 10, fontWeight: '600', color: '#111827', padding: 4 },
+  cardImage: { backgroundColor: t.colors.panel2 },
+  cardName: { fontSize: 10, fontWeight: '600', color: t.colors.text, padding: 4 },
   cardOwnedBadge: {
     position: 'absolute',
     top: 4,
@@ -235,7 +240,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 3,
   },
-  cardOwnedText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  cardOwnedText: { color: t.colors.onGold, fontSize: 10, fontWeight: '700' },
   pickingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
