@@ -15,19 +15,24 @@ function RootNav() {
   const segments = useSegments();
   const router = useRouter();
 
+  const inAuthGroup = segments[0] === '(auth)';
+  const needsRedirect = !loading && ((!user && !inAuthGroup) || (user && inAuthGroup));
+
   useEffect(() => {
     if (loading) return;
     SplashScreen.hideAsync();
 
-    const inAuthGroup = segments[0] === '(auth)';
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [user, loading, segments, router]);
+  }, [user, loading, inAuthGroup, router]);
 
-  if (loading) {
+  // Tant que le guard n'a pas fini de router au bon groupe, on n'affiche
+  // rien : sinon le Stack mount le premier écran de la mauvaise section
+  // et déclenche des GET protégés (401 → toast "Access token required").
+  if (loading || needsRedirect) {
     return (
       <View
         style={{
