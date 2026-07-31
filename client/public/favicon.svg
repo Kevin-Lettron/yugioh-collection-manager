@@ -1,4 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#1e1b4b"/>
-  <text x="32" y="42" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-weight="bold" fill="#fbbf24">Y</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#A855F7" stop-opacity="0.35"/>
+      <stop offset="55%" stop-color="#A855F7" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#A855F7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C29A0F"/>
+    </linearGradient>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M 44 0 L 0 0 0 44" fill="none" stroke="#F5C518" stroke-width="1" stroke-opacity="0.055"/>
+    </pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="#0B0906"/>
+  <rect width="1024" height="1024" fill="url(#grid)"/>
+  <rect width="1024" height="1024" fill="url(#halo)"/>
+  <g transform="translate(512, 540) scale(22) translate(-16, -16)"
+     fill="none" stroke="url(#gold)" stroke-linejoin="miter">
+    <path d="M4 4 L28 4 L16 29 Z" stroke-width="1.7"/>
+    <path d="M9 10 L23 10 L16 24 Z" stroke-width="0.8" opacity="0.55"/>
+    <ellipse cx="16" cy="13" rx="5.4" ry="3.1" stroke-width="1.3"/>
+    <circle cx="16" cy="13" r="1.7" fill="#F5C518" stroke="none"/>
+    <path d="M16 16.5 L16 20 M13 16 L11.5 19 M19 16 L20.5 19" stroke-width="0.9"/>
+  </g>
 </svg>
