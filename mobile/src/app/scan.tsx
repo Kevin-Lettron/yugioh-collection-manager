@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { collectionApi } from '@/services/collectionApi';
-import type { CardLanguage, ScanCandidate, ScanResult, VisionReading } from '@/types';
+import type { CardLanguage, ScanCandidate, ScanMode, ScanResult, VisionReading } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
 
 /** Résumé lisible de ce que l'IA a lu sur la photo, pour comparaison visuelle. */
@@ -45,6 +45,7 @@ export default function ScanScreen() {
   const cameraRef = useRef<CameraView>(null);
 
   const [step, setStep] = useState<Step>('camera');
+  const [mode, setMode] = useState<ScanMode>('card');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [scan, setScan] = useState<ScanResult | null>(null);
@@ -107,6 +108,7 @@ export default function ScanScreen() {
     try {
       const result = await collectionApi.scan(photoUri, {
         description: description.trim() || undefined,
+        mode,
       });
       setScan(result);
       if (result.success && result.card) {
@@ -193,13 +195,33 @@ export default function ScanScreen() {
             <View style={{ width: 40 }} />
           </View>
 
+          {/* Cadre de visée : portrait pour la carte, bande étroite pour le code */}
           <View style={styles.cameraFrame}>
-            <View style={styles.frameCorner} />
+            <View style={mode === 'code' ? styles.frameCode : styles.frameCard} />
           </View>
 
           <View style={styles.cameraFooter}>
+            <View style={styles.modeRow}>
+              <TouchableOpacity
+                onPress={() => setMode('card')}
+                style={[styles.modeChip, mode === 'card' && styles.modeChipActive]}>
+                <Text style={[styles.modeText, mode === 'card' && styles.modeTextActive]}>
+                  Carte entière
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setMode('code')}
+                style={[styles.modeChip, mode === 'code' && styles.modeChipActive]}>
+                <Text style={[styles.modeText, mode === 'code' && styles.modeTextActive]}>
+                  Code uniquement
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.cameraHint}>
-              Cadre la carte dans l'écran, en gros plan sur le nom et l'illustration.
+              {mode === 'code'
+                ? "Colle l'appareil sur le code en bas de la carte (ex. CORE-FR058) et remplis la bande."
+                : "Cadre la carte entière, bien à plat et sans reflet."}
             </Text>
             <TouchableOpacity
               style={[styles.captureBtn, capturing && { opacity: 0.5 }]}
@@ -231,9 +253,15 @@ export default function ScanScreen() {
         <ScrollView contentContainerStyle={styles.body}>
           {photoUri && <Image source={{ uri: photoUri }} style={styles.previewImage} />}
 
+          <Text style={styles.hint}>
+            Mode : {mode === 'code' ? 'code uniquement' : 'carte entière'}
+          </Text>
+
           <Text style={styles.label}>Description (optionnel)</Text>
           <Text style={styles.hint}>
-            Ex : "Édition française, holographique" — aide l'IA à mieux identifier.
+            {mode === 'code'
+              ? "Ex : « carte magie, édition française » — sert à recouper le code lu."
+              : 'Ex : "Édition française, holographique" — aide l\'IA à mieux identifier.'}
           </Text>
           <TextInput
             style={styles.input}
@@ -404,7 +432,9 @@ export default function ScanScreen() {
               <Text style={styles.warnText}>
                 {scan.verification?.mismatched?.length
                   ? `Incohérences détectées : ${scan.verification.mismatched.join(', ')}.`
-                  : "Les indices lus sur la photo n'ont pas suffi à confirmer l'identification."}
+                  : mode === 'code'
+                    ? "Le code a été lu seul : rien d'autre à recouper. Compare avec l'image officielle."
+                    : "Les indices lus sur la photo n'ont pas suffi à confirmer l'identification."}
               </Text>
             </View>
           )}
@@ -659,8 +689,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeTextDark: { color: '#fff', fontSize: 22 },
-  cameraFrame: { flex: 1 },
-  frameCorner: {},
+  cameraFrame: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  frameCard: {
+    width: '78%',
+    aspectRatio: 59 / 86, // proportions d'une carte Yu-Gi-Oh
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 10,
+  },
+  frameCode: {
+    width: '80%',
+    height: 64,
+    borderWidth: 2,
+    borderColor: '#7c3aed',
+    borderRadius: 8,
+    backgroundColor: 'rgba(124,58,237,0.12)',
+  },
+  modeRow: { flexDirection: 'row', gap: 8 },
+  modeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  modeChipActive: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
+  modeText: { color: '#fff', fontSize: 13, fontWeight: '500' },
+  modeTextActive: { fontWeight: '700' },
   cameraFooter: {
     alignItems: 'center',
     paddingHorizontal: 20,

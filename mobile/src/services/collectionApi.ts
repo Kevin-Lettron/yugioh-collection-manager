@@ -4,6 +4,7 @@ import type {
   CardLanguage,
   CollectionFilters,
   PaginatedResponse,
+  ScanMode,
   ScanResult,
   UserCard,
 } from '@/types';
@@ -47,10 +48,16 @@ export const collectionApi = {
    * Scan a card photo via Claude Vision.
    * `photoUri` is a local file URI from expo-camera or expo-image-picker.
    * `mimeType` defaults to image/jpeg.
+   * `mode: 'code'` indique un gros plan sur le seul code de set.
    */
   scan: async (
     photoUri: string,
-    opts?: { description?: string; mimeType?: string; fileName?: string }
+    opts?: {
+      description?: string;
+      mimeType?: string;
+      fileName?: string;
+      mode?: ScanMode;
+    }
   ): Promise<ScanResult> => {
     const formData = new FormData();
     // React Native FormData accepts { uri, name, type } object literal
@@ -60,6 +67,7 @@ export const collectionApi = {
       type: opts?.mimeType || 'image/jpeg',
     } as unknown as Blob);
     if (opts?.description) formData.append('description', opts.description);
+    if (opts?.mode) formData.append('mode', opts.mode);
 
     const response = await api.post<ScanResult>('/collection/scan', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

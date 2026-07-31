@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { collectionApi } from '@/services/collectionApi';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -77,9 +77,14 @@ export default function CollectionScreen() {
     [debouncedSearch, filters]
   );
 
-  useEffect(() => {
-    fetchPage(1, true);
-  }, [fetchPage]);
+  // Rechargement à chaque fois que l'écran reprend le focus : sans ça, une carte
+  // ajoutée depuis le scanner n'apparaît qu'après un redémarrage de l'app.
+  // (Se déclenche aussi au montage, et à chaque changement de recherche/filtres.)
+  useFocusEffect(
+    useCallback(() => {
+      fetchPage(1, true);
+    }, [fetchPage])
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

@@ -7,6 +7,7 @@ import { CardModel } from '../models/cardModel';
 import { YGOProDeckService } from '../services/ygoprodeckService';
 import {
   scanCard as scanCardService,
+  parseScanMode,
   getRemainingScanCalls,
   getMaxScanCalls,
   getScanCallCount,
@@ -266,13 +267,16 @@ export class CollectionController {
 
       const base64 = req.file.buffer.toString('base64');
       const description = typeof req.body?.description === 'string' ? req.body.description : undefined;
+      // 'code' = gros plan sur le seul code de set, 'card' (défaut) = carte entière
+      const mode = parseScanMode(req.body?.mode);
 
       loggers.external.request('Claude Vision', '/scan', {
         size: req.file.size,
+        mode,
         hasDescription: !!description,
       });
 
-      const result = await scanCardService(base64, mediaType, description);
+      const result = await scanCardService(base64, mediaType, description, mode);
 
       res.json({
         ...result,

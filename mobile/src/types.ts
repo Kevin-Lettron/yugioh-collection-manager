@@ -76,6 +76,12 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
+/**
+ * 'card' = photo de la carte entière (identification par recoupement).
+ * 'code' = gros plan sur le seul code de set, bien plus lisible.
+ */
+export type ScanMode = 'card' | 'code';
+
 /** Ce que l'IA a lu sur la photo, avant confrontation avec la base YGOProDeck. */
 export interface VisionReading {
   code: string | null;
