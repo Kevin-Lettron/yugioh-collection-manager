@@ -15,6 +15,7 @@ import { deckApi } from '@/services/deckApi';
 import type { Deck } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export default function DecksScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -135,11 +136,11 @@ export default function DecksScreen() {
             {decks.length} deck{decks.length > 1 ? 's' : ''}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.newBtn}
-          onPress={() => router.push('/deck/new')}>
-          <Text style={styles.newBtnText}>+ Nouveau</Text>
-        </TouchableOpacity>
+        <CyberButton
+          label="+ Nouveau"
+          size="sm"
+          onPress={() => router.push('/deck/new')}
+        />
       </View>
 
       {loading && decks.length === 0 ? (

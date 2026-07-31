@@ -3,18 +3,17 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export default function RegisterScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -94,16 +93,14 @@ export default function RegisterScreen() {
             minuscule, majuscule, chiffre, spécial.
           </Text>
 
-          <TouchableOpacity
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
+          <CyberButton
+            label={submitting ? 'CRÉATION…' : 'Créer mon compte'}
             onPress={handleSubmit}
-            disabled={!canSubmit}>
-            {submitting ? (
-              <ActivityIndicator color={colors.onGold} />
-            ) : (
-              <Text style={styles.buttonText}>Créer mon compte</Text>
-            )}
-          </TouchableOpacity>
+            disabled={!canSubmit}
+            loading={submitting}
+            block
+            cutColor={colors.panel}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Déjà un compte ?</Text>

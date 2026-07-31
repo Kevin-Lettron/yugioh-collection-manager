@@ -24,6 +24,7 @@ import FiltersModal, { type CollectionFilterValues } from '@/components/FiltersM
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, useTheme, type Theme } from '@/theme/ThemeContext';
 import { MillenniumMark } from '@/components/CyberSurfaces';
+import CyberButton from '@/components/CyberButton';
 
 const PAGE_SIZE = 30;
 const NUM_COLUMNS = 2;
@@ -215,16 +216,20 @@ export default function CollectionScreen() {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.scanBtn]}
-          onPress={() => router.push('/scan')}>
-          <Text style={styles.actionBtnText}>📷 Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.addBtn]}
-          onPress={() => setShowAdd(true)}>
-          <Text style={styles.actionBtnText}>+ Ajouter</Text>
-        </TouchableOpacity>
+        <CyberButton
+          label="Scanner"
+          variant="primary"
+          onPress={() => router.push('/scan')}
+          block
+          style={{ flex: 1 }}
+        />
+        <CyberButton
+          label="+ Ajouter"
+          variant="secondary"
+          onPress={() => setShowAdd(true)}
+          block
+          style={{ flex: 1 }}
+        />
       </View>
 
       <View style={styles.searchWrap}>

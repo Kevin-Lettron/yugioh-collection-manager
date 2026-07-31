@@ -34,16 +34,13 @@ function readStoredTheme(): { theme: Theme; isSystem: boolean } {
       return { theme: stored, isSystem: false };
     }
   } catch {
-    /* stockage indisponible : on retombe sur le réglage système */
+    /* stockage indisponible : le sombre s'applique de toute façon */
   }
 
-  const prefersLight =
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: light)').matches;
-
-  // Le sombre est le thème par défaut du produit, pas seulement un repli.
-  return { theme: prefersLight ? 'light' : 'dark', isSystem: true };
+  // Le sombre est le thème du produit. On l'impose au premier chargement
+  // même si le système est en clair — l'utilisateur peut basculer via le
+  // toggle. `isSystem = false` pour ne PAS suivre les changements OS.
+  return { theme: 'dark', isSystem: false };
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -3,18 +3,17 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export default function LoginScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -74,16 +73,14 @@ export default function LoginScreen() {
             onSubmitEditing={handleSubmit}
           />
 
-          <TouchableOpacity
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
+          <CyberButton
+            label={submitting ? 'CONNEXION…' : 'Se connecter'}
             onPress={handleSubmit}
-            disabled={!canSubmit}>
-            {submitting ? (
-              <ActivityIndicator color={colors.onGold} />
-            ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
-            )}
-          </TouchableOpacity>
+            disabled={!canSubmit}
+            loading={submitting}
+            block
+            cutColor={colors.panel}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Pas encore de compte ?</Text>

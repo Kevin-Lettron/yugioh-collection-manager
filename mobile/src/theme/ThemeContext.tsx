@@ -56,7 +56,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const name: ThemeName = chosen ?? (systemScheme === 'light' ? 'light' : 'dark');
+  // Sombre par défaut : on ignore `systemScheme` tant que l'utilisateur n'a
+  // pas basculé explicitement. La variable `systemScheme` reste importée
+  // uniquement pour re-render l'UI si un jour on veut proposer un mode « auto ».
+  void systemScheme;
+  const name: ThemeName = chosen ?? 'dark';
 
   const persist = useCallback((next: ThemeName) => {
     setChosen(next);

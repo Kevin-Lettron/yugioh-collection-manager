@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import Button from '../components/ui/Button';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
@@ -71,13 +72,16 @@ const Login = () => {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
+            variant="primary"
+            size="lg"
+            glitch
+            isLoading={loading}
+            className="w-full"
           >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
-          </button>
+            Se connecter
+          </Button>
         </form>
 
         <div className="mt-6 text-center">
