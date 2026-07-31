@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Refonte cyberpunk / Yu-Gi-Oh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   TOKENS — la seule source de vérité des couleurs.
+   Ces variables seront reprises telles quelles dans
+   client/src/styles/theme.css et mobile/src/theme/palette.ts
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='dark'] {
+  --bg: #0B0906;
+  --bg-elev: #14100A;
+  --panel: #1A1510;
+  --panel-2: #221B12;
+  --border: #3A2E1C;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --violet: #A855F7;
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --on-gold: #0B0906;
+  --grid: rgba(245, 197, 24, 0.055);
+  --glow: 0 0 24px rgba(245, 197, 24, 0.25);
+}
+
+[data-theme='light'] {
+  --bg: #F7F3EA;
+  --bg-elev: #FFFFFF;
+  --panel: #FFFFFF;
+  --panel-2: #F2ECDD;
+  --border: #DCCFB0;
+  --text: #1A1206;
+  --text-muted: #6B5E45;
+  --gold: #8A6D0B;
+  --gold-dim: #6B5408;
+  --violet: #7C3AED;
+  --cyan: #0E7490;
+  --magenta: #C2185B;
+  --success: #047857;
+  --danger: #BE123C;
+  --on-gold: #FFFFFF;
+  --grid: rgba(138, 109, 11, 0.07);
+  --glow: 0 0 20px rgba(138, 109, 11, 0.18);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 5rem;
+  transition: background .3s, color .3s;
+  /* Trame de circuit : deux dégradés croisés + une lueur diffuse */
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168, 85, 247, .13), transparent);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+h1, h2, h3, .display { font-family: 'Orbitron', 'Rajdhani', sans-serif; letter-spacing: .04em; }
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+
+/* ── En-tête ─────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  max-width: 1100px; margin: 0 auto; padding: .7rem 1rem;
+  display: flex; align-items: center; gap: .9rem; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: .6rem; margin-right: auto; }
+.brand-name { font-family: 'Orbitron'; font-weight: 900; font-size: 1.02rem; letter-spacing: .09em; text-transform: uppercase; }
+.brand-name span { color: var(--gold); }
+.navlink {
+  font-weight: 600; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); text-decoration: none; padding: .35rem 0; position: relative;
+}
+.navlink.is-active, .navlink:hover { color: var(--text); }
+.navlink.is-active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -.35rem; height: 2px;
+  background: var(--gold); box-shadow: var(--glow);
+}
+
+/* ── Bouton cyber ─────────────────────────────────────────
+   Reprise de la technique du repo Cyberpunk :
+   deux couches en pseudo-éléments, découpées au clip-path,
+   la couche « ombre » décalée de --border. Couleurs changées.
+   ───────────────────────────────────────────────────────── */
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: var(--on-gold);
+  --border-offset: 5px;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  --clip-1: polygon(0 2%, 100% 2%, 100% 95%, 95% 95%, 95% 90%, 85% 90%, 85% 95%, 8% 95%, 0 70%);
+  --clip-2: polygon(0 78%, 100% 78%, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 78%);
+  --clip-3: polygon(0 44%, 100% 44%, 100% 54%, 95% 54%, 95% 54%, 85% 54%, 85% 54%, 8% 54%, 0 54%);
+  --clip-4: polygon(0 0, 100% 0, 100% 0, 95% 0, 95% 0, 85% 0, 85% 0, 8% 0, 0 0);
+  --clip-6: polygon(0 40%, 100% 40%, 100% 85%, 95% 85%, 95% 85%, 85% 85%, 85% 85%, 8% 85%, 0 70%);
+
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font-family: 'Orbitron', sans-serif; font-weight: 700;
+  font-size: clamp(.78rem, .55rem + .5vw, .95rem);
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--fg); background: transparent; border: 0; cursor: pointer;
+  padding: .95rem 1.9rem; min-height: 48px; /* cible tactile confortable */
+  transition: transform .12s ease, filter .2s ease;
+}
+.cyber-btn::before,
+.cyber-btn::after {
+  content: ''; position: absolute; inset: 0; clip-path: var(--clip); z-index: -1;
+}
+.cyber-btn::before { background: var(--shadow); transform: translate(var(--border-offset), 0); }
+.cyber-btn::after  { background: var(--main); }
+.cyber-btn:hover   { filter: brightness(1.08); }
+.cyber-btn:active  { transform: translate(2px, 1px); filter: brightness(.9); }
+.cyber-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+.cyber-btn[disabled] { opacity: .45; cursor: not-allowed; filter: grayscale(.5); }
+
+/* Étiquette d'angle, comme dans la référence */
+.cyber-btn__tag {
+  position: absolute; right: 6%; bottom: 2px;
+  font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 600;
+  letter-spacing: .1em; color: var(--fg); opacity: .65; pointer-events: none;
+}
+
+/* Glitch au survol */
+.cyber-btn__glitch {
+  position: absolute; inset: calc(var(--border-offset) * -1);
+  background: var(--shadow); clip-path: var(--clip);
+  display: none; z-index: -2;
+}
+.cyber-btn:hover .cyber-btn__glitch { display: block; animation: glitch 2s infinite; }
+.cyber-btn__glitch::before {
+  content: ''; position: absolute; inset: var(--border-offset);
+  background: var(--main); clip-path: var(--clip);
+}
+@keyframes glitch {
+  0%   { clip-path: var(--clip-1); }
+  2%, 8% { clip-path: var(--clip-2); transform: translate(-5%, 0); }
+  6%   { clip-path: var(--clip-2); transform: translate(5%, 0); }
+  9%   { clip-path: var(--clip-2); transform: translate(0, 0); }
+  10%  { clip-path: var(--clip-3); transform: translate(5%, 0); }
+  13%  { clip-path: var(--clip-3); transform: translate(0, 0); }
+  14%, 21% { clip-path: var(--clip-4); transform: translate(5%, 0); }
+  35%, 45% { clip-path: var(--clip-6); transform: translate(-5%, 0); }
+  40%  { clip-path: var(--clip-6); transform: translate(5%, 0); }
+  50%  { clip-path: var(--clip-6); transform: translate(0, 0); }
+  31%, 61%, 100% { clip-path: var(--clip-4); }
+}
+/* Respect des préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn:hover .cyber-btn__glitch { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
+
+.cyber-btn--violet { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
+.cyber-btn--danger { --main: var(--danger); --shadow: var(--magenta); --fg: #fff; }
+.cyber-btn--ghost  { --main: transparent; --shadow: transparent; --fg: var(--text); }
+.cyber-btn--ghost::after { background: transparent; border: 1px solid var(--gold); clip-path: none; }
+.cyber-btn--ghost:hover::after { background: color-mix(in srgb, var(--gold) 12%, transparent); }
+.cyber-btn--sm { padding: .55rem 1.1rem; min-height: 40px; font-size: .72rem; --border-offset: 4px; }
+.cyber-btn--block { display: flex; width: 100%; }
+
+/* ── Panneaux ─────────────────────────────────────────────
+   Coin supérieur droit biseauté = clin d'œil au dos de carte.
+   ───────────────────────────────────────────────────────── */
+.panel {
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 1.15rem; position: relative;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+.panel--glow { box-shadow: var(--glow); border-color: color-mix(in srgb, var(--gold) 45%, var(--border)); }
+.panel__title {
+  font-family: 'Orbitron'; font-size: .74rem; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: .8rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.panel__title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+section { margin-top: 2.6rem; }
+.section-title {
+  font-size: .78rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: .9rem; font-family: 'Orbitron';
+}
+.grid { display: grid; gap: 1rem; }
+.grid--2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.grid--cards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Champs ───────────────────────────────────────────────── */
+.field { display: block; margin-bottom: .85rem; }
+.label {
+  display: block; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: .35rem; font-weight: 600;
+}
+.input {
+  width: 100%; background: var(--bg-elev); color: var(--text);
+  border: 1px solid var(--border); border-left: 2px solid var(--gold);
+  padding: .7rem .85rem; font-family: inherit; font-size: .95rem; min-height: 44px;
+}
+.input::placeholder { color: var(--text-muted); }
+.input:focus { outline: none; border-color: var(--gold); box-shadow: var(--glow); }
+
+.chip {
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text-muted);
+  padding: .35rem .8rem; font-size: .78rem; font-weight: 600; letter-spacing: .06em;
+  cursor: pointer; clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.chip[aria-pressed='true'] { background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .66rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  padding: .22rem .6rem; border: 1px solid currentColor;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+.badge--gold { color: var(--gold); } .badge--cyan { color: var(--cyan); }
+.badge--ok { color: var(--success); } .badge--warn { color: var(--danger); }
+
+/* ── Tuile de carte ───────────────────────────────────────── */
+.cardtile {
+  background: var(--panel); border: 1px solid var(--border); overflow: hidden;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  transition: transform .18s, border-color .18s, box-shadow .18s;
+}
+.cardtile:hover { transform: translateY(-4px); border-color: var(--gold); box-shadow: var(--glow); }
+.cardtile__art {
+  aspect-ratio: 59 / 86;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 9px, color-mix(in srgb, var(--violet) 12%, transparent) 9px 10px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-elev));
+  display: grid; place-items: center;
+}
+.cardtile__body { padding: .6rem .7rem; }
+.cardtile__name { font-weight: 700; font-size: .85rem; line-height: 1.25; }
+.cardtile__meta { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: .6rem; }
+.swatch { border: 1px solid var(--border); }
+.swatch__color { height: 52px; }
+.swatch__meta { padding: .35rem .5rem; font-size: .7rem; }
+.swatch__meta b { display: block; letter-spacing: .08em; text-transform: uppercase; font-size: .64rem; }
+.swatch__meta code { color: var(--text-muted); font-size: .7rem; }
+
+.note {
+  border-left: 2px solid var(--cyan); background: color-mix(in srgb, var(--cyan) 8%, transparent);
+  padding: .7rem .9rem; font-size: .85rem; color: var(--text-muted);
+}
+.hero { padding: 3rem 0 1rem; text-align: center; }
+.hero h1 { font-size: clamp(1.6rem, 1rem + 3vw, 2.9rem); font-weight: 900; text-transform: uppercase; }
+.hero h1 em { font-style: normal; color: var(--gold); text-shadow: var(--glow); }
+.hero p { color: var(--text-muted); margin: .6rem auto 1.6rem; max-width: 46ch; }
+
+@media (max-width: 560px) {
+  .cyber-btn { width: 100%; }
+  .topbar-inner { gap: .6rem; }
+  .navlink { font-size: .76rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ BARRE DE NAVIGATION ═══════ -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <!-- Motif original : pyramide inversée + œil géométrique.
+           Évoque le Puzzle du Millénium sans reprendre d'asset Konami. -->
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="au" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F5C518"/><stop offset="1" stop-color="#8A6D0B"/>
+          </linearGradient>
+        </defs>
+        <path d="M4 4 L28 4 L16 29 Z" fill="none" stroke="url(#au)" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M9 10 L23 10 L16 24 Z" fill="none" stroke="url(#au)" stroke-width=".8" opacity=".55"/>
+        <ellipse cx="16" cy="13" rx="5.4" ry="3.1" fill="none" stroke="url(#au)" stroke-width="1.3"/>
+        <circle cx="16" cy="13" r="1.7" fill="#F5C518"/>
+        <path d="M16 16.5 L16 20 M13 16 L11.5 19 M19 16 L20.5 19" stroke="url(#au)" stroke-width=".9" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-name">Keit<span>land</span></span>
+    </div>
+    <a class="navlink is-active" href="#">Collection</a>
+    <a class="navlink" href="#">Decks</a>
+    <a class="navlink" href="#">Social</a>
+    <button class="chip" id="themeBtn" aria-pressed="false" onclick="toggleTheme()">☾ Sombre</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Duel <em>Interface</em></h1>
+    <p>Maquette de référence. Valide la direction visuelle ici avant que les 12 pages web et les 16 écrans mobile ne soient repris.</p>
+    <div class="row" style="justify-content:center">
+      <button class="cyber-btn">
+        <span class="cyber-btn__glitch" aria-hidden="true"></span>
+        Scanner une carte
+        <span class="cyber-btn__tag">R25</span>
+      </button>
+      <button class="cyber-btn cyber-btn--violet">
+        <span class="cyber-btn__glitch" aria-hidden="true"></span>
+        Construire un deck
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════ BOUTONS ═══════ -->
+  <section>
+    <h2 class="section-title">Boutons — d'après le repo Cyberpunk</h2>
+    <div class="panel">
+      <div class="row">
+        <button class="cyber-btn"><span class="cyber-btn__glitch"></span>Primaire</button>
+        <button class="cyber-btn cyber-btn--violet"><span class="cyber-btn__glitch"></span>Secondaire</button>
+        <button class="cyber-btn cyber-btn--danger"><span class="cyber-btn__glitch"></span>Supprimer</button>
+        <button class="cyber-btn cyber-btn--ghost">Fantôme</button>
+        <button class="cyber-btn" disabled>Désactivé</button>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="cyber-btn cyber-btn--sm"><span class="cyber-btn__glitch"></span>Petit</button>
+        <button class="cyber-btn cyber-btn--sm cyber-btn--violet"><span class="cyber-btn__glitch"></span>Petit violet</button>
+      </div>
+      <p class="note" style="margin-top:1.1rem">
+        Survole un bouton pour voir le glitch. L'animation est désactivée si le système
+        demande une réduction des animations, et les boutons passent pleine largeur sous 560 px.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════ PALETTE ═══════ -->
+  <section>
+    <h2 class="section-title">Palette — Or / Violet</h2>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <!-- ═══════ COMPOSANTS ═══════ -->
+  <section>
+    <h2 class="section-title">Composants</h2>
+    <div class="grid grid--2">
+
+      <div class="panel">
+        <div class="panel__title">Ajouter une carte</div>
+        <label class="field">
+          <span class="label">Code set</span>
+          <input class="input" placeholder="CORE-FR058" value="LDK2-FRK01">
+        </label>
+        <span class="label">Rareté</span>
+        <div class="row" style="margin-bottom:1rem">
+          <button class="chip" aria-pressed="true">Common</button>
+          <button class="chip" aria-pressed="false">Rare</button>
+          <button class="chip" aria-pressed="false">Ultra</button>
+          <button class="chip" aria-pressed="false">Secret</button>
+        </div>
+        <button class="cyber-btn cyber-btn--block"><span class="cyber-btn__glitch"></span>Ajouter</button>
+      </div>
+
+      <div class="panel panel--glow">
+        <div class="panel__title">Carte identifiée</div>
+        <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
+          <div style="width:78px;flex:0 0 78px">
+            <div class="cardtile__art" style="clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)">
+              <svg width="30" height="30" viewBox="0 0 32 32" opacity=".45" aria-hidden="true">
+                <path d="M4 4 L28 4 L16 29 Z" fill="none" stroke="#F5C518" stroke-width="1.5"/>
+                <ellipse cx="16" cy="13" rx="5" ry="3" fill="none" stroke="#F5C518" stroke-width="1.2"/>
+                <circle cx="16" cy="13" r="1.5" fill="#F5C518"/>
+              </svg>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:'Orbitron';font-weight:700;font-size:.95rem">Bubble Barrier</div>
+            <div style="color:var(--text-muted);font-size:.8rem;margin:.2rem 0 .5rem">Spell Card · CORE-FR058</div>
+            <div class="row">
+              <span class="badge badge--gold">Confiance 95 %</span>
+              <span class="badge badge--ok">Vérifiée</span>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="margin-top:.9rem">
+          <b style="color:var(--text)">Lu sur ta photo</b><br>
+          « Barrière de Bulles » · Magie Normale · CORE-FR058
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ GRILLE COLLECTION ═══════ -->
+  <section>
+    <h2 class="section-title">Collection</h2>
+    <div class="grid grid--cards" id="cards"></div>
+  </section>
+
+  <!-- ═══════ ÉTAT VIDE ═══════ -->
+  <section>
+    <h2 class="section-title">État vide</h2>
+    <div class="panel" style="text-align:center;padding:2.6rem 1rem">
+      <svg width="76" height="76" viewBox="0 0 32 32" style="opacity:.5" aria-hidden="true">
+        <path d="M4 4 L28 4 L16 29 Z" fill="none" stroke="#F5C518" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <ellipse cx="16" cy="13" rx="5.4" ry="3.1" fill="none" stroke="#A855F7" stroke-width="1.1"/>
+        <circle cx="16" cy="13" r="1.6" fill="#A855F7"/>
+      </svg>
+      <h3 style="margin:.9rem 0 .35rem;font-size:1rem;text-transform:uppercase;letter-spacing:.1em">Collection vide</h3>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.3rem">Scanne ta première carte pour commencer.</p>
+      <button class="cyber-btn"><span class="cyber-btn__glitch"></span>Scanner</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const PALETTE = [
+  ['Fond', '--bg'], ['Élevé', '--bg-elev'], ['Panneau', '--panel'], ['Bordure', '--border'],
+  ['Texte', '--text'], ['Texte atténué', '--text-muted'], ['Or (primaire)', '--gold'],
+  ['Violet (second.)', '--violet'], ['Cyan', '--cyan'], ['Magenta', '--magenta'],
+  ['Succès', '--success'], ['Danger', '--danger'],
+];
+
+function paintSwatches() {
+  const css = getComputedStyle(document.documentElement);
+  document.getElementById('swatches').innerHTML = PALETTE.map(([name, token]) => {
+    const value = css.getPropertyValue(token).trim();
+    return `<div class="swatch">
+      <div class="swatch__color" style="background:${value}"></div>
+      <div class="swatch__meta"><b>${name}</b><code>${value}</code></div>
+    </div>`;
+  }).join('');
+}
+
+const DEMO = [
+  ['Dark Magician', 'Monstre · DARK · Niv.7'],
+  ['Blue-Eyes White Dragon', 'Monstre · LIGHT · Niv.8'],
+  ['Mirror Force', 'Piège · Normal'],
+  ['Pot of Greed', 'Magie · Normale'],
+  ['Bubble Barrier', 'Magie · Normale'],
+  ['Kuriboh', 'Monstre · DARK · Niv.1'],
+];
+
+document.getElementById('cards').innerHTML = DEMO.map(([name, meta]) => `
+  <article class="cardtile">
+    <div class="cardtile__art">
+      <svg width="34" height="34" viewBox="0 0 32 32" opacity=".4" aria-hidden="true">
+        <path d="M4 4 L28 4 L16 29 Z" fill="none" stroke="#F5C518" stroke-width="1.3"/>
+        <ellipse cx="16" cy="13" rx="5" ry="3" fill="none" stroke="#F5C518" stroke-width="1.1"/>
+        <circle cx="16" cy="13" r="1.5" fill="#F5C518"/>
+      </svg>
+    </div>
+    <div class="cardtile__body">
+      <div class="cardtile__name">${name}</div>
+      <div class="cardtile__meta">${meta}</div>
+    </div>
+  </article>`).join('');
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  const btn = document.getElementById('themeBtn');
+  btn.textContent = next === 'dark' ? '☾ Sombre' : '☀ Clair';
+  btn.setAttribute('aria-pressed', next === 'light');
+  paintSwatches();
+}
+
+paintSwatches();
+</script>
+</body>
+</html>
