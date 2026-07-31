@@ -15,8 +15,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { collectionApi } from '@/services/collectionApi';
-import type { CardLanguage, ScanResult } from '@/types';
+import type { CardLanguage, ScanCandidate, ScanResult, VisionReading } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
+
+/** Résumé lisible de ce que l'IA a lu sur la photo, pour comparaison visuelle. */
+function readingSummary(reading?: VisionReading): string | null {
+  if (!reading) return null;
+  const parts: string[] = [];
+  if (reading.nameAsPrinted) parts.push(`« ${reading.nameAsPrinted} »`);
+  if (reading.cardKind) {
+    const kind =
+      reading.cardKind === 'Spell' ? 'Magie' : reading.cardKind === 'Trap' ? 'Piège' : 'Monstre';
+    parts.push(reading.spellTrapType ? `${kind} ${reading.spellTrapType}` : kind);
+  }
+  if (reading.attribute) parts.push(reading.attribute);
+  if (reading.level !== null) parts.push(`Niv.${reading.level}`);
+  if (reading.atk !== null) {
+    parts.push(reading.def !== null ? `ATK ${reading.atk} / DEF ${reading.def}` : `ATK ${reading.atk}`);
+  }
+  if (reading.code) parts.push(reading.code);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
 
 type Step = 'camera' | 'preview' | 'analyzing' | 'confirm' | 'noresult';
 
@@ -29,6 +48,8 @@ export default function ScanScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [scan, setScan] = useState<ScanResult | null>(null);
+  // Carte retenue quand l'utilisateur corrige le choix de l'IA parmi les alternatives.
+  const [chosen, setChosen] = useState<ScanCandidate | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -44,8 +65,10 @@ export default function ScanScreen() {
     if (!cameraRef.current || capturing) return;
     setCapturing(true);
     try {
+      // Qualité max : le code de set fait quelques pixels de haut, la compression
+      // JPEG le rend illisible bien avant que la photo paraisse floue à l'œil.
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
+        quality: 1,
         skipProcessing: false,
       });
       if (photo?.uri) {
@@ -62,13 +85,25 @@ export default function ScanScreen() {
   const retake = () => {
     setPhotoUri(null);
     setScan(null);
+    setChosen(null);
     setDescription('');
     setStep('camera');
+  };
+
+  /** L'IA s'est trompée : l'utilisateur retient une des autres pistes proposées. */
+  const applyCandidate = (candidate: ScanCandidate) => {
+    setChosen(candidate);
+    setSetCode(candidate.code || '');
+    setRarity(candidate.availableRarities?.[0] || '');
+    setLanguage(candidate.detectedLanguage || scan?.detectedLanguage || 'EN');
+    setQuantity('1');
+    setStep('confirm');
   };
 
   const analyze = async () => {
     if (!photoUri) return;
     setStep('analyzing');
+    setChosen(null);
     try {
       const result = await collectionApi.scan(photoUri, {
         description: description.trim() || undefined,
@@ -96,17 +131,18 @@ export default function ScanScreen() {
   };
 
   const confirmAdd = async () => {
-    if (!scan?.card || !setCode.trim() || !rarity) return;
+    const card = chosen?.card ?? scan?.card;
+    if (!card || !setCode.trim() || !rarity) return;
     setAdding(true);
     try {
       await collectionApi.add({
-        card_code: scan.card.card_id,
+        card_code: card.card_id,
         set_code: setCode.trim().toUpperCase(),
         rarity,
         language,
         quantity: parseInt(quantity, 10) || 1,
       });
-      Alert.alert('Ajouté', `${scan.card.name} ajouté à ta collection.`, [
+      Alert.alert('Ajouté', `${card.name} ajouté à ta collection.`, [
         { text: 'OK', onPress: close },
       ]);
     } catch (err: any) {
@@ -235,27 +271,103 @@ export default function ScanScreen() {
 
   // ─── Step: no result ──────────────────────────────────
   if (step === 'noresult') {
+    const read = readingSummary(scan?.reading);
+    // Même sans validation, l'IA a pu proposer des pistes : on laisse choisir
+    // plutôt que d'imposer un nouveau scan.
+    const pistes: ScanCandidate[] = [
+      ...(scan?.card
+        ? [
+            {
+              code: scan.code,
+              name: scan.card.name,
+              card: scan.card,
+              officialImage: scan.officialImage,
+              availableRarities: scan.availableRarities,
+              detectedLanguage: scan.detectedLanguage,
+              score: scan.verification?.score ?? 0,
+              source: scan.verification?.source ?? 'code',
+            } as ScanCandidate,
+          ]
+        : []),
+      ...(scan?.alternatives || []),
+    ];
+
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <Text style={styles.title}>Carte non identifiée</Text>
-        <Text style={styles.subtitle}>
-          {scan?.notes || scan?.error || "L'IA n'a pas pu identifier la carte."}
-        </Text>
-        {typeof scan?.remainingScans === 'number' && (
-          <Text style={styles.subtitle}>Scans restants : {scan.remainingScans}</Text>
-        )}
-        <TouchableOpacity style={styles.primaryBtn} onPress={retake}>
-          <Text style={styles.primaryBtnText}>Réessayer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={close}>
-          <Text style={styles.link}>Ajouter manuellement</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={close} style={styles.closeBtn}>
+            <Text style={styles.closeText}>✕</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Carte non confirmée</Text>
+          <View style={{ width: 30 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.body}>
+          <Text style={styles.subtitle}>
+            {scan?.error || "L'IA n'a pas pu identifier la carte avec certitude."}
+          </Text>
+          {scan?.notes && <Text style={styles.hint}>{scan.notes}</Text>}
+
+          {read && (
+            <View style={styles.readBox}>
+              <Text style={styles.readTitle}>Lu sur ta photo</Text>
+              <Text style={styles.readText}>{read}</Text>
+            </View>
+          )}
+
+          {pistes.length > 0 && (
+            <>
+              <Text style={styles.label}>Pistes possibles</Text>
+              <Text style={styles.hint}>
+                Compare avec ta carte, puis choisis la bonne — ou reprends la photo.
+              </Text>
+              {pistes.map((c, i) => (
+                <TouchableOpacity
+                  key={`${c.card.card_id}-${c.code || i}`}
+                  style={styles.candidateRow}
+                  onPress={() => applyCandidate(c)}>
+                  {c.officialImage && (
+                    <Image
+                      source={{ uri: c.officialImage }}
+                      style={styles.candidateImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.identifiedName}>{c.name}</Text>
+                    <Text style={styles.identifiedMeta}>{c.card.type}</Text>
+                    {c.code && <Text style={styles.identifiedMeta}>{c.code}</Text>}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {typeof scan?.remainingScans === 'number' && (
+            <Text style={styles.remaining}>Scans restants : {scan.remainingScans}</Text>
+          )}
+
+          <TouchableOpacity style={styles.primaryBtn} onPress={retake}>
+            <Text style={styles.primaryBtnText}>Reprendre la photo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={close}>
+            <Text style={[styles.link, { textAlign: 'center' }]}>Ajouter manuellement</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   // ─── Step: confirm identified card ────────────────────
-  if (step === 'confirm' && scan?.card) {
+  const activeCard = chosen?.card ?? scan?.card;
+  if (step === 'confirm' && scan && activeCard) {
+    const activeImage = chosen?.officialImage ?? scan.officialImage;
+    const activeRarities = chosen?.availableRarities ?? scan.availableRarities;
+    const read = readingSummary(scan.reading);
+    // Après correction manuelle, l'avertissement de l'IA n'a plus lieu d'être.
+    const uncertain = !chosen && scan.verification?.status !== 'confirmed';
+    const others = (scan.alternatives || []).filter((c) => c.card.card_id !== activeCard.card_id);
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -268,16 +380,16 @@ export default function ScanScreen() {
 
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.identifiedBox}>
-            {scan.officialImage && (
+            {activeImage && (
               <Image
-                source={{ uri: scan.officialImage }}
+                source={{ uri: activeImage }}
                 style={styles.identifiedImage}
                 resizeMode="contain"
               />
             )}
             <View style={{ flex: 1 }}>
-              <Text style={styles.identifiedName}>{scan.card.name}</Text>
-              <Text style={styles.identifiedMeta}>{scan.card.type}</Text>
+              <Text style={styles.identifiedName}>{activeCard.name}</Text>
+              <Text style={styles.identifiedMeta}>{activeCard.type}</Text>
               {typeof scan.confidence === 'number' && (
                 <Text style={styles.identifiedMeta}>
                   Confiance : {Math.round(scan.confidence * 100)}%
@@ -285,6 +397,49 @@ export default function ScanScreen() {
               )}
             </View>
           </View>
+
+          {uncertain && (
+            <View style={styles.warnBox}>
+              <Text style={styles.warnTitle}>⚠️ Vérifie que c'est bien ta carte</Text>
+              <Text style={styles.warnText}>
+                {scan.verification?.mismatched?.length
+                  ? `Incohérences détectées : ${scan.verification.mismatched.join(', ')}.`
+                  : "Les indices lus sur la photo n'ont pas suffi à confirmer l'identification."}
+              </Text>
+            </View>
+          )}
+
+          {read && (
+            <View style={styles.readBox}>
+              <Text style={styles.readTitle}>Lu sur ta photo</Text>
+              <Text style={styles.readText}>{read}</Text>
+            </View>
+          )}
+
+          {others.length > 0 && (
+            <>
+              <Text style={styles.label}>Ce n'est pas la bonne carte ?</Text>
+              {others.map((c, i) => (
+                <TouchableOpacity
+                  key={`${c.card.card_id}-${c.code || i}`}
+                  style={styles.candidateRow}
+                  onPress={() => applyCandidate(c)}>
+                  {c.officialImage && (
+                    <Image
+                      source={{ uri: c.officialImage }}
+                      style={styles.candidateImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.identifiedName}>{c.name}</Text>
+                    <Text style={styles.identifiedMeta}>{c.card.type}</Text>
+                    {c.code && <Text style={styles.identifiedMeta}>{c.code}</Text>}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
 
           {typeof scan.remainingScans === 'number' && (
             <Text style={styles.remaining}>Scans restants : {scan.remainingScans}</Text>
@@ -302,8 +457,8 @@ export default function ScanScreen() {
 
           <Text style={styles.label}>Rareté</Text>
           <View style={styles.chipRow}>
-            {(scan.availableRarities && scan.availableRarities.length > 0
-              ? scan.availableRarities
+            {(activeRarities && activeRarities.length > 0
+              ? activeRarities
               : ['Common', 'Rare', 'Super Rare', 'Ultra Rare', 'Secret Rare']
             ).map((r) => (
               <TouchableOpacity
@@ -421,6 +576,37 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   identifiedImage: { width: 80, height: 115 },
+  warnBox: {
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+    borderRadius: 10,
+    padding: 12,
+    gap: 4,
+  },
+  warnTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
+  warnText: { fontSize: 12, color: '#92400e' },
+  readBox: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    padding: 12,
+    gap: 4,
+  },
+  readTitle: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  readText: { fontSize: 13, color: '#111827' },
+  candidateRow: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  candidateImage: { width: 48, height: 70 },
   identifiedName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   identifiedMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   remaining: { fontSize: 11, color: '#9ca3af', textAlign: 'right' },

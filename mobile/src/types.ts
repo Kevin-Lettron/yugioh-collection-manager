@@ -76,6 +76,48 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
+/** Ce que l'IA a lu sur la photo, avant confrontation avec la base YGOProDeck. */
+export interface VisionReading {
+  code: string | null;
+  codeCandidates: string[];
+  nameAsPrinted: string | null;
+  nameEnglish: string | null;
+  language: string | null;
+  cardKind: 'Monster' | 'Spell' | 'Trap' | null;
+  spellTrapType: string | null;
+  monsterSubtypes: string[];
+  attribute: string | null;
+  level: number | null;
+  linkRating: number | null;
+  atk: number | null;
+  def: number | null;
+  edition: string | null;
+  rarityHint: string | null;
+  effectSnippet: string | null;
+  confidence: number;
+  notes?: string;
+}
+
+/** Résultat du recoupement entre la lecture et la carte trouvée en base. */
+export interface ScanVerification {
+  status: 'confirmed' | 'uncertain' | 'conflict';
+  score: number;
+  matched: string[];
+  mismatched: string[];
+  source: 'code' | 'name';
+}
+
+export interface ScanCandidate {
+  code?: string;
+  name: string;
+  card: Card;
+  officialImage?: string;
+  availableRarities?: string[];
+  detectedLanguage?: CardLanguage;
+  score: number;
+  source: 'code' | 'name';
+}
+
 export interface ScanResult {
   success: boolean;
   code?: string;
@@ -88,6 +130,9 @@ export interface ScanResult {
   notes?: string;
   error?: string;
   remainingScans?: number;
+  verification?: ScanVerification;
+  reading?: VisionReading;
+  alternatives?: ScanCandidate[];
 }
 
 export const LANGUAGE_LABELS: Record<CardLanguage, string> = {

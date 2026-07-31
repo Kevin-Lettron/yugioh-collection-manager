@@ -1,6 +1,27 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import api, { ScanResult } from '../services/api';
+import api, { ScanCandidate, ScanResult, VisionReading } from '../services/api';
+
+/** Résumé lisible de ce que l'IA a lu sur la photo, pour comparaison visuelle. */
+function readingSummary(reading?: VisionReading): string | null {
+  if (!reading) return null;
+  const parts: string[] = [];
+  if (reading.nameAsPrinted) parts.push(`« ${reading.nameAsPrinted} »`);
+  if (reading.cardKind) {
+    const kind =
+      reading.cardKind === 'Spell' ? 'Magie' : reading.cardKind === 'Trap' ? 'Piège' : 'Monstre';
+    parts.push(reading.spellTrapType ? `${kind} ${reading.spellTrapType}` : kind);
+  }
+  if (reading.attribute) parts.push(reading.attribute);
+  if (reading.level !== null) parts.push(`Niv.${reading.level}`);
+  if (reading.atk !== null) {
+    parts.push(
+      reading.def !== null ? `ATK ${reading.atk} / DEF ${reading.def}` : `ATK ${reading.atk}`
+    );
+  }
+  if (reading.code) parts.push(reading.code);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
 
 interface CardScanConfirmationProps {
   scanResult: ScanResult;
@@ -17,29 +38,48 @@ const CardScanConfirmation = ({
   onRetry,
   onClose,
 }: CardScanConfirmationProps) => {
-  const rarities = scanResult.availableRarities || ['Common'];
+  // Carte retenue quand l'utilisateur corrige le choix de l'IA parmi les alternatives.
+  const [chosen, setChosen] = useState<ScanCandidate | null>(null);
+
+  const activeCard = chosen?.card ?? scanResult.card;
+  const activeCode = chosen?.code ?? scanResult.code;
+  const activeImage = chosen?.officialImage ?? scanResult.officialImage;
+  const activeLanguage = chosen?.detectedLanguage ?? scanResult.detectedLanguage;
+  const rarities = (chosen?.availableRarities ?? scanResult.availableRarities) || ['Common'];
+
   const [rarity, setRarity] = useState(rarities[0]);
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const confidencePct = Math.round((scanResult.confidence || 0) * 100);
   const lowConfidence = (scanResult.confidence || 0) < 0.7;
+  // Après correction manuelle, l'avertissement de l'IA n'a plus lieu d'être.
+  const uncertain = !chosen && scanResult.verification?.status !== 'confirmed';
+  const reading = readingSummary(scanResult.reading);
+  const others = (scanResult.alternatives || []).filter(
+    (c) => c.card?.card_id !== activeCard?.card_id
+  );
+
+  const selectCandidate = (candidate: ScanCandidate) => {
+    setChosen(candidate);
+    setRarity((candidate.availableRarities || ['Common'])[0]);
+  };
 
   const handleAdd = async () => {
-    if (!scanResult.code) {
+    if (!activeCode) {
       toast.error('Aucun code à ajouter');
       return;
     }
     setSaving(true);
     try {
       await api.post('/collection/cards/add', {
-        card_code: scanResult.card?.card_id,
-        set_code: scanResult.code,
+        card_code: activeCard?.card_id,
+        set_code: activeCode,
         rarity,
         quantity,
-        language: scanResult.detectedLanguage,
+        language: activeLanguage,
       });
-      toast.success(`${scanResult.name} ajouté à la collection !`);
+      toast.success(`${activeCard?.name} ajouté à la collection !`);
       onConfirmed();
     } catch (err: any) {
       const message = err?.response?.data?.error || "Erreur lors de l'ajout";
@@ -64,22 +104,64 @@ const CardScanConfirmation = ({
         </div>
 
         <div className="p-4 sm:p-6 space-y-4">
+          {/* Avertissement quand les signaux lus ne confirment pas la carte trouvée */}
+          {uncertain && (
+            <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-800 text-sm">
+              <p className="font-semibold">⚠️ Vérifie que c'est bien ta carte</p>
+              <p className="text-xs mt-1">
+                {scanResult.verification?.mismatched?.length
+                  ? `Incohérences détectées : ${scanResult.verification.mismatched.join(', ')}.`
+                  : "Les indices lus sur la photo n'ont pas suffi à confirmer l'identification."}
+              </p>
+            </div>
+          )}
+
           {/* Info carte */}
           <div className="bg-gray-50 rounded-lg p-3 space-y-1">
             <p className="text-sm text-gray-600">Code détecté :</p>
-            <p className="text-lg font-mono font-bold text-blue-600 break-all">
-              {scanResult.code}
-            </p>
+            <p className="text-lg font-mono font-bold text-blue-600 break-all">{activeCode}</p>
             <p className="text-sm text-gray-600 mt-2">Nom :</p>
             <p className="text-base font-semibold text-gray-800 break-words">
-              {scanResult.name}
+              {activeCard?.name || scanResult.name}
             </p>
-            {scanResult.detectedLanguage && (
-              <p className="text-xs text-gray-500 mt-1">
-                Langue détectée : {scanResult.detectedLanguage}
-              </p>
+            {activeLanguage && (
+              <p className="text-xs text-gray-500 mt-1">Langue détectée : {activeLanguage}</p>
             )}
           </div>
+
+          {/* Ce que l'IA a lu sur la photo */}
+          {reading && (
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-500">Lu sur ta photo</p>
+              <p className="text-sm text-gray-800 mt-1 break-words">{reading}</p>
+            </div>
+          )}
+
+          {/* Autres pistes proposées par le recoupement */}
+          {others.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">Ce n'est pas la bonne carte ?</p>
+              {others.map((c, i) => (
+                <button
+                  key={`${c.card?.card_id}-${c.code || i}`}
+                  type="button"
+                  onClick={() => selectCandidate(c)}
+                  className="w-full flex items-center gap-3 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+                >
+                  {c.officialImage && (
+                    <img src={c.officialImage} alt={c.name} className="w-12 h-16 object-contain" />
+                  )}
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-semibold text-gray-800 truncate">{c.name}</span>
+                    <span className="block text-xs text-gray-500">
+                      {c.card?.type}
+                      {c.code ? ` · ${c.code}` : ''}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Confiance */}
           <div
@@ -112,10 +194,10 @@ const CardScanConfirmation = ({
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1 text-center">Image officielle</p>
-                {scanResult.officialImage ? (
+                {activeImage ? (
                   <img
-                    src={scanResult.officialImage}
-                    alt={scanResult.name}
+                    src={activeImage}
+                    alt={activeCard?.name || scanResult.name}
                     className="w-full rounded border border-gray-200 object-contain max-h-48"
                   />
                 ) : (

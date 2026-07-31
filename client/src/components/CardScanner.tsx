@@ -475,9 +475,15 @@ const CardScanner = ({ onScanComplete, onClose }: CardScannerProps) => {
     try {
       const result = await scanCard(compressedBlob, description);
       if (!result.success) {
-        toast.error(result.error || 'Scan échoué');
-        setScanning(false);
-        return;
+        // Le serveur refuse de valider quand les signaux lus contredisent la carte
+        // trouvée, mais il peut quand même proposer des pistes : dans ce cas on
+        // ouvre la confirmation pour laisser l'utilisateur trancher.
+        if (!result.card && !result.alternatives?.length) {
+          toast.error(result.error || 'Scan échoué');
+          setScanning(false);
+          return;
+        }
+        toast.error(result.error || 'Identification incertaine — vérifie la carte');
       }
       onScanComplete(result, previewUrl);
     } catch (err: any) {
