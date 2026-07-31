@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — étape 0 terminée (maquette)
+**Dernière mise à jour :** 2026-07-31 — étape 1 terminée (tokens + remap Tailwind)
 
 ---
 
@@ -65,8 +65,15 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 
 ## 4. Avancement
 
-- [x] **Étape 0** — Fichier de suivi + maquette HTML autonome (`docs/maquette-cyberpunk.html`)
-- [ ] **Étape 1** — Web : tokens CSS + remap Tailwind
+- [x] **Étape 0** — Fichier de suivi + **charte graphique** autonome (`docs/maquette-cyberpunk.html`)
+      — logo et ses variantes, rôle de chaque couleur avec répartition 60/30/10, échelle
+      typographique, jeu d'icônes maison, anatomie des composants, do & don't, maquette d'écrans.
+- [x] **Étape 1** — Web : tokens CSS + remap Tailwind
+      - `client/src/styles/theme.css` : les deux jeux de tokens + classes `.cyber-*`
+      - `client/tailwind.config.js` : les familles Tailwind pointent vers les variables
+      - Polices **auto-hébergées** (`@fontsource/orbitron`, `@fontsource/rajdhani`) : la CSP du
+        site n'autorise que `font-src 'self'`, Google Fonts serait bloqué
+      - `index.html` : `theme-color` passé à `#0b0906`
 - [ ] **Étape 2** — Web : ThemeContext + bascule
 - [ ] **Étape 3** — Web : bouton cyber + composants `ui/`
 - [ ] **Étape 4** — Web : motifs SVG Yu-Gi-Oh
