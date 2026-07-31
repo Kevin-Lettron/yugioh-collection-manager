@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — étape 3 terminée (composants ui/)
+**Dernière mise à jour :** 2026-07-31 — étapes 5, 6 et 7 terminées (socle mobile posé)
 
 ---
 
@@ -90,9 +90,25 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 - [x] **Étape 4** — Web : motifs SVG Yu-Gi-Oh (`src/components/decor/Icons.tsx`)
       — marque du Millénium, carte, deck, scan, social, recherche, filtres, ajout, alerte, validé,
       lune, soleil. Toutes en `currentColor`, grille 24, angles vifs.
-- [ ] **Étape 5** — Web : navbar + 12 pages
-- [ ] **Étape 6** — Mobile : palette + ThemeContext + hook
-- [ ] **Étape 7** — Mobile : CyberButton + composants partagés
+- [x] **Étape 5** — Web : navbar + pages
+      Les pages héritent du thème via le remap Tailwind, sans réécriture. Un seul cas devait
+      être traité à la main : `text-white` pointe vers la couleur de panneau (sombre), ce qui
+      le rendait invisible sur les 7 incrustations posées sur fond noir réel (aperçu caméra,
+      étiquettes sur illustration de carte). Une règle CSS ciblant `.bg-black.text-white`
+      (spécificité 0,3,0 contre 0,1,0 pour l'utilitaire) les couvre toutes.
+- [x] **Étape 6** — Mobile : palette + ThemeContext + hook
+      - `src/theme/palette.ts` : mêmes valeurs que le web + constantes de forme
+      - `src/theme/ThemeContext.tsx` : persistance via le helper `storage` existant
+        (SecureStore natif / localStorage web) ; suit `useColorScheme` tant qu'aucun choix
+      - `src/theme/useThemedStyles.ts` : `makeStyles(theme)` mémoïsé
+      - `_layout.tsx` : provider en racine, `StatusBar` et fond de `Stack` suivent le thème
+        (sans `contentStyle`, l'écran clignote en blanc entre deux navigations)
+- [x] **Étape 7** — Mobile : CyberButton + composants partagés
+      - `CyberButton` : couche d'ombre décalée + biseau simulé par un carré pivoté à 45°
+        de la couleur du fond. **Conséquence à connaître** : passer `cutColor` dès que le
+        bouton n'est pas posé sur `colors.bg`, sinon le biseau se voit comme une tache.
+      - `CyberSurfaces` : `CyberPanel`, `CyberTile`, `CyberTitle`, `CyberBadge`,
+        `MillenniumMark` (triangle par bordures, pour éviter react-native-svg et son rebuild natif)
 - [ ] **Étape 8** — Mobile : 16 écrans et modales
 - [x] **Étape 9** — Tests `ui/` web mis à jour (faite en même temps que l'étape 3)
 - [ ] **Étape 10** — Typecheck + tests + build de vérification

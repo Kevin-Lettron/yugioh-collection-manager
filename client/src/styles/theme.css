@@ -440,10 +440,15 @@ body {
   box-shadow: var(--glow);
 }
 
-/* L'interface caméra reste sur fond noir réel : le blanc doit y rester blanc,
-   alors que `text-white` est remappé vers la couleur de panneau. */
-.camera-ui,
-.camera-ui .text-white {
+/* `white` est remappé vers la couleur de panneau (sombre en thème sombre), ce
+   qui est le bon comportement sur un aplat doré ou une surface. Mais sur un
+   vrai fond noir — aperçu caméra, incrustations posées sur l'illustration
+   d'une carte — le texte doit rester blanc, sinon il disparaît.
+
+   La règle cible les éléments qui portent les deux classes à la fois ;
+   sa spécificité (0,3,0) passe devant l'utilitaire Tailwind (0,1,0). */
+[data-theme] .bg-black.text-white,
+.camera-ui {
   color: #fff;
 }
 

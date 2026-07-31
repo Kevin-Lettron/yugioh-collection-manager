@@ -620,7 +620,7 @@ const CardScanner = ({ onScanComplete, onClose }: CardScannerProps) => {
                   />
                 )}
                 <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-                  <div className="bg-black bg-opacity-70 text-white text-xs px-3 py-1.5 rounded text-center max-w-[90%]">
+                  <div className="camera-ui bg-black bg-opacity-70 text-white text-xs px-3 py-1.5 rounded text-center max-w-[90%]">
                     {capabilities?.focusDistance
                       ? 'Focus manuel + Capturer en bas'
                       : "Touche le code pour faire la mise au point"}
