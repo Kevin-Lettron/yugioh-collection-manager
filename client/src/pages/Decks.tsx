@@ -99,7 +99,7 @@ const Decks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* Navigation */}
       <AppNavbar />
 

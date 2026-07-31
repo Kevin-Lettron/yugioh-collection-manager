@@ -123,7 +123,7 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
@@ -131,7 +131,7 @@ const UserProfile = () => {
 
   if (!profileUser) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Utilisateur non trouve</h2>
           <Link to="/social" className="text-blue-600 hover:text-blue-700">
@@ -143,7 +143,7 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* Navigation */}
       <AppNavbar />
 

@@ -869,7 +869,7 @@ const DeckEditor = () => {
   const isExtraDeckFull = extraDeckCount + selectedExtraCount >= 15;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* Navigation */}
       <AppNavbar />
 

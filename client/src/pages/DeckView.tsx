@@ -196,7 +196,7 @@ const DeckView = () => {
   const isOwner = user?.id === deck.user_id;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* Navigation */}
       <AppNavbar />
 
