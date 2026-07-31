@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — étape 1 terminée (tokens + remap Tailwind)
+**Dernière mise à jour :** 2026-07-31 — étapes 2 et 4 terminées (thème + icônes)
 
 ---
 
@@ -74,9 +74,16 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
       - Polices **auto-hébergées** (`@fontsource/orbitron`, `@fontsource/rajdhani`) : la CSP du
         site n'autorise que `font-src 'self'`, Google Fonts serait bloqué
       - `index.html` : `theme-color` passé à `#0b0906`
-- [ ] **Étape 2** — Web : ThemeContext + bascule
+- [x] **Étape 2** — Web : ThemeContext + bascule
+      - `src/context/ThemeContext.tsx` : lecture de la préférence **au premier rendu** (pas dans un
+        effet) pour éviter le flash de thème clair ; suit `prefers-color-scheme` tant que
+        l'utilisateur n'a rien choisi ; met à jour `theme-color` pour la barre d'état mobile
+      - `src/components/ThemeToggle.tsx` dans la navbar
+      - `App.tsx` : `ThemeProvider` en racine + toasts aux couleurs du thème
 - [ ] **Étape 3** — Web : bouton cyber + composants `ui/`
-- [ ] **Étape 4** — Web : motifs SVG Yu-Gi-Oh
+- [x] **Étape 4** — Web : motifs SVG Yu-Gi-Oh (`src/components/decor/Icons.tsx`)
+      — marque du Millénium, carte, deck, scan, social, recherche, filtres, ajout, alerte, validé,
+      lune, soleil. Toutes en `currentColor`, grille 24, angles vifs.
 - [ ] **Étape 5** — Web : navbar + 12 pages
 - [ ] **Étape 6** — Mobile : palette + ThemeContext + hook
 - [ ] **Étape 7** — Mobile : CyberButton + composants partagés

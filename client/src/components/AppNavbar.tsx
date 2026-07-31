@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Notification } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
+import ThemeToggle from './ThemeToggle';
+import { MillenniumMark } from './decor/Icons';
 
 const AppNavbar = () => {
   const { user, logout } = useAuth();
@@ -140,23 +142,29 @@ const AppNavbar = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and main nav */}
           <div className="flex items-center space-x-8">
-            <Link to="/collection" className="text-2xl font-bold text-blue-600">
-              YuGiOh Manager
+            <Link
+              to="/collection"
+              className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition"
+            >
+              <MillenniumMark size={30} className="text-blue-600" title="Keitland" />
+              <span className="font-display text-lg font-black uppercase tracking-widest">
+                Keit<span className="text-blue-600">land</span>
+              </span>
             </Link>
-            <div className="hidden md:flex space-x-4">
+            <div className="hidden md:flex space-x-1">
               {navLinks.map(link => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-3 py-2 rounded-md font-medium transition ${
+                  className={`relative px-3 py-2 text-sm font-semibold uppercase tracking-widest transition ${
                     isActivePath(link.to)
-                      ? 'text-blue-600 font-semibold'
-                      : 'text-gray-700 hover:text-blue-600'
+                      ? 'text-gray-800 after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:bg-blue-600 after:shadow-glow'
+                      : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   {link.label}
@@ -166,7 +174,8 @@ const AppNavbar = () => {
           </div>
 
           {/* Right side - Notifications and Profile */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <ThemeToggle />
             {/* Notification Bell */}
             <div className="relative" ref={notificationMenuRef}>
               <button
