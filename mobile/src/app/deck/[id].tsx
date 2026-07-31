@@ -176,9 +176,9 @@ export default function DeckViewScreen() {
               {isOwner ? 'Toi' : deck.user?.username || 'Anonyme'}
             </Text>
             <View style={styles.metaBadges}>
-              {deck.is_public && <Badge label="Public" color="#d1fae5" />}
-              {deck.is_shared && <Badge label="Partagé" color="#fef3c7" />}
-              {deck.respect_banlist && <Badge label="Banlist" color="#ede9fe" />}
+              {deck.is_public && <Badge label="Public" color={colors.panel2} />}
+              {deck.is_shared && <Badge label="Partagé" color={colors.panel2} />}
+              {deck.respect_banlist && <Badge label="Banlist" color={colors.panel2} />}
             </View>
           </View>
 

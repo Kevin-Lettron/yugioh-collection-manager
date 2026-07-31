@@ -3,7 +3,7 @@
 > Fichier de passation. Il est mis à jour et poussé à **chaque étape** pour pouvoir
 > reprendre le travail depuis une autre machine sans rien perdre du contexte.
 
-**Dernière mise à jour :** 2026-07-31 — refonte terminée (étapes 0 à 10)
+**Dernière mise à jour :** 2026-07-31 — refonte terminée (étapes 0 à 10) + patch badges deck view
 
 ---
 
@@ -122,6 +122,13 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
 - [x] **Étape 10** — Vérifications
       `tsc --noEmit` propre sur **serveur, client et mobile** ; build Vite du client OK.
       Tests web : 195 échecs sur 456, contre **197 avant la refonte** — aucune régression.
+- [x] **Patch 10.1** — Audit post-refonte : 3 badges (`Public`, `Partagé`, `Banlist`) dans
+      `mobile/src/app/deck/[id].tsx` gardaient des hex hardcodés (`#d1fae5`, `#fef3c7`,
+      `#ede9fe`) — équivalents `bg-green-100/yellow-100/violet-100` de l'ancien design.
+      Basculés sur `colors.panel2` pour être cohérents avec `(tabs)/decks.tsx` qui utilisait
+      déjà la palette. Grep final : plus aucun hex hors palette dans `mobile/src/`, hors les
+      exceptions déjà documentées (`CardDetailModal` attributs YGO, `scan.tsx` overlays caméra,
+      `palette.ts` lui-même).
 
 ## 5. Points de vigilance
 
