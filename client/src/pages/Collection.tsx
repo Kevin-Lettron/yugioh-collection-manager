@@ -2,11 +2,10 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserCard, CollectionFilters, Card, CardLanguage } from '../../../shared/types';
-import api, { ScanResult, debugLog } from '../services/api';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import CardScanner from '../components/CardScanner';
-import CardScanConfirmation from '../components/CardScanConfirmation';
+import Button from '../components/ui/Button';
 
 interface CardSet {
   set_name: string;
@@ -40,97 +39,6 @@ const Collection = () => {
   const [attribute, setAttribute] = useState('');
   const [rarity, setRarity] = useState('');
   const debouncedSearch = useDebounce(search, 500);
-
-  // Scan photo flow
-  const [showScanModal, setShowScanModal] = useState(false);
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [scanPhotoUrl, setScanPhotoUrl] = useState<string | null>(null);
-
-  // Restore scan flow after tab-kill by Android (camera intent)
-  // Uses localStorage because aggressive Android OEMs recreate the tab
-  // context on resume, wiping sessionStorage.
-  useEffect(() => {
-    const STALE_SCAN_MS = 5 * 60 * 1000; // 5 minutes
-
-    let pending = false;
-    let killedDuringCamera = false;
-    const raw = localStorage.getItem('pendingScan');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as { at: number; cameraClicked?: boolean };
-        if (Date.now() - parsed.at < STALE_SCAN_MS) {
-          pending = true;
-          killedDuringCamera = !!parsed.cameraClicked;
-        } else {
-          localStorage.removeItem('pendingScan');
-        }
-      } catch {
-        localStorage.removeItem('pendingScan');
-      }
-    }
-
-    debugLog('collection:mount', { pendingScan: pending, killedDuringCamera });
-
-    // Listen for tab lifecycle events to trace tab-kill behavior on mobile
-    const onVisibility = () => {
-      debugLog('collection:visibility_change', { state: document.visibilityState });
-    };
-    const onPageHide = (e: PageTransitionEvent) => {
-      debugLog('collection:pagehide', { persisted: e.persisted });
-    };
-    const onPageShow = (e: PageTransitionEvent) => {
-      debugLog('collection:pageshow', { persisted: e.persisted });
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', onPageHide);
-    window.addEventListener('pageshow', onPageShow);
-
-    if (pending) {
-      setShowScanModal(true);
-      if (killedDuringCamera) {
-        toast(
-          "Chrome a été rechargé pendant la capture caméra. Sur ton appareil, " +
-            'utilise plutôt **Galerie** : prends la photo avec ton appli appareil ' +
-            'photo normale, puis charge-la ici.',
-          { icon: '⚠️', duration: 8000 }
-        );
-      } else {
-        toast("L'onglet a été rechargé. Tu peux reprendre.", {
-          icon: 'ℹ️',
-          duration: 4000,
-        });
-      }
-    }
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', onPageHide);
-      window.removeEventListener('pageshow', onPageShow);
-    };
-  }, []);
-
-  // Persist scan modal state so we can restore after Android kills the tab
-  useEffect(() => {
-    if (showScanModal) {
-      const existing = localStorage.getItem('pendingScan');
-      // Preserve cameraClicked flag if already set by CardScanner
-      const cameraClicked = existing
-        ? (() => {
-            try {
-              return !!(JSON.parse(existing) as { cameraClicked?: boolean }).cameraClicked;
-            } catch {
-              return false;
-            }
-          })()
-        : false;
-      localStorage.setItem(
-        'pendingScan',
-        JSON.stringify({ at: Date.now(), cameraClicked })
-      );
-    } else if (!scanResult) {
-      localStorage.removeItem('pendingScan');
-    }
-  }, [showScanModal, scanResult]);
 
   // Add card modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -336,25 +244,9 @@ const Collection = () => {
             <p className="text-gray-600 mt-1">Total : {totalCards} cartes</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                debugLog('collection:scan_button_click');
-                setShowScanModal(true);
-              }}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-purple-700 transition font-semibold whitespace-nowrap"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Scanner</span>
-            </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition font-semibold whitespace-nowrap"
-            >
+            <Button variant="primary" size="lg" glitch onClick={() => setShowAddModal(true)}>
               + Ajouter une carte
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -566,43 +458,6 @@ const Collection = () => {
           </div>
         )}
       </div>
-
-      {/* Card Scanner (Claude Vision) */}
-      {showScanModal && !scanResult && (
-        <CardScanner
-          onScanComplete={(result, photoUrl) => {
-            setScanResult(result);
-            setScanPhotoUrl(photoUrl);
-            setShowScanModal(false);
-          }}
-          onClose={() => setShowScanModal(false)}
-        />
-      )}
-
-      {/* Scan Confirmation */}
-      {scanResult && scanPhotoUrl && (
-        <CardScanConfirmation
-          scanResult={scanResult}
-          userPhotoUrl={scanPhotoUrl}
-          onConfirmed={() => {
-            if (scanPhotoUrl) URL.revokeObjectURL(scanPhotoUrl);
-            setScanResult(null);
-            setScanPhotoUrl(null);
-            fetchCards(1);
-          }}
-          onRetry={() => {
-            if (scanPhotoUrl) URL.revokeObjectURL(scanPhotoUrl);
-            setScanResult(null);
-            setScanPhotoUrl(null);
-            setShowScanModal(true);
-          }}
-          onClose={() => {
-            if (scanPhotoUrl) URL.revokeObjectURL(scanPhotoUrl);
-            setScanResult(null);
-            setScanPhotoUrl(null);
-          }}
-        />
-      )}
 
       {/* Add Card Modal */}
       {showAddModal && (
