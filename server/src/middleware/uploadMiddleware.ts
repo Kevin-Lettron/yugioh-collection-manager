@@ -202,15 +202,39 @@ export const uploadProfilePicture = upload.single('profile_picture');
 export const uploadDeckCover = upload.single('cover_image');
 export const uploadCardImage = upload.single('card_image');
 
-// Ephemeral in-memory upload for card scanning (photo is never written to disk)
+// Ephemeral in-memory upload for card scanning (photo is never written to disk).
+// Limite a 8 MB : les photos iPhone/Android modernes font souvent 2-5 MB en
+// JPEG haute qualite. 8 MB donne de la marge sans permettre de bombers un
+// serveur avec des PNG geants (Claude Vision refuse au-dela de ~5 MB de base64
+// de toute facon).
 const scanUpload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2 MB max for scan photos
+    fileSize: 8 * 1024 * 1024, // 8 MB max for scan photos
   },
 });
 
-export const uploadCardScan = scanUpload.single('photo');
+/**
+ * Wrapper autour de multer scan : intercepte les erreurs multer (LIMIT_FILE_SIZE,
+ * fileFilter reject, etc.) et les traduit en 200 + { success: false, error }
+ * pour le mobile — au lieu de laisser errorHandler mask le message en prod.
+ */
+export const uploadCardScan = (req: Request, res: Response, next: NextFunction): void => {
+  scanUpload.single('photo')(req, res, (err: any) => {
+    if (!err) return next();
+    let message = 'Upload de la photo echoue';
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      message = 'Photo trop volumineuse (max 8 Mo). Reduisez la qualite dans les reglages appareil photo ou reprends une photo plus rapprochee.';
+    } else if (err.message) {
+      message = err.message;
+    }
+    res.json({
+      success: false,
+      error: message,
+      remainingScans: undefined,
+    });
+  });
+};
 
 export default upload;
