@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Deck, DeckFilters } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 interface WishlistItem {
   id: number;
@@ -137,12 +138,14 @@ const Decks = () => {
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Mes Decks</h2>
                 <p className="text-gray-600 mt-1">{decks.length} deck(s)</p>
               </div>
-              <Link
-                to="/decks/new"
-                className="bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition font-semibold whitespace-nowrap text-center"
+              <Button
+                variant="primary"
+                size="lg"
+                glitch
+                onClick={() => navigate('/decks/new')}
               >
                 + Creer un deck
-              </Link>
+              </Button>
             </div>
 
             {/* Filters */}
@@ -259,18 +262,21 @@ const Decks = () => {
 
                           {/* Actions */}
                           <div className="flex space-x-2">
-                            <button
+                            <Button
+                              variant="primary"
+                              size="sm"
                               onClick={() => navigate(`/decks/${deck.id}/edit`)}
-                              className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
+                              className="flex-1"
                             >
                               Voir / Editer
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
                               onClick={() => handleDeleteDeck(deck.id)}
-                              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold text-sm"
                             >
                               Supprimer
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -282,12 +288,13 @@ const Decks = () => {
                 {decks.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-gray-600 text-lg mb-4">Vous n'avez pas encore de deck.</p>
-                    <Link
-                      to="/decks/new"
-                      className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={() => navigate('/decks/new')}
                     >
                       Creer votre premier deck
-                    </Link>
+                    </Button>
                   </div>
                 )}
               </>
@@ -388,21 +395,24 @@ const Decks = () => {
 
                           {/* Actions */}
                           <div className="flex space-x-2">
-                            <button
+                            <Button
+                              variant="secondary"
+                              size="sm"
                               onClick={() => navigate(`/decks/${deck.id}`)}
-                              className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition font-semibold text-sm"
+                              className="flex-1"
                             >
                               Voir le deck
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
                               onClick={() => handleRemoveFromWishlist(deck.id)}
-                              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition font-semibold text-sm"
                               title="Retirer de la wishlist"
                             >
                               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                               </svg>
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -430,12 +440,13 @@ const Decks = () => {
                     <p className="text-gray-600 mb-4">
                       Parcourez les decks publics et ajoutez ceux qui vous interessent a votre wishlist !
                     </p>
-                    <Link
-                      to="/social"
-                      className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => navigate('/social')}
                     >
                       Decouvrir des decks
-                    </Link>
+                    </Button>
                   </div>
                 )}
               </>

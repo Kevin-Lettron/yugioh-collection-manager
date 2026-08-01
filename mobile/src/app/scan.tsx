@@ -19,6 +19,7 @@ import type { CardLanguage, ScanCandidate, ScanMode, ScanResult, VisionReading }
 import { LANGUAGE_LABELS } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 /** Résumé lisible de ce que l'IA a lu sur la photo, pour comparaison visuelle. */
 function readingSummary(reading?: VisionReading): string | null {
@@ -174,9 +175,7 @@ export default function ScanScreen() {
         <Text style={styles.subtitle}>
           Pour scanner tes cartes, l'app a besoin d'accéder à la caméra.
         </Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={requestPermission}>
-          <Text style={styles.primaryBtnText}>Autoriser la caméra</Text>
-        </TouchableOpacity>
+        <CyberButton label="Autoriser la caméra" variant="primary" onPress={requestPermission} />
         <TouchableOpacity onPress={close}>
           <Text style={styles.link}>Retour</Text>
         </TouchableOpacity>
@@ -278,12 +277,8 @@ export default function ScanScreen() {
           />
 
           <View style={styles.rowBtns}>
-            <TouchableOpacity style={[styles.secondaryBtn, { flex: 1 }]} onPress={retake}>
-              <Text style={styles.secondaryBtnText}>Reprendre</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={analyze}>
-              <Text style={styles.primaryBtnText}>Analyser</Text>
-            </TouchableOpacity>
+            <CyberButton label="Reprendre" variant="ghost" onPress={retake} style={{ flex: 1 }} block />
+            <CyberButton label="Analyser" variant="primary" onPress={analyze} style={{ flex: 1 }} block />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -379,9 +374,7 @@ export default function ScanScreen() {
             <Text style={styles.remaining}>Scans restants : {scan.remainingScans}</Text>
           )}
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={retake}>
-            <Text style={styles.primaryBtnText}>Reprendre la photo</Text>
-          </TouchableOpacity>
+          <CyberButton label="Reprendre la photo" variant="primary" onPress={retake} block />
           <TouchableOpacity onPress={close}>
             <Text style={[styles.link, { textAlign: 'center' }]}>Ajouter manuellement</Text>
           </TouchableOpacity>
@@ -529,23 +522,16 @@ export default function ScanScreen() {
           />
 
           <View style={styles.rowBtns}>
-            <TouchableOpacity style={[styles.secondaryBtn, { flex: 1 }]} onPress={retake}>
-              <Text style={styles.secondaryBtnText}>Reprendre</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.primaryBtn,
-                { flex: 1 },
-                (!setCode || !rarity || adding) && { opacity: 0.5 },
-              ]}
+            <CyberButton label="Reprendre" variant="ghost" onPress={retake} style={{ flex: 1 }} block />
+            <CyberButton
+              label="Ajouter"
+              variant="primary"
               onPress={confirmAdd}
-              disabled={!setCode || !rarity || adding}>
-              {adding ? (
-                <ActivityIndicator color={colors.onGold} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Ajouter</Text>
-              )}
-            </TouchableOpacity>
+              loading={adding}
+              disabled={!setCode || !rarity}
+              style={{ flex: 1 }}
+              block
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -5,6 +5,7 @@ import { Deck, DeckComment } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const DeckView = () => {
   const { deckId } = useParams<{ deckId: string }>();
@@ -225,29 +226,31 @@ const DeckView = () => {
 
             <div className="flex flex-col space-y-2 shrink-0">
               {isOwner && (
-                <Link
-                  to={`/decks/${deckId}/edit`}
-                  className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-center whitespace-nowrap"
+                <Button
+                  variant="primary"
+                  glitch
+                  onClick={() => navigate(`/decks/${deckId}/edit`)}
                 >
                   Modifier le deck
-                </Link>
+                </Button>
               )}
               {!isOwner && (
                 <>
                   {deck.is_wishlisted ? (
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={handleRemoveFromWishlist}
-                      className="bg-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold whitespace-nowrap"
                     >
                       Retirer de la wishlist
-                    </button>
+                    </Button>
                   ) : (
-                    <button
+                    <Button
+                      variant="primary"
+                      glitch
                       onClick={handleCopyToWishlist}
-                      className="bg-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-green-700 transition font-semibold whitespace-nowrap"
                     >
                       Ajouter à la wishlist
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -384,12 +387,13 @@ const DeckView = () => {
                       rows={3}
                       placeholder="Ajouter un commentaire..."
                     />
-                    <button
+                    <Button
                       type="submit"
-                      className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                      variant="primary"
+                      className="mt-2 w-full"
                     >
                       Publier le commentaire
-                    </button>
+                    </Button>
                   </form>
 
                   {/* Comments List */}
@@ -433,18 +437,20 @@ const DeckView = () => {
                                   placeholder="Écrire une réponse..."
                                 />
                                 <div className="flex space-x-2 mt-2">
-                                  <button
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
                                     onClick={() => handleAddReply(comment.id)}
-                                    className="bg-blue-600 text-white px-4 py-1 rounded text-xs hover:bg-blue-700"
                                   >
                                     Répondre
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => setReplyingTo(null)}
-                                    className="bg-gray-200 text-gray-700 px-4 py-1 rounded text-xs hover:bg-gray-300"
                                   >
                                     Annuler
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             )}

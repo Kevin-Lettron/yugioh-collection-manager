@@ -22,6 +22,7 @@ import type { Deck, DeckComment } from '@/types';
 import { API_URL } from '@/config';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export default function DeckViewScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -192,33 +193,32 @@ export default function DeckViewScreen() {
 
           {/* Reactions */}
           <View style={styles.reactionsRow}>
-            <TouchableOpacity
-              style={[styles.reactBtn, deck.user_reaction === 'like' && styles.reactBtnLikeActive]}
+            <CyberButton
+              label="👍 J'aime"
+              variant={deck.user_reaction === 'like' ? 'primary' : 'ghost'}
               onPress={() => handleReaction('like')}
-              disabled={reacting}>
-              <Text
-                style={[styles.reactBtnText, deck.user_reaction === 'like' && styles.reactBtnTextActive]}>
-                👍 J'aime
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.reactBtn, deck.user_reaction === 'dislike' && styles.reactBtnDislikeActive]}
+              disabled={reacting}
+              block
+              style={{ flex: 1 }}
+            />
+            <CyberButton
+              label="👎 J'aime pas"
+              variant={deck.user_reaction === 'dislike' ? 'danger' : 'ghost'}
               onPress={() => handleReaction('dislike')}
-              disabled={reacting}>
-              <Text
-                style={[styles.reactBtnText, deck.user_reaction === 'dislike' && styles.reactBtnTextActive]}>
-                👎 J'aime pas
-              </Text>
-            </TouchableOpacity>
+              disabled={reacting}
+              block
+              style={{ flex: 1 }}
+            />
           </View>
 
           {/* Owner actions */}
           {isOwner && (
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => router.push(`/deck/edit/${deck.id}`)}>
-              <Text style={styles.editBtnText}>✏️ Éditer le deck</Text>
-            </TouchableOpacity>
+            <CyberButton
+              label="Éditer le deck"
+              variant="primary"
+              onPress={() => router.push(`/deck/edit/${deck.id}`)}
+              block
+            />
           )}
 
           {/* Main deck */}
@@ -276,19 +276,14 @@ export default function DeckViewScreen() {
               multiline
               editable={!postingComment}
             />
-            <TouchableOpacity
-              style={[
-                styles.commentPostBtn,
-                (!commentText.trim() || postingComment) && { opacity: 0.5 },
-              ]}
+            <CyberButton
+              label="Poster"
+              variant="primary"
+              size="sm"
               onPress={handlePostComment}
-              disabled={!commentText.trim() || postingComment}>
-              {postingComment ? (
-                <ActivityIndicator color={colors.onGold} size="small" />
-              ) : (
-                <Text style={styles.commentPostBtnText}>Poster</Text>
-              )}
-            </TouchableOpacity>
+              disabled={!commentText.trim()}
+              loading={postingComment}
+            />
           </View>
 
           {comments.length === 0 ? (

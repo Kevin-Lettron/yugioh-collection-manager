@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Deck, DeckCard } from '../../../shared/types';
 import api from '../services/api';
+import Button from '../components/ui/Button';
 
 const DeckShare = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const navigate = useNavigate();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +51,12 @@ const DeckShare = () => {
           </svg>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Lien invalide</h2>
           <p className="text-gray-600 mb-6">{error || 'Ce deck n\'existe pas ou n\'est plus disponible.'}</p>
-          <Link
-            to="/login"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+          <Button
+            variant="primary"
+            onClick={() => navigate('/login')}
           >
             Se connecter
-          </Link>
+          </Button>
         </div>
       </div>
     );
@@ -76,12 +78,13 @@ const DeckShare = () => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-500 text-sm">Mode Visiteur</span>
-              <Link
-                to="/login"
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate('/login')}
               >
                 Se connecter
-              </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -200,12 +203,14 @@ const DeckShare = () => {
         <div className="mt-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-8 text-center text-white">
           <h3 className="text-2xl font-bold mb-2">Creez votre propre collection !</h3>
           <p className="mb-4 opacity-90">Inscrivez-vous gratuitement pour creer vos propres decks et gerer votre collection Yu-Gi-Oh.</p>
-          <Link
-            to="/register"
-            className="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-gray-100 transition font-semibold"
+          <Button
+            variant="primary"
+            size="lg"
+            glitch
+            onClick={() => navigate('/register')}
           >
             S'inscrire gratuitement
-          </Link>
+          </Button>
         </div>
       </div>
 
@@ -368,12 +373,12 @@ const DeckShare = () => {
 
               {/* Actions */}
               <div className="mt-6 flex justify-end">
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => setSelectedCardDetail(null)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                 >
                   Fermer
-                </button>
+                </Button>
               </div>
             </div>
           </div>

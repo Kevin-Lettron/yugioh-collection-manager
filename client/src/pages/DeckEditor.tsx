@@ -21,6 +21,7 @@ interface AISelectedCard {
   reason: string;
 }
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   EN: 'Anglais',
@@ -882,31 +883,27 @@ const DeckEditor = () => {
           {isEditing && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {/* View public page button */}
-              <button
+              <Button
+                variant="primary"
                 onClick={() => navigate(`/decks/${deckId}`)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm sm:text-base"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 <span>Voir page publique</span>
-              </button>
+              </Button>
               {/* Share button */}
-              <button
+              <Button
+                variant="secondary"
+                isLoading={shareLoading}
                 onClick={handleGenerateShareLink}
-                disabled={shareLoading}
-                className="flex items-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-green-400 text-sm sm:text-base"
               >
-                {shareLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                )}
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
                 <span>Partager le deck</span>
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -986,20 +983,24 @@ const DeckEditor = () => {
                 </div>
 
                 <div className="flex space-x-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    className="flex-1"
                     onClick={() => navigate('/decks')}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                   >
                     Annuler
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    disabled={saving || validationErrors.length > 0}
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    variant="primary"
+                    glitch
+                    className="flex-1"
+                    disabled={validationErrors.length > 0}
+                    isLoading={saving}
                   >
-                    {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-                  </button>
+                    Sauvegarder
+                  </Button>
                 </div>
               </form>
             </div>
@@ -1019,39 +1020,41 @@ const DeckEditor = () => {
 
               {/* Buttons to open collection modal */}
               <div className="grid grid-cols-2 gap-2 mb-4">
-                <button
+                <Button
                   type="button"
+                  variant="primary"
                   onClick={() => openCollectionModal('main')}
-                  className="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold flex flex-col items-center justify-center space-y-1"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                  <span className="text-xs">Main Deck</span>
-                </button>
-                <button
+                  <span>Main Deck</span>
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => openCollectionModal('extra')}
-                  className="bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold flex flex-col items-center justify-center space-y-1"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
-                  <span className="text-xs">Extra Deck</span>
-                </button>
+                  <span>Extra Deck</span>
+                </Button>
               </div>
 
               {/* AI Deck Builder Button */}
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                className="w-full mb-4"
                 onClick={() => setShowAIModal(true)}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-semibold flex items-center justify-center space-x-2 mb-4"
+                tag="AI"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
                 <span>{isEditing ? 'Optimiser avec l\'IA' : 'Créer avec l\'IA'}</span>
-              </button>
+              </Button>
 
               {/* Quick search results */}
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -1556,23 +1559,19 @@ const DeckEditor = () => {
                 )}
               </div>
               <div className="flex space-x-3">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={resetCollectionModal}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
                 >
                   Annuler
-                </button>
-                <button
-                  onClick={handleAddSelectedCards}
+                </Button>
+                <Button
+                  variant={collectionModalType === 'main' ? 'primary' : 'secondary'}
                   disabled={totalSelectedCount === 0}
-                  className={`px-6 py-2 text-white rounded-lg transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed ${
-                    collectionModalType === 'main'
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : 'bg-purple-600 hover:bg-purple-700'
-                  }`}
+                  onClick={handleAddSelectedCards}
                 >
                   Ajouter au {collectionModalType === 'main' ? 'Main Deck' : 'Extra Deck'} ({totalSelectedCount})
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1607,15 +1606,17 @@ const DeckEditor = () => {
                 </p>
               </div>
 
-              <button
+              <Button
+                variant="primary"
+                glitch
+                className="w-full"
                 onClick={copyShareLink}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
                 Copier le lien
-              </button>
+              </Button>
             </div>
 
             {/* Modal Footer */}
@@ -1804,12 +1805,12 @@ const DeckEditor = () => {
 
               {/* Actions */}
               <div className="mt-6 flex justify-end">
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => setSelectedCardDetail(null)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                 >
                   Fermer
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1886,32 +1887,25 @@ const DeckEditor = () => {
 
             {/* Modal Footer */}
             <div className="p-4 border-t bg-gray-50 rounded-b-lg flex justify-end space-x-3">
-              <button
-                onClick={() => setShowAIModal(false)}
+              <Button
+                variant="ghost"
                 disabled={aiLoading}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
+                onClick={() => setShowAIModal(false)}
               >
                 Annuler
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                glitch
+                isLoading={aiLoading}
+                disabled={!aiPrompt.trim()}
                 onClick={handleAIBuild}
-                disabled={aiLoading || !aiPrompt.trim()}
-                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                {aiLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>Génération en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>Générer le deck</span>
-                  </>
-                )}
-              </button>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Générer le deck</span>
+              </Button>
             </div>
           </div>
         </div>

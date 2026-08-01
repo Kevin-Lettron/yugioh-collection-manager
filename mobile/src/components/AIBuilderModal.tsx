@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,7 @@ import { deckApi } from '@/services/deckApi';
 import type { AIStatus } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 type Props = {
   visible: boolean;
@@ -121,19 +121,14 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
                 ⚠️ L'IA ne pioche que dans les cartes que tu possèdes déjà.
               </Text>
 
-              <TouchableOpacity
-                style={[styles.buildBtn, (!prompt.trim() || building) && { opacity: 0.5 }]}
+              <CyberButton
+                label={building ? 'Génération… (~10-30s)' : 'Générer le deck'}
+                variant="primary"
                 onPress={handleBuild}
-                disabled={!prompt.trim() || building}>
-                {building ? (
-                  <>
-                    <ActivityIndicator color={colors.onGold} />
-                    <Text style={styles.buildBtnText}>Génération… (~10-30s)</Text>
-                  </>
-                ) : (
-                  <Text style={styles.buildBtnText}>Générer le deck</Text>
-                )}
-              </TouchableOpacity>
+                disabled={!prompt.trim()}
+                loading={building}
+                block
+              />
             </>
           ) : (
             <>
@@ -151,9 +146,7 @@ export default function AIBuilderModal({ visible, deckId, onClose, onBuilt }: Pr
                   <Text style={styles.resultNotes}>{result.notes}</Text>
                 ) : null}
               </View>
-              <TouchableOpacity style={styles.buildBtn} onPress={handleDone}>
-                <Text style={styles.buildBtnText}>Voir le résultat</Text>
-              </TouchableOpacity>
+              <CyberButton label="Voir le résultat" variant="primary" onPress={handleDone} block />
             </>
           )}
         </ScrollView>

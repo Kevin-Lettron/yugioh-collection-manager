@@ -8,7 +8,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -18,6 +17,7 @@ import type { CardLanguage } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 type Props = {
   visible: boolean;
@@ -140,19 +140,14 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
               autoCorrect={false}
               onSubmitEditing={handleSearch}
             />
-            <TouchableOpacity
+            <CyberButton
+              label="Chercher"
+              variant="secondary"
+              size="sm"
               onPress={handleSearch}
-              disabled={searchLoading || !searchQuery.trim()}
-              style={[
-                styles.searchBtn,
-                (searchLoading || !searchQuery.trim()) && { opacity: 0.5 },
-              ]}>
-              {searchLoading ? (
-                <ActivityIndicator color={colors.onGold} />
-              ) : (
-                <Text style={styles.searchBtnText}>Chercher</Text>
-              )}
-            </TouchableOpacity>
+              disabled={!searchQuery.trim()}
+              loading={searchLoading}
+            />
           </View>
 
           {result?.card && (
@@ -277,16 +272,15 @@ export default function AddCardModal({ visible, onClose, onAdded }: Props) {
                 keyboardType="number-pad"
               />
 
-              <TouchableOpacity
-                style={[styles.addBtn, !canAdd && { opacity: 0.5 }]}
+              <CyberButton
+                label="Ajouter à ma collection"
+                variant="primary"
                 onPress={handleAdd}
-                disabled={!canAdd}>
-                {adding ? (
-                  <ActivityIndicator color={colors.onGold} />
-                ) : (
-                  <Text style={styles.addBtnText}>Ajouter à ma collection</Text>
-                )}
-              </TouchableOpacity>
+                disabled={!canAdd}
+                loading={adding}
+                block
+                style={{ marginTop: 12 }}
+              />
             </>
           )}
         </ScrollView>

@@ -7,6 +7,7 @@ import { Deck, User } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const Social = () => {
   const { user } = useAuth();
@@ -235,12 +236,14 @@ const Social = () => {
                       </div>
 
                       {/* Actions */}
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full"
                         onClick={() => navigate(`/decks/${deck.id}`)}
-                        className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
                       >
                         Voir le deck
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -312,19 +315,21 @@ const Social = () => {
                   {searchUser.id !== user?.id && (
                     <div>
                       {followingIds.has(searchUser.id) ? (
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleUnfollow(searchUser.id)}
-                          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                         >
                           Ne plus suivre
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={() => handleFollow(searchUser.id)}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
                         >
                           Suivre
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}

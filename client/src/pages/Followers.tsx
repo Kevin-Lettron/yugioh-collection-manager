@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Follow } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const Followers = () => {
   const { user } = useAuth();
@@ -118,28 +119,31 @@ const Followers = () => {
           {!isSelf && (
             <>
               {isFollowing ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleUnfollow(displayUser.id)}
-                  className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                 >
                   Ne plus suivre
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => handleFollow(displayUser.id)}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
                 >
                   Suivre en retour
-                </button>
+                </Button>
               )}
             </>
           )}
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => navigate(`/profile/${displayUser.id}`)}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition text-sm font-semibold"
           >
             Voir le profil
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -213,12 +217,12 @@ const Followers = () => {
                       Partagez vos decks publics pour gagner des abonnés !
                     </p>
                     <div className="mt-6">
-                      <Link
-                        to="/social"
-                        className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                      <Button
+                        variant="primary"
+                        onClick={() => navigate('/social')}
                       >
                         Explorer le fil d'actualités
-                      </Link>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -250,12 +254,12 @@ const Followers = () => {
                       Découvrez des utilisateurs et suivez-les pour voir leurs decks dans votre fil
                     </p>
                     <div className="mt-6">
-                      <Link
-                        to="/social"
-                        className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                      <Button
+                        variant="primary"
+                        onClick={() => navigate('/social')}
                       >
                         Trouver des utilisateurs à suivre
-                      </Link>
+                      </Button>
                     </div>
                   </div>
                 )}

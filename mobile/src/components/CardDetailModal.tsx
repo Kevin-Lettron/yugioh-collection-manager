@@ -7,14 +7,14 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { collectionApi } from '@/services/collectionApi';
 import type { UserCard } from '@/types';
 import { LANGUAGE_LABELS } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
-import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import { type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 type Props = {
   visible: boolean;
@@ -41,7 +41,6 @@ const banlistColor = (status?: string) => {
 
 export default function CardDetailModal({ visible, userCard, onClose, onDeleted }: Props) {
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useAppTheme();
   const [deleting, setDeleting] = useState(false);
   const card = userCard.card;
   const attr = card?.attribute ? attributeColors[card.attribute] : null;
@@ -199,16 +198,13 @@ export default function CardDetailModal({ visible, userCard, onClose, onDeleted 
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.deleteBtn, deleting && { opacity: 0.5 }]}
+          <CyberButton
+            label="Retirer de la collection"
+            variant="danger"
             onPress={handleDelete}
-            disabled={deleting}>
-            {deleting ? (
-              <ActivityIndicator color={colors.onGold} />
-            ) : (
-              <Text style={styles.deleteBtnText}>Retirer de la collection</Text>
-            )}
-          </TouchableOpacity>
+            loading={deleting}
+            block
+          />
         </ScrollView>
       </View>
     </Modal>

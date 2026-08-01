@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export type CollectionFilterValues = {
   type: string;
@@ -134,19 +135,23 @@ export default function FiltersModal({ visible, initial, onClose, onApply }: Pro
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.footerBtn, styles.footerBtnGhost, activeCount === 0 && { opacity: 0.4 }]}
+          <CyberButton
+            label="Réinitialiser"
+            variant="ghost"
             onPress={reset}
-            disabled={activeCount === 0}>
-            <Text style={styles.footerBtnGhostText}>Réinitialiser</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.footerBtn, styles.footerBtnPrimary]}
-            onPress={() => onApply(values)}>
-            <Text style={styles.footerBtnPrimaryText}>
-              Appliquer {activeCount > 0 ? `(${activeCount})` : ''}
-            </Text>
-          </TouchableOpacity>
+            disabled={activeCount === 0}
+            block
+            style={{ flex: 1 }}
+            cutColor={colors.panel}
+          />
+          <CyberButton
+            label={`Appliquer ${activeCount > 0 ? `(${activeCount})` : ''}`.trim()}
+            variant="primary"
+            onPress={() => onApply(values)}
+            block
+            style={{ flex: 1 }}
+            cutColor={colors.panel}
+          />
         </View>
       </View>
     </Modal>

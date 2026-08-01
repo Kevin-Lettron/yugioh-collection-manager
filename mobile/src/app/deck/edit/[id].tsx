@@ -21,6 +21,7 @@ import AddCardsFromCollectionModal from '@/components/AddCardsFromCollectionModa
 import AIBuilderModal from '@/components/AIBuilderModal';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
 
 export default function DeckEditorScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -298,30 +299,43 @@ export default function DeckEditorScreen() {
 
         {/* Actions */}
         <View style={styles.actionsGrid}>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.cyan }]}
-            onPress={() => setPickerOpen('main')}>
-            <Text style={styles.actionBtnText}>+ Main</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.gold }]}
-            onPress={() => setPickerOpen('extra')}>
-            <Text style={styles.actionBtnText}>+ Extra</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.violet }]}
-            onPress={() => setAiOpen(true)}>
-            <Text style={styles.actionBtnText}>🤖 AI</Text>
-          </TouchableOpacity>
+          <CyberButton
+            label="+ Main"
+            variant="primary"
+            size="sm"
+            onPress={() => setPickerOpen('main')}
+            block
+            style={{ flex: 1 }}
+          />
+          <CyberButton
+            label="+ Extra"
+            variant="primary"
+            size="sm"
+            onPress={() => setPickerOpen('extra')}
+            block
+            style={{ flex: 1 }}
+          />
+          <CyberButton
+            label="AI"
+            variant="secondary"
+            size="sm"
+            onPress={() => setAiOpen(true)}
+            block
+            style={{ flex: 1 }}
+            tag="BOT"
+          />
         </View>
 
         {/* Main deck */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Deck principal ({mainCount})</Text>
           {mainCount > 0 && (
-            <TouchableOpacity onPress={handleClear}>
-              <Text style={styles.sectionAction}>Vider</Text>
-            </TouchableOpacity>
+            <CyberButton
+              label="Vider"
+              variant="danger"
+              size="sm"
+              onPress={handleClear}
+            />
           )}
         </View>
         <View style={styles.cardGrid}>
@@ -373,9 +387,13 @@ export default function DeckEditorScreen() {
         </View>
 
         {/* Delete */}
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-          <Text style={styles.deleteBtnText}>🗑️ Supprimer ce deck</Text>
-        </TouchableOpacity>
+        <CyberButton
+          label="Supprimer ce deck"
+          variant="danger"
+          onPress={handleDelete}
+          block
+          style={{ marginTop: 16 }}
+        />
       </ScrollView>
 
       {pickerOpen && (

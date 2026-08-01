@@ -5,6 +5,7 @@ import { User } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -253,13 +254,14 @@ const Profile = () => {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Informations du compte</h3>
                 {!editing && (
-                  <button
+                  <Button
+                    variant="primary"
+                    glitch
                     onClick={() => setEditing(true)}
                     data-edit-profile
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold whitespace-nowrap"
                   >
                     Modifier le profil
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -320,25 +322,27 @@ const Profile = () => {
                   </div>
 
                   <div className="flex space-x-3 pt-4">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      className="flex-1"
                       onClick={() => {
                         setEditing(false);
                         setUsername(user?.username || '');
                         setNewPassword('');
                         setConfirmPassword('');
                       }}
-                      className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                     >
                       Annuler
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
-                      disabled={loading}
-                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-blue-400 disabled:cursor-not-allowed"
+                      variant="primary"
+                      className="flex-1"
+                      isLoading={loading}
                     >
-                      {loading ? 'Sauvegarde...' : 'Enregistrer'}
-                    </button>
+                      Enregistrer
+                    </Button>
                   </div>
                 </form>
               ) : (

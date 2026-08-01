@@ -5,6 +5,7 @@ import { User, Deck } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
+import Button from '../components/ui/Button';
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -192,33 +193,22 @@ const UserProfile = () => {
 
               {/* Follow Button or Edit Profile Button */}
               {isOwnProfile ? (
-                <button
+                <Button
+                  variant="primary"
+                  glitch
                   onClick={() => navigate('/profile')}
-                  className="px-6 py-2 rounded-lg font-semibold transition bg-blue-600 text-white hover:bg-blue-700"
                 >
                   Modifier mon profil
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  variant={isFollowing ? 'ghost' : 'primary'}
+                  glitch={!isFollowing}
+                  isLoading={followLoading}
                   onClick={isFollowing ? handleUnfollow : handleFollow}
-                  disabled={followLoading}
-                  className={`px-6 py-2 rounded-lg font-semibold transition ${
-                    isFollowing
-                      ? 'bg-gray-600 text-white hover:bg-gray-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {followLoading ? (
-                    <span className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                      Chargement...
-                    </span>
-                  ) : isFollowing ? (
-                    'Ne plus suivre'
-                  ) : (
-                    'Suivre'
-                  )}
-                </button>
+                  {isFollowing ? 'Ne plus suivre' : 'Suivre'}
+                </Button>
               )}
             </div>
           </div>
@@ -291,12 +281,14 @@ const UserProfile = () => {
                     </div>
 
                     {/* Actions */}
-                    <button
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="w-full"
                       onClick={() => navigate(`/decks/${deck.id}`)}
-                      className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
                     >
                       Voir le deck
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
