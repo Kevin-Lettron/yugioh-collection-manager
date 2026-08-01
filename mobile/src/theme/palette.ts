@@ -31,6 +31,17 @@ export interface Palette {
   scrim: string;
   /** Fond des zones caméra : du vrai noir, jamais thémé */
   camera: string;
+  /** Trame de fond quadrillée (or ambient) */
+  grid: string;
+  /** Halo violet radial du haut de page */
+  halo: string;
+  /** Halos par rareté (rgba pour blend inline) */
+  rarityCommon: string;
+  rarityRare: string;
+  raritySuper: string;
+  rarityUltra: string;
+  raritySecret1: string;
+  raritySecret2: string;
 }
 
 export const darkPalette: Palette = {
@@ -51,6 +62,14 @@ export const darkPalette: Palette = {
   onGold: '#0B0906',
   scrim: 'rgba(0, 0, 0, 0.72)',
   camera: '#000000',
+  grid: 'rgba(245, 197, 24, 0.05)',
+  halo: 'rgba(168, 85, 247, 0.16)',
+  rarityCommon: 'rgba(255, 255, 255, 0.05)',
+  rarityRare: 'rgba(59, 130, 246, 0.4)',
+  raritySuper: 'rgba(168, 85, 247, 0.5)',
+  rarityUltra: 'rgba(245, 197, 24, 0.55)',
+  raritySecret1: 'rgba(255, 46, 136, 0.4)',
+  raritySecret2: 'rgba(34, 211, 238, 0.3)',
 };
 
 export const lightPalette: Palette = {
@@ -72,6 +91,14 @@ export const lightPalette: Palette = {
   onGold: '#FFFFFF',
   scrim: 'rgba(26, 18, 6, 0.55)',
   camera: '#000000',
+  grid: 'rgba(138, 109, 11, 0.06)',
+  halo: 'rgba(124, 58, 237, 0.10)',
+  rarityCommon: 'rgba(0, 0, 0, 0.08)',
+  rarityRare: 'rgba(29, 78, 216, 0.35)',
+  raritySuper: 'rgba(124, 58, 237, 0.45)',
+  rarityUltra: 'rgba(138, 109, 11, 0.55)',
+  raritySecret1: 'rgba(194, 24, 91, 0.4)',
+  raritySecret2: 'rgba(14, 116, 144, 0.3)',
 };
 
 /**
@@ -96,6 +123,35 @@ export const type = {
   /** Interlettrage des libellés en majuscules */
   tracking: 1.2,
   trackingWide: 2,
+} as const;
+
+/**
+ * Tokens de motion — durations et easings partages avec le web.
+ * Reanimated : `Easing.bezier(a, b, c, d)` pour recréer les cubic-bezier CSS.
+ */
+export const motion = {
+  fast: 180,
+  mid: 320,
+  slow: 600,
+  lag: 1200,
+  /** Cubic-bezier (.2, .8, .2, 1) — l'easing "confiant" par defaut */
+  easing: [0.2, 0.8, 0.2, 1] as const,
+  easingIn: [0.4, 0, 1, 1] as const,
+  easingOut: [0, 0, 0.2, 1] as const,
+} as const;
+
+/**
+ * Spacing selon la grille 8 (charte §7.2).
+ */
+export const spacing = {
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 24,
+  6: 32,
+  7: 48,
+  8: 64,
 } as const;
 
 export type ThemeName = 'dark' | 'light';

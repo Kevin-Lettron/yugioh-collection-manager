@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+<div style="{{ outerStyle }}">
+<div style="{{ deviceStyle }}">
+
+<sc-if value="{{ showGlyphs }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden">
+<svg style="position:absolute;top:14%;left:-22px;width:112px;height:112px;color:#A855F7;opacity:.09;animation:sanFloat 12s ease-in-out infinite"><use href="#i-glyph-pyramid"></use></svg>
+<svg style="position:absolute;top:52%;right:-30px;width:132px;height:132px;color:#F5C518;opacity:.06;animation:sanFloat 12s ease-in-out -3s infinite"><use href="#i-glyph-eye"></use></svg>
+<svg style="position:absolute;bottom:16%;left:28%;width:62px;height:62px;color:#A855F7;opacity:.07;animation:sanFloat 12s ease-in-out -6s infinite"><use href="#i-glyph-pyramid"></use></svg>
+<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(245,197,24,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(245,197,24,.05) 1px,transparent 1px);background-size:44px 44px"></div>
+<div style="position:absolute;inset:0;background:radial-gradient(ellipse 90% 45% at 50% -8%,rgba(168,85,247,.16),transparent 70%)"></div>
+</div>
+</sc-if>
+
+<div style="{{ statusStyle }}">
+<span>9:41</span>
+<span style="display:flex;gap:6px;align-items:center;opacity:.85;font-size:10px">
+<svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="2" height="6"></rect><rect x="4" y="2" width="2" height="8"></rect><rect x="8" y="0" width="2" height="10"></rect><rect x="12" y="0" width="2" height="10" opacity=".5"></rect></svg>
+<svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="14" height="9" rx="1.5"></rect><rect x="15.5" y="3" width="1.5" height="4" fill="currentColor"></rect><rect x="2" y="2" width="10" height="6" fill="currentColor"></rect></svg>
+</span>
+</div>
+
+<sc-if value="{{ showChrome }}" hint-placeholder-val="{{ true }}">
+<div style="{{ headerStyle }}">
+<div style="display:flex;align-items:center;gap:8px">
+<svg viewBox="0 0 32 32" style="width:26px;height:26px;color:#F5C518;filter:drop-shadow(0 0 7px rgba(245,197,24,.35))"><use href="#i-millennium"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-weight:900;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#F5EFE0">Keit<span style="color:#F5C518">land</span></span>
+</div>
+<div style="display:flex;gap:10px;align-items:center">
+<button style="width:34px;height:34px;border:1px solid #3A2E1C;background:transparent;color:#A99C86;display:grid;place-items:center;cursor:pointer;position:relative;clip-path:polygon(15% 0,100% 0,100% 85%,85% 100%,0 100%,0 15%)" style-hover="border-color:#F5C518;color:#F5C518">
+<svg width="16" height="16"><use href="#i-bell"></use></svg>
+<span style="position:absolute;top:4px;right:4px;width:6px;height:6px;background:#FF2E88;border-radius:50%;box-shadow:0 0 6px #FF2E88"></span>
+</button>
+<button onClick="{{ goProfile }}" style="width:34px;height:34px;background:linear-gradient(135deg,#A855F7,#C29A0F);color:#0B0906;display:grid;place-items:center;font-family:Orbitron,sans-serif;font-size:12px;font-weight:900;cursor:pointer;border:1px solid #F5C518;clip-path:polygon(50% 0,100% 30%,100% 70%,50% 100%,0 70%,0 30%)">PA</button>
+</div>
+</div>
+<svg style="position:absolute;top:92px;left:8px;width:44px;height:44px;color:#F5C518;opacity:.4;z-index:10;pointer-events:none"><use href="#i-corner"></use></svg>
+<svg style="position:absolute;top:92px;right:8px;width:44px;height:44px;color:#F5C518;opacity:.4;z-index:10;pointer-events:none;transform:scaleX(-1)"><use href="#i-corner"></use></svg>
+</sc-if>
+
+<div style="{{ bodyStyle }}">
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;padding:0 22px;min-height:100%;display:flex;flex-direction:column">
+<div style="position:absolute;left:50%;top:-40px;transform:translateX(-50%);width:520px;height:420px;background:radial-gradient(ellipse at 50% 30%,rgba(168,85,247,.28),transparent 62%);pointer-events:none"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:300px;background:linear-gradient(180deg,transparent,rgba(245,197,24,.07));pointer-events:none"></div>
+<div style="display:flex;justify-content:center;gap:0;margin-top:72px;opacity:.5;pointer-events:none">
+<div style="width:26px;height:150px;background:linear-gradient(180deg,rgba(58,46,28,.9),rgba(11,9,6,0));border-left:1px solid rgba(245,197,24,.22);border-right:1px solid rgba(245,197,24,.1);margin-right:34px"></div>
+<div style="width:34px;height:200px;background:linear-gradient(180deg,rgba(58,46,28,.95),rgba(11,9,6,0));border-left:1px solid rgba(245,197,24,.28);border-right:1px solid rgba(245,197,24,.12);margin-right:34px"></div>
+<div style="width:26px;height:150px;background:linear-gradient(180deg,rgba(58,46,28,.9),rgba(11,9,6,0));border-left:1px solid rgba(245,197,24,.22);border-right:1px solid rgba(245,197,24,.1)"></div>
+</div>
+<div style="position:relative;margin-top:-176px;display:flex;flex-direction:column;align-items:center;text-align:center">
+<svg viewBox="0 0 32 32" style="width:74px;height:74px;color:#F5C518;filter:drop-shadow(0 0 22px rgba(245,197,24,.45));animation:sanBreath 4s ease-in-out infinite"><use href="#i-millennium"></use></svg>
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:11px;letter-spacing:.3em;color:#F5C518;text-transform:uppercase;margin-top:20px">— Sanctuaire du Millénium —</div>
+<h1 style="margin-top:10px;font-family:Orbitron,sans-serif;font-size:33px;font-weight:900;line-height:.96;letter-spacing:.02em;text-transform:uppercase;background:linear-gradient(180deg,#F5EFE0,#C29A0F);-webkit-background-clip:text;background-clip:text;color:transparent">Ta collection<br>mérite un temple</h1>
+<p style="margin-top:14px;font-size:15px;line-height:1.5;color:#A99C86;max-width:290px;text-wrap:pretty">Scanne tes cartes, dresse tes decks, expose ton sanctuaire. Ce que tu as rassemblé se regarde enfin.</p>
+</div>
+<div style="position:relative;margin-top:30px;display:flex;flex-direction:column;gap:12px;align-items:center">
+<button onClick="{{ goRegister }}" style="width:230px;height:52px;position:relative;isolation:isolate;border:0;background:transparent;color:#0B0906;font-family:Orbitron,sans-serif;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer" style-hover="filter:brightness(1.08)">
+<span style="position:absolute;inset:0;background:#A855F7;transform:translate(5px,0);clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+<span style="position:absolute;inset:0;background:#F5C518;clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+Ouvrir mon sanctuaire
+</button>
+<button onClick="{{ goLogin }}" style="width:230px;height:46px;border:1px solid #F5C518;background:transparent;color:#F5EFE0;font-family:Orbitron,sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)" style-hover="background:rgba(245,197,24,.12)">J'ai déjà un compte</button>
+</div>
+<div style="position:relative;margin-top:34px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#3A2E1C;border:1px solid #3A2E1C;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px))">
+<div style="padding:12px 8px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;align-items:center;gap:4px">
+<svg width="20" height="20" style="color:#F5C518"><use href="#i-scan"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.14em;color:#A99C86;text-transform:uppercase;text-align:center">Scan IA</span>
+</div>
+<div style="padding:12px 8px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;align-items:center;gap:4px">
+<svg width="20" height="20" style="color:#F5C518"><use href="#tab-decks"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.14em;color:#A99C86;text-transform:uppercase;text-align:center">Decks</span>
+</div>
+<div style="padding:12px 8px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;align-items:center;gap:4px">
+<svg width="20" height="20" style="color:#F5C518"><use href="#tab-social"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.14em;color:#A99C86;text-transform:uppercase;text-align:center">Vitrine</span>
+</div>
+</div>
+<div style="position:relative;margin-top:auto;padding:20px 0 8px;display:flex;align-items:center;gap:10px;justify-content:center">
+<span style="height:1px;width:56px;background:linear-gradient(90deg,transparent,#3A2E1C)"></span>
+<span style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:.16em;color:#A99C86;text-transform:uppercase">3 214 duellistes</span>
+<span style="height:1px;width:56px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;padding:0 26px;min-height:100%;display:flex;flex-direction:column;justify-content:center">
+<div style="position:absolute;left:50%;top:60px;transform:translateX(-50%);width:460px;height:340px;background:radial-gradient(ellipse at 50% 40%,rgba(168,85,247,.22),transparent 65%);pointer-events:none"></div>
+<div style="position:relative;display:flex;flex-direction:column;align-items:center;margin-bottom:26px">
+<svg viewBox="0 0 32 32" style="width:52px;height:52px;color:#F5C518;filter:drop-shadow(0 0 16px rgba(245,197,24,.4))"><use href="#i-millennium"></use></svg>
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase;margin-top:14px">{{ authKicker }}</div>
+<h1 style="margin-top:6px;font-family:Orbitron,sans-serif;font-size:26px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:#F5EFE0;text-align:center">{{ authTitle }}</h1>
+</div>
+<div style="position:relative;display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ authFields }}" as="f" hint-placeholder-count="3">
+<label style="display:flex;flex-direction:column;gap:5px">
+<span style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:.2em;color:#A99C86;text-transform:uppercase">{{ f.label }}</span>
+<input type="{{ f.type }}" placeholder="{{ f.ph }}" style="width:100%;padding:13px 14px;background:#14100A;border:1px solid #3A2E1C;border-left:2px solid #F5C518;color:#F5EFE0;font-family:Rajdhani,sans-serif;font-size:15px;outline:none;clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)" style-focus="border-color:#F5C518;box-shadow:0 0 18px rgba(245,197,24,.2)">
+</label>
+</sc-for>
+<button onClick="{{ goCollection }}" style="margin-top:8px;width:100%;height:52px;position:relative;isolation:isolate;border:0;background:transparent;color:#0B0906;font-family:Orbitron,sans-serif;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer" style-hover="filter:brightness(1.08)">
+<span style="position:absolute;inset:0;background:#A855F7;transform:translate(5px,0);clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+<span style="position:absolute;inset:0;background:#F5C518;clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+{{ authCta }}
+</button>
+<div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+<span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#3A2E1C)"></span>
+<svg viewBox="0 0 40 40" style="width:16px;height:16px;color:#C29A0F;opacity:.8"><use href="#i-glyph-eye"></use></svg>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+</div>
+<button style="width:100%;height:46px;border:1px solid #3A2E1C;background:#1A1510;color:#A99C86;font-family:Orbitron,sans-serif;font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)" style-hover="border-color:#C29A0F;color:#F5EFE0">Continuer avec Discord</button>
+<button onClick="{{ toggleAuth }}" style="margin-top:4px;background:transparent;border:0;color:#A99C86;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:.04em;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(245,197,24,.4)">{{ authSwitch }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCollection }}" hint-placeholder-val="{{ true }}">
+<div style="padding:18px 20px 96px">
+<div style="padding-bottom:16px;border-bottom:1px solid #3A2E1C">
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase;margin-bottom:4px">— Vitrine du Millénium —</div>
+<h1 style="font-family:Orbitron,sans-serif;font-size:32px;font-weight:900;letter-spacing:.03em;line-height:.95;text-transform:uppercase;background:linear-gradient(180deg,#F5EFE0,#C29A0F);-webkit-background-clip:text;background-clip:text;color:transparent">Ma Collection</h1>
+<p style="margin-top:6px;font-size:13px;color:#A99C86;letter-spacing:.04em">3 214 cartes rassemblées.</p>
+<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#3A2E1C;border:1px solid #3A2E1C;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px))">
+<div style="padding:12px 14px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden">
+<span style="position:absolute;top:0;left:0;width:3px;height:100%;background:#F5C518;opacity:.6"></span>
+<span style="font-family:Orbitron,sans-serif;font-size:9px;color:#A99C86;letter-spacing:.2em;text-transform:uppercase">Ultra rares +</span>
+<span style="font-family:Orbitron,sans-serif;font-size:22px;font-weight:700;color:#F5C518;font-variant-numeric:tabular-nums;line-height:1">128</span>
+</div>
+<div style="padding:12px 14px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden">
+<span style="position:absolute;top:0;left:0;width:3px;height:100%;background:#F5C518;opacity:.6"></span>
+<span style="font-family:Orbitron,sans-serif;font-size:9px;color:#A99C86;letter-spacing:.2em;text-transform:uppercase">Valeur estimée</span>
+<span style="font-family:Orbitron,sans-serif;font-size:22px;font-weight:700;color:#F5EFE0;font-variant-numeric:tabular-nums;line-height:1">2 840 €</span>
+</div>
+</div>
+</div>
+<div style="margin-top:18px;display:flex;gap:8px;align-items:stretch">
+<div style="flex:1;position:relative">
+<svg width="16" height="16" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#F5C518;pointer-events:none"><use href="#i-search"></use></svg>
+<input placeholder="Cherche une carte…" style="width:100%;padding:11px 14px 11px 38px;background:#1A1510;border:1px solid #3A2E1C;border-left:3px solid #F5C518;color:#F5EFE0;font-family:Rajdhani,sans-serif;font-size:14px;outline:none;clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)" style-focus="border-color:#F5C518;box-shadow:0 0 0 2px rgba(245,197,24,.15)">
+</div>
+<button style="width:44px;background:#221B12;border:1px solid #3A2E1C;color:#F5C518;display:grid;place-items:center;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)" style-hover="border-color:#F5C518;box-shadow:0 0 10px rgba(245,197,24,.35)">
+<svg width="18" height="18"><use href="#i-filter"></use></svg>
+</button>
+</div>
+<div style="margin-top:14px;display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
+<sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+<button onClick="{{ c.onSelect }}" style="{{ c.style }}">{{ c.label }}<span style="{{ c.badgeStyle }}">{{ c.count }}</span></button>
+</sc-for>
+</div>
+<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<sc-for list="{{ cards }}" as="card" hint-placeholder-count="8">
+<div onClick="{{ card.onOpen }}" style="{{ card.tileStyle }}">
+<div style="{{ card.artStyle }}">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(168,85,247,.05) 8px 9px),linear-gradient(150deg,#221B12,#14100A)"></div>
+<div style="{{ card.sheenStyle }}"></div>
+<span style="position:absolute;top:6px;right:6px;padding:3px 8px;background:linear-gradient(135deg,#0B0906,#1A1510);border:1px solid #F5C518;color:#F5C518;font-family:Orbitron,sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;clip-path:polygon(0 0,100% 0,100% 100%,5px 100%,0 calc(100% - 5px));box-shadow:0 0 6px rgba(245,197,24,.35);z-index:3">{{ card.qty }}</span>
+<span style="{{ card.langStyle }}">{{ card.langLabel }}</span>
+<sc-if value="{{ card.banned }}" hint-placeholder-val="{{ false }}">
+<span style="position:absolute;bottom:6px;left:6px;display:flex;align-items:center;gap:3px;padding:2px 6px;background:rgba(11,9,6,.9);border:1px solid #FF4D6D;color:#FF4D6D;font-family:Orbitron,sans-serif;font-size:8px;font-weight:700;letter-spacing:.08em;z-index:3">
+<svg width="8" height="8"><use href="#i-close"></use></svg>LIMITÉ 1
+</span>
+</sc-if>
+<svg viewBox="0 0 60 100" style="position:relative;width:55%;height:55%;color:#F5C518;opacity:.3"><use href="#i-card"></use></svg>
+</div>
+<div style="{{ card.plinthStyle }}"></div>
+<div style="padding:6px 4px 0;display:flex;flex-direction:column;gap:2px">
+<div style="font-family:Orbitron,sans-serif;font-size:10px;font-weight:600;color:#F5EFE0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ card.name }}</div>
+<div style="display:flex;justify-content:space-between;font-size:9px;color:#A99C86;letter-spacing:.03em">
+<span style="{{ card.rarityStyle }}">{{ card.rarity }}</span>
+<span>{{ card.code }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isArena }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px 18px 96px">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+<div>
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase">— Arène · Variante A —</div>
+<h1 style="margin-top:4px;font-family:Orbitron,sans-serif;font-size:22px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#F5EFE0;line-height:1">Sanctuaire<br>Draconique</h1>
+<div style="margin-top:6px;font-size:12px;color:#A99C86">par <span style="color:#A855F7">@kaiba_pa</span> · maj. il y a 2 j</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+<button onClick="{{ toggleLike }}" style="{{ likeStyle }}"><svg width="13" height="13"><use href="#i-heart"></use></svg>{{ likes }}</button>
+<button style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid #3A2E1C;background:#1A1510;color:#A99C86;font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%)" style-hover="border-color:#22D3EE;color:#22D3EE"><svg width="13" height="13"><use href="#i-comment"></use></svg>34</button>
+</div>
+</div>
+
+<div style="margin-top:18px;padding:18px 12px 14px;background:linear-gradient(180deg,#14100A,#0B0906);border:1px solid #3A2E1C;position:relative;overflow:hidden;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))">
+<div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 100%,rgba(168,85,247,.18),transparent 70%);pointer-events:none"></div>
+<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(245,197,24,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(245,197,24,.06) 1px,transparent 1px);background-size:26px 26px;pointer-events:none"></div>
+<div style="position:relative;transform:perspective(640px) rotateX(16deg);transform-origin:50% 100%;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;justify-content:center;gap:7px">
+<sc-for list="{{ arenaBack }}" as="z" hint-placeholder-count="5">
+<div style="{{ z.style }}"><span style="font-family:Orbitron,sans-serif;font-size:7px;letter-spacing:.1em;color:#A99C86;opacity:.7">{{ z.label }}</span></div>
+</sc-for>
+</div>
+<div style="display:flex;justify-content:center;gap:7px">
+<sc-for list="{{ arenaFront }}" as="z" hint-placeholder-count="5">
+<div style="{{ z.style }}"><span style="font-family:Orbitron,sans-serif;font-size:7px;letter-spacing:.1em;color:#A99C86;opacity:.7">{{ z.label }}</span></div>
+</sc-for>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+<div style="width:44px;height:30px;border:1px dashed rgba(34,211,238,.5);display:grid;place-items:center;font-family:Orbitron,sans-serif;font-size:7px;color:#22D3EE;letter-spacing:.08em">EXTRA</div>
+<div style="width:56px;height:24px;border:1px solid rgba(245,197,24,.35);display:grid;place-items:center;font-family:Orbitron,sans-serif;font-size:7px;color:#C29A0F;letter-spacing:.1em">TERRAIN</div>
+<div style="width:44px;height:30px;border:1px dashed rgba(255,46,136,.45);display:grid;place-items:center;font-family:Orbitron,sans-serif;font-size:7px;color:#FF2E88;letter-spacing:.08em">CIM.</div>
+</div>
+</div>
+<div style="position:relative;margin-top:14px;display:flex;justify-content:center;gap:8px">
+<sc-for list="{{ arenaCounters }}" as="k" hint-placeholder-count="3">
+<div style="padding:6px 12px;background:#1A1510;border:1px solid #3A2E1C;display:flex;flex-direction:column;align-items:center;gap:1px;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.16em;color:#A99C86;text-transform:uppercase">{{ k.label }}</span>
+<span style="{{ k.valueStyle }}">{{ k.value }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="margin-top:20px;display:flex;align-items:center;gap:8px">
+<span style="font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#F5C518">Cartes clés</span>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+</div>
+<div style="margin-top:12px;display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">
+<sc-for list="{{ keyCards }}" as="card" hint-placeholder-count="4">
+<div style="flex:none;width:88px">
+<div style="{{ card.artStyle }}">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(168,85,247,.05) 8px 9px),linear-gradient(150deg,#221B12,#14100A)"></div>
+<span style="position:absolute;top:5px;right:5px;padding:2px 6px;background:#0B0906;border:1px solid #F5C518;color:#F5C518;font-family:Orbitron,sans-serif;font-size:8px;font-weight:700">{{ card.qty }}</span>
+<svg viewBox="0 0 60 100" style="position:relative;width:55%;height:55%;color:#F5C518;opacity:.3"><use href="#i-card"></use></svg>
+</div>
+<div style="margin-top:5px;font-family:Orbitron,sans-serif;font-size:8px;color:#F5EFE0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ card.name }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="margin-top:18px;display:flex;gap:10px">
+<button style="flex:1;height:46px;position:relative;isolation:isolate;border:0;background:transparent;color:#0B0906;font-family:Orbitron,sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer" style-hover="filter:brightness(1.08)">
+<span style="position:absolute;inset:0;background:#A855F7;transform:translate(5px,0);clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+<span style="position:absolute;inset:0;background:#F5C518;clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+Copier ce deck
+</button>
+<button onClick="{{ goList }}" style="width:120px;height:46px;border:1px solid #F5C518;background:transparent;color:#F5EFE0;font-family:Orbitron,sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)" style-hover="background:rgba(245,197,24,.12)">Vue liste →</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px 18px 96px">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+<div>
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase">— Grimoire · Variante B —</div>
+<h1 style="margin-top:4px;font-family:Orbitron,sans-serif;font-size:22px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#F5EFE0;line-height:1">Sanctuaire<br>Draconique</h1>
+<div style="margin-top:6px;font-size:12px;color:#A99C86">par <span style="color:#A855F7">@kaiba_pa</span> · 40 · 12 · 9</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+<button onClick="{{ toggleLike }}" style="{{ likeStyle }}"><svg width="13" height="13"><use href="#i-heart"></use></svg>{{ likes }}</button>
+<button style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid #3A2E1C;background:#1A1510;color:#A99C86;font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%)" style-hover="border-color:#22D3EE;color:#22D3EE"><svg width="13" height="13"><use href="#i-comment"></use></svg>34</button>
+</div>
+</div>
+
+<div style="margin-top:16px;padding:12px 14px;background:linear-gradient(135deg,#1A1510,#221B12);border:1px solid #3A2E1C;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))">
+<div style="display:flex;justify-content:space-between;font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:.16em;color:#A99C86;text-transform:uppercase">
+<span>Répartition</span><span style="color:#F5C518;font-variant-numeric:tabular-nums">40 / 40</span>
+</div>
+<div style="margin-top:8px;height:8px;display:flex;gap:2px">
+<div style="flex:22;background:linear-gradient(90deg,#C29A0F,#F5C518)"></div>
+<div style="flex:12;background:linear-gradient(90deg,#7C3AED,#A855F7)"></div>
+<div style="flex:6;background:linear-gradient(90deg,#0E7490,#22D3EE)"></div>
+</div>
+<div style="margin-top:8px;display:flex;gap:12px;font-size:11px;color:#A99C86">
+<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:#F5C518"></span>Monstres 22</span>
+<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:#A855F7"></span>Magies 12</span>
+<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:#22D3EE"></span>Pièges 6</span>
+</div>
+</div>
+
+<sc-for list="{{ deckSections }}" as="sec" hint-placeholder-count="3">
+<div style="margin-top:20px">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#F5C518">{{ sec.title }}</span>
+<span style="font-family:Orbitron,sans-serif;font-size:11px;color:#A99C86;font-variant-numeric:tabular-nums">{{ sec.count }}</span>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+</div>
+<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+<sc-for list="{{ sec.rows }}" as="row" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:#14100A;border:1px solid #3A2E1C;border-left:2px solid {{ row.accent }};clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)">
+<div style="{{ row.thumbStyle }}"><svg viewBox="0 0 60 100" style="width:14px;height:22px;color:#F5C518;opacity:.4"><use href="#i-card"></use></svg></div>
+<div style="flex:1;min-width:0">
+<div style="font-family:Orbitron,sans-serif;font-size:10px;font-weight:600;color:#F5EFE0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.name }}</div>
+<div style="font-size:10px;color:#A99C86;letter-spacing:.04em">{{ row.meta }}</div>
+</div>
+<span style="font-family:Orbitron,sans-serif;font-size:11px;font-weight:700;color:#F5C518;font-variant-numeric:tabular-nums">{{ row.qty }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="margin-top:20px;display:flex;gap:10px">
+<button style="flex:1;height:46px;position:relative;isolation:isolate;border:0;background:transparent;color:#0B0906;font-family:Orbitron,sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer" style-hover="filter:brightness(1.08)">
+<span style="position:absolute;inset:0;background:#A855F7;transform:translate(5px,0);clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+<span style="position:absolute;inset:0;background:#F5C518;clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+Copier ce deck
+</button>
+<button onClick="{{ goArena }}" style="width:120px;height:46px;border:1px solid #F5C518;background:transparent;color:#F5EFE0;font-family:Orbitron,sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)" style-hover="background:rgba(245,197,24,.12)">← Vue arène</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEditor }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;height:100%">
+<div style="padding:14px 18px 12px;border-bottom:1px solid #3A2E1C;background:linear-gradient(180deg,#14100A,#0B0906)">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<div>
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:9px;letter-spacing:.26em;color:#F5C518;text-transform:uppercase">— Atelier —</div>
+<div style="margin-top:2px;font-family:Orbitron,sans-serif;font-size:15px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#F5EFE0">Nouveau deck</div>
+</div>
+<button style="display:flex;align-items:center;gap:5px;padding:8px 12px;border:1px solid #A855F7;background:rgba(168,85,247,.12);color:#A855F7;font-family:Orbitron,sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)" style-hover="background:rgba(168,85,247,.24)"><svg width="12" height="12"><use href="#i-shuffle"></use></svg>Auto IA</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px">
+<sc-for list="{{ editorCounters }}" as="k" hint-placeholder-count="3">
+<div style="{{ k.style }}">
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.16em;text-transform:uppercase;opacity:.75">{{ k.label }}</span>
+<span style="font-family:Orbitron,sans-serif;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums">{{ k.value }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="flex:1;overflow-y:auto;padding:14px 18px 12px">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#F5C518">Deck principal</span>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+<span style="font-size:10px;color:#A99C86">appui long = retirer</span>
+</div>
+<div style="margin-top:10px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px">
+<sc-for list="{{ slots }}" as="s" hint-placeholder-count="24">
+<div onClick="{{ s.onTap }}" style="{{ s.style }}">
+<sc-if value="{{ s.filled }}" hint-placeholder-val="{{ true }}">
+<svg viewBox="0 0 60 100" style="width:70%;height:70%;color:#F5C518;opacity:.35"><use href="#i-card"></use></svg>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="border-top:1px solid #3A2E1C;background:linear-gradient(180deg,#14100A,#1A1510);padding:12px 18px 88px">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#F5C518">Ma collection</span>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+<svg width="14" height="14" style="color:#A99C86"><use href="#i-search"></use></svg>
+</div>
+<div style="margin-top:10px;display:flex;gap:9px;overflow-x:auto;padding-bottom:4px">
+<sc-for list="{{ pool }}" as="card" hint-placeholder-count="6">
+<div style="flex:none;width:74px">
+<div style="{{ card.artStyle }}">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(168,85,247,.05) 8px 9px),linear-gradient(150deg,#221B12,#14100A)"></div>
+<svg viewBox="0 0 60 100" style="position:relative;width:52%;height:52%;color:#F5C518;opacity:.3"><use href="#i-card"></use></svg>
+<button onClick="{{ card.onAdd }}" style="position:absolute;bottom:4px;right:4px;width:20px;height:20px;border:1px solid #F5C518;background:rgba(11,9,6,.9);color:#F5C518;display:grid;place-items:center;cursor:pointer;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)" style-hover="background:#F5C518;color:#0B0906"><svg width="10" height="10"><use href="#i-plus"></use></svg></button>
+</div>
+<div style="margin-top:4px;font-family:Orbitron,sans-serif;font-size:7px;color:#A99C86;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ card.name }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSocial }}" hint-placeholder-val="{{ true }}">
+<div style="padding:18px 20px 96px">
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase">— Vitrines ouvertes —</div>
+<h1 style="margin-top:4px;font-family:Orbitron,sans-serif;font-size:28px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;background:linear-gradient(180deg,#F5EFE0,#C29A0F);-webkit-background-clip:text;background-clip:text;color:transparent">Social</h1>
+<div style="margin-top:14px;display:flex;gap:6px">
+<sc-for list="{{ sortTabs }}" as="s" hint-placeholder-count="3">
+<button onClick="{{ s.onSelect }}" style="{{ s.style }}">{{ s.label }}</button>
+</sc-for>
+</div>
+<div style="margin-top:16px;display:flex;flex-direction:column;gap:14px">
+<sc-for list="{{ feed }}" as="post" hint-placeholder-count="3">
+<div style="background:linear-gradient(135deg,#1A1510,#14100A);border:1px solid #3A2E1C;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));cursor:pointer" style-hover="border-color:#C29A0F">
+<div style="position:relative;height:96px;overflow:hidden;background:linear-gradient(120deg,#221B12,#0B0906)">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(168,85,247,.05) 10px 11px)"></div>
+<div style="position:absolute;inset:0;background:{{ post.wash }}"></div>
+<div style="position:absolute;left:14px;top:14px;display:flex;gap:-10px">
+<div style="width:44px;height:66px;border:1px solid rgba(245,197,24,.5);background:linear-gradient(150deg,#221B12,#14100A);display:grid;place-items:center;transform:rotate(-8deg);box-shadow:0 6px 14px rgba(0,0,0,.5)"><svg viewBox="0 0 60 100" style="width:60%;height:60%;color:#F5C518;opacity:.3"><use href="#i-card"></use></svg></div>
+<div style="width:44px;height:66px;border:1px solid rgba(168,85,247,.5);background:linear-gradient(150deg,#221B12,#14100A);display:grid;place-items:center;margin-left:-14px;transform:rotate(4deg);box-shadow:0 6px 14px rgba(0,0,0,.5)"><svg viewBox="0 0 60 100" style="width:60%;height:60%;color:#A855F7;opacity:.35"><use href="#i-card"></use></svg></div>
+<div style="width:44px;height:66px;border:1px solid rgba(34,211,238,.45);background:linear-gradient(150deg,#221B12,#14100A);display:grid;place-items:center;margin-left:-14px;transform:rotate(13deg);box-shadow:0 6px 14px rgba(0,0,0,.5)"><svg viewBox="0 0 60 100" style="width:60%;height:60%;color:#22D3EE;opacity:.3"><use href="#i-card"></use></svg></div>
+</div>
+<span style="position:absolute;right:12px;top:12px;padding:3px 8px;background:rgba(11,9,6,.8);border:1px solid #3A2E1C;color:#C29A0F;font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.14em;text-transform:uppercase">{{ post.tag }}</span>
+</div>
+<div style="padding:12px 14px 14px">
+<div style="font-family:Orbitron,sans-serif;font-size:14px;font-weight:700;color:#F5EFE0;letter-spacing:.02em">{{ post.name }}</div>
+<div style="margin-top:4px;font-size:12px;color:#A99C86">par <span style="color:#A855F7">{{ post.author }}</span> · {{ post.when }}</div>
+<div style="margin-top:10px;display:flex;align-items:center;gap:14px">
+<span style="display:flex;align-items:center;gap:5px;font-family:Orbitron,sans-serif;font-size:10px;color:#FF2E88;font-variant-numeric:tabular-nums"><svg width="12" height="12"><use href="#i-heart"></use></svg>{{ post.likes }}</span>
+<span style="display:flex;align-items:center;gap:5px;font-family:Orbitron,sans-serif;font-size:10px;color:#A99C86;font-variant-numeric:tabular-nums"><svg width="12" height="12"><use href="#i-comment"></use></svg>{{ post.comments }}</span>
+<span style="flex:1"></span>
+<span style="font-family:Orbitron,sans-serif;font-size:10px;color:#F5C518;font-variant-numeric:tabular-nums">{{ post.ratio }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+<div style="padding:0 0 96px">
+<div style="position:relative;padding:24px 20px 20px;background:linear-gradient(180deg,rgba(168,85,247,.14),transparent);border-bottom:1px solid #3A2E1C">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="width:66px;height:66px;background:linear-gradient(135deg,#A855F7,#C29A0F);color:#0B0906;display:grid;place-items:center;font-family:Orbitron,sans-serif;font-size:22px;font-weight:900;border:1px solid #F5C518;clip-path:polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%);box-shadow:0 0 24px rgba(245,197,24,.3)">PA</div>
+<div>
+<div style="font-family:Orbitron,sans-serif;font-size:19px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:#F5EFE0">@kaiba_pa</div>
+<div style="margin-top:3px;font-size:12px;color:#A99C86">Gardien du sanctuaire · depuis 2019</div>
+<div style="margin-top:8px;display:flex;gap:5px">
+<span style="display:flex;align-items:center;gap:3px;padding:3px 7px;border:1px solid #C29A0F;color:#F5C518;font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.1em;text-transform:uppercase"><svg width="9" height="9"><use href="#i-star"></use></svg>Top 5%</span>
+<span style="padding:3px 7px;border:1px solid #3A2E1C;color:#A99C86;font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.1em;text-transform:uppercase">1 000 scans</span>
+</div>
+</div>
+</div>
+<div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#3A2E1C;border:1px solid #3A2E1C;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px))">
+<sc-for list="{{ profileStats }}" as="s" hint-placeholder-count="3">
+<div style="padding:11px 10px;background:linear-gradient(135deg,#1A1510,#221B12);display:flex;flex-direction:column;gap:2px;align-items:center">
+<span style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:.16em;color:#A99C86;text-transform:uppercase">{{ s.label }}</span>
+<span style="font-family:Orbitron,sans-serif;font-size:18px;font-weight:700;color:#F5EFE0;font-variant-numeric:tabular-nums">{{ s.value }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="padding:18px 20px 0">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#F5C518">Mes decks</span>
+<span style="flex:1;height:1px;background:linear-gradient(90deg,#3A2E1C,transparent)"></span>
+</div>
+<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<sc-for list="{{ myDecks }}" as="d" hint-placeholder-count="3">
+<div onClick="{{ d.onOpen }}" style="padding:12px;background:linear-gradient(135deg,#1A1510,#14100A);border:1px solid #3A2E1C;cursor:pointer;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))" style-hover="border-color:#C29A0F">
+<div style="height:46px;display:flex;align-items:center;gap:-8px">
+<div style="width:30px;height:44px;border:1px solid rgba(245,197,24,.4);background:linear-gradient(150deg,#221B12,#14100A);transform:rotate(-6deg)"></div>
+<div style="width:30px;height:44px;border:1px solid rgba(168,85,247,.4);background:linear-gradient(150deg,#221B12,#14100A);margin-left:-10px;transform:rotate(6deg)"></div>
+</div>
+<div style="margin-top:8px;font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;color:#F5EFE0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.name }}</div>
+<div style="margin-top:3px;display:flex;justify-content:space-between;font-size:10px;color:#A99C86"><span>{{ d.count }}</span><span style="color:#FF2E88">♥ {{ d.likes }}</span></div>
+</div>
+</sc-for>
+<div style="padding:12px;border:1px dashed #3A2E1C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px;cursor:pointer" style-hover="border-color:#C29A0F">
+<svg viewBox="0 0 64 64" style="width:38px;height:38px;color:#C29A0F;opacity:.6"><use href="#i-empty-deck"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:.12em;color:#A99C86;text-transform:uppercase;text-align:center">Dresser<br>un deck</span>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isStates }}" hint-placeholder-val="{{ true }}">
+<div style="padding:18px 20px 96px">
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase">— Interstices —</div>
+<h1 style="margin-top:4px;font-family:Orbitron,sans-serif;font-size:26px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:#F5EFE0">États</h1>
+<div style="margin-top:18px;padding:26px 18px;background:linear-gradient(135deg,#1A1510,#14100A);border:1px solid #3A2E1C;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))">
+<svg viewBox="0 0 64 64" style="width:64px;height:64px;color:#C29A0F;opacity:.75"><use href="#i-empty-card"></use></svg>
+<div style="font-family:Orbitron,sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#F5EFE0">Le socle est nu</div>
+<p style="font-size:13px;color:#A99C86;max-width:230px;text-wrap:pretty">Aucune carte ici. Scanne ta première relique pour ouvrir la vitrine.</p>
+<button style="margin-top:4px;height:44px;padding:0 26px;position:relative;isolation:isolate;border:0;background:transparent;color:#0B0906;font-family:Orbitron,sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">
+<span style="position:absolute;inset:0;background:#A855F7;transform:translate(5px,0);clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+<span style="position:absolute;inset:0;background:#F5C518;clip-path:polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%);z-index:-1"></span>
+Scanner une carte
+</button>
+</div>
+<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<sc-for list="{{ skeletons }}" as="s" hint-placeholder-count="2">
+<div>
+<div style="aspect-ratio:59/82;background:linear-gradient(100deg,#1A1510 30%,#2A2216 50%,#1A1510 70%);background-size:220% 100%;animation:sanShimmer 1.6s linear infinite;border:1px solid #3A2E1C;clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%)"></div>
+<div style="margin-top:6px;height:9px;width:76%;background:linear-gradient(100deg,#1A1510 30%,#2A2216 50%,#1A1510 70%);background-size:220% 100%;animation:sanShimmer 1.6s linear infinite"></div>
+<div style="margin-top:5px;height:7px;width:48%;background:#1A1510"></div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:14px;padding:18px;background:rgba(255,77,109,.07);border:1px solid rgba(255,77,109,.4);display:flex;gap:12px;align-items:flex-start;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))">
+<svg width="26" height="26" style="color:#FF4D6D;flex:none"><use href="#i-wifi-off"></use></svg>
+<div>
+<div style="font-family:Orbitron,sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#FF4D6D">Lien rompu</div>
+<p style="margin-top:5px;font-size:12px;color:#A99C86">Le scan n'a pas atteint l'oracle. Tes 3 dernières captures sont en file d'attente.</p>
+<button style="margin-top:10px;padding:7px 14px;border:1px solid #FF4D6D;background:transparent;color:#FF4D6D;font-family:Orbitron,sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)" style-hover="background:rgba(255,77,109,.15)">Réessayer</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isScan }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;height:100%;background:#050403;overflow:hidden">
+<div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 45%,#241d14,#050403 75%)"></div>
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 2px,transparent 2px 4px)"></div>
+<div style="position:absolute;left:50%;top:47%;transform:translate(-50%,-50%) rotate(-4deg);width:184px;height:268px;background:linear-gradient(150deg,#3A2E1C,#14100A);border:1px solid rgba(245,197,24,.35);display:grid;place-items:center;box-shadow:0 30px 60px rgba(0,0,0,.7)">
+<svg viewBox="0 0 60 100" style="width:60%;height:60%;color:#F5C518;opacity:.28"><use href="#i-card"></use></svg>
+</div>
+<div style="position:absolute;left:0;right:0;top:74px;text-align:center;padding:0 30px">
+<div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.28em;color:#F5C518;text-transform:uppercase">— Oracle —</div>
+<div style="margin-top:6px;font-family:Orbitron,sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff">{{ scanTitle }}</div>
+<div style="margin-top:5px;font-size:12px;color:rgba(255,255,255,.6)">{{ scanHint }}</div>
+</div>
+<div style="position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);width:248px;height:330px">
+<div style="{{ lockTL }}"></div>
+<div style="{{ lockTR }}"></div>
+<div style="{{ lockBL }}"></div>
+<div style="{{ lockBR }}"></div>
+<div style="{{ scanLineStyle }}"></div>
+</div>
+<sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:50%;bottom:184px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(11,9,6,.92);border:1px solid #34D399;color:#34D399;font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)">
+<svg width="13" height="13"><use href="#i-check"></use></svg>Carte verrouillée · 98 %
+</div>
+</sc-if>
+<div style="position:absolute;left:0;right:0;bottom:44px;display:flex;align-items:center;justify-content:space-between;padding:0 34px">
+<button style="width:44px;height:44px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)"><svg width="18" height="18"><use href="#i-gallery"></use></svg></button>
+<button onClick="{{ capture }}" style="width:78px;height:78px;border:0;background:transparent;position:relative;cursor:pointer;display:grid;place-items:center">
+<span style="position:absolute;inset:0;border:1px solid rgba(245,197,24,.5);clip-path:polygon(0 20%,20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%)"></span>
+<span style="position:absolute;inset:8px;background:linear-gradient(135deg,#F5C518,#C29A0F);clip-path:polygon(0 20%,20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%);box-shadow:0 0 30px rgba(245,197,24,.5)"></span>
+<svg width="26" height="26" style="position:relative;color:#0B0906"><use href="#i-scan"></use></svg>
+</button>
+<button style="width:44px;height:44px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)"><svg width="18" height="18"><use href="#i-flash"></use></svg></button>
+</div>
+<button onClick="{{ goCollection }}" style="position:absolute;left:20px;top:{{ scanCloseTop }};width:34px;height:34px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.4);color:#fff;display:grid;place-items:center;cursor:pointer;clip-path:polygon(15% 0,100% 0,100% 85%,85% 100%,0 100%,0 15%)"><svg width="14" height="14"><use href="#i-close"></use></svg></button>
+</div>
+</sc-if>
+
+</div>
+
+<sc-if value="{{ showChrome }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ goScan }}" style="{{ fabStyle }}">
+<span style="position:absolute;inset:-5px;border:1px solid #A855F7;clip-path:polygon(0 20%,20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%);opacity:.6;animation:sanRing 3s ease-out infinite"></span>
+<svg width="26" height="26"><use href="#i-scan"></use></svg>
+</button>
+<nav style="{{ tabbarStyle }}">
+<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+<button onClick="{{ t.onSelect }}" style="{{ t.style }}">
+<sc-if value="{{ t.active }}" hint-placeholder-val="{{ false }}">
+<span style="position:absolute;top:0;left:25%;right:25%;height:2px;background:linear-gradient(90deg,transparent,#F5C518,transparent);box-shadow:0 0 8px rgba(245,197,24,.35)"></span>
+</sc-if>
+<svg width="22" height="22"><use href="{{ t.icon }}"></use></svg>
+<span style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:600">{{ t.label }}</span>
+</button>
+</sc-for>
+</nav>
+</sc-if>
+
+<sc-if value="{{ preview }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closePreview }}" style="position:absolute;inset:0;z-index:400;background:rgba(3,2,1,.86);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px">
+<div style="{{ previewArtStyle }}">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(168,85,247,.06) 10px 11px),linear-gradient(150deg,#2A2216,#14100A)"></div>
+<div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 22%,rgba(255,46,136,.22) 34%,rgba(245,197,24,.26) 48%,rgba(34,211,238,.22) 62%,transparent 74%);mix-blend-mode:overlay;animation:sanHolo 4s linear infinite"></div>
+<svg viewBox="0 0 60 100" style="position:relative;width:56%;height:56%;color:#F5C518;opacity:.32"><use href="#i-card"></use></svg>
+</div>
+<div style="text-align:center">
+<div style="font-family:Orbitron,sans-serif;font-size:16px;font-weight:900;letter-spacing:.03em;color:#F5EFE0">{{ previewName }}</div>
+<div style="margin-top:5px;font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F5C518">{{ previewRarity }} · {{ previewCode }}</div>
+<div style="margin-top:12px;display:flex;gap:16px;justify-content:center;font-family:Orbitron,sans-serif;font-size:11px;color:#A99C86;font-variant-numeric:tabular-nums">
+<span>ATK <span style="color:#F5EFE0">3000</span></span>
+<span>DEF <span style="color:#F5EFE0">2500</span></span>
+<span>NIV <span style="color:#F5EFE0">8</span></span>
+</div>
+</div>
+<div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,239,224,.4)">Touche pour refermer</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#000;border-radius:20px;z-index:300"></div>
+<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:4px;background:rgba(255,255,255,.5);border-radius:4px;z-index:300"></div>
+</sc-if>
+<sc-if value="{{ isAndroid }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);width:11px;height:11px;background:#000;border-radius:50%;z-index:300;box-shadow:0 0 0 1px rgba(255,255,255,.08)"></div>
+<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:104px;height:3px;background:rgba(255,255,255,.42);border-radius:3px;z-index:300"></div>
+</sc-if>
+
+</div>
+</div>
+<sc-if value="{{ label }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:baseline;gap:8px;font-family:Rajdhani,system-ui,sans-serif">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(245,197,24,.14);color:#F5C518;border-radius:5px">{{ badge }}</span>
+<span style="font-size:12.5px;color:rgba(245,239,224,.62);letter-spacing:.02em">{{ label }}</span>
+</div>
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:900},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;login&quot;,&quot;register&quot;,&quot;collection&quot;,&quot;deck-arena&quot;,&quot;deck-list&quot;,&quot;editor&quot;,&quot;social&quot;,&quot;profile&quot;,&quot;states&quot;,&quot;scan&quot;],&quot;default&quot;:&quot;collection&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;platform&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ios&quot;,&quot;android&quot;],&quot;default&quot;:&quot;ios&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cardTreatment&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;halo&quot;,&quot;socle&quot;,&quot;holo&quot;],&quot;default&quot;:&quot;halo&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scale&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.4,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;badge&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const CUT_SM = 'polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%)';
+
+const RARITY = {
+  common: { label: 'Common', ring: 'inset 0 0 0 1px rgba(255,255,255,.06)', glow: 'none', color: '#A99C86' },
+  rare:   { label: 'Rare',   ring: 'inset 0 0 0 1px rgba(59,130,246,.45)', glow: '0 0 12px rgba(59,130,246,.2)', color: '#7FB3FF' },
+  super:  { label: 'Super',  ring: 'inset 0 0 0 1px rgba(168,85,247,.55)', glow: '0 0 16px rgba(168,85,247,.28)', color: '#C084FC' },
+  ultra:  { label: 'Ultra',  ring: 'inset 0 0 0 1px #F5C518', glow: '0 0 22px rgba(245,197,24,.4)', color: '#F5C518' },
+  secret: { label: 'Secret', ring: 'inset 0 0 0 1px #FF2E88', glow: '0 0 14px rgba(255,46,136,.42),0 0 22px rgba(34,211,238,.3)', color: '#FF6FAC' }
+};
+
+const CARDS = [
+  { name: 'Dragon Blanc Yeux Bleus', code: 'LOB-001', r: 'ultra', lang: 'FR', qty: 'x3', banned: false },
+  { name: 'Magicien Sombre', code: 'LOB-005', r: 'secret', lang: 'JP', qty: 'x1', banned: false },
+  { name: 'Elfe Mystique', code: 'LOB-032', r: 'common', lang: 'EN', qty: 'x2', banned: false },
+  { name: 'Cyber Dragon', code: 'CRV-009', r: 'super', lang: 'FR', qty: 'x2', banned: false },
+  { name: 'Jinzo', code: 'PSV-000', r: 'rare', lang: 'FR', qty: 'x1', banned: true },
+  { name: 'Stardust Dragon', code: 'TDGS-040', r: 'ultra', lang: 'JP', qty: 'x1', banned: false },
+  { name: 'Kuriboh', code: 'MRD-071', r: 'common', lang: 'FR', qty: 'x4', banned: false },
+  { name: 'Sky Striker Raye', code: 'DASA-01', r: 'super', lang: 'EN', qty: 'x3', banned: false },
+  { name: 'Number 39 Utopia', code: 'YS11-002', r: 'rare', lang: 'FR', qty: 'x2', banned: false },
+  { name: 'Time Wizard', code: 'MRD-065', r: 'common', lang: 'EN', qty: 'x1', banned: false }
+];
+
+const LANG_BG = {
+  FR: 'linear-gradient(180deg,#0055A4 33%,#fff 33% 66%,#EF4135 66%)',
+  JP: '#BC002D',
+  EN: 'linear-gradient(180deg,#012169 33%,#fff 33% 66%,#C8102E 66%)'
+};
+
+class Component extends DCLogic {
+  state = {
+    screen: null, auth: null, chip: 0, treatment: null,
+    liked: false, mainCount: 38, locked: false, preview: null, sort: 0
+  };
+
+  get screen() { return this.state.screen ?? this.props.screen ?? 'collection'; }
+  get platform() { return this.props.platform ?? 'ios'; }
+  get treatment() { return 'socle'; }
+
+  go = (s) => this.setState({ screen: s, locked: false, preview: null });
+
+  cardArt(r, treatment, extra) {
+    const R = RARITY[r] || RARITY.common;
+    const shadows = [R.ring, R.glow].filter(s => s && s !== 'none');
+    if (treatment === 'socle') {
+      if (R.glow !== 'none') shadows.push(R.glow);
+      shadows.push('0 16px 22px -10px rgba(0,0,0,.9)');
+    }
+    if (treatment === 'holo') shadows.push('0 0 26px rgba(34,211,238,.16)');
+    return 'width:100%;height:' + (extra && extra.h ? extra.h : '82%') +
+      ';position:relative;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#221B12,#14100A);border:1px solid #3A2E1C;clip-path:' + CUT_SM +
+      ';box-shadow:' + (shadows.join(',') || 'none') +
+      (treatment === 'socle' ? ';transform:translateY(-5px)' : '');
+  }
+
+  renderVals() {
+    const s = this.screen, plat = this.platform, treatment = this.treatment;
+    const isIos = plat === 'ios';
+    const W = isIos ? 390 : 412, H = isIos ? 844 : 915;
+    const scale = this.props.scale ?? 1;
+    const authMode = this.state.auth ?? (s === 'register' ? 'register' : 'login');
+    const isAuth = s === 'login' || s === 'register';
+    const chrome = !['home', 'login', 'register', 'scan'].includes(s);
+    const statusTop = isIos ? 14 : 12;
+
+    const tabFor = { collection: 0, editor: 1, 'deck-arena': 1, 'deck-list': 1, social: 2, profile: 3, states: 0 };
+    const activeTab = tabFor[s] ?? 0;
+    const tabDefs = [
+      { label: 'Collection', icon: '#tab-collection', to: 'collection' },
+      { label: 'Decks', icon: '#tab-decks', to: 'deck-arena' },
+      { label: 'Social', icon: '#tab-social', to: 'social' },
+      { label: 'Profil', icon: '#tab-profile', to: 'profile' }
+    ];
+
+    const chipDefs = [
+      { label: 'Toutes', count: '3214' }, { label: 'Monstres', count: '1420' },
+      { label: 'Magies', count: '908' }, { label: 'Pièges', count: '632' }, { label: 'Ultra ↑', count: '128' }
+    ];
+
+    const cards = CARDS.map((c, i) => {
+      const R = RARITY[c.r];
+      return {
+        name: c.name, code: c.code, qty: c.qty, rarity: R.label, banned: c.banned,
+        langLabel: c.lang,
+        tileStyle: 'position:relative;aspect-ratio:59/100;cursor:pointer;animation:sanCardIn 600ms cubic-bezier(.2,.8,.2,1) both;animation-delay:' + (i * 55) + 'ms',
+        artStyle: this.cardArt(c.r, treatment),
+        sheenStyle: treatment === 'holo' || c.r === 'secret'
+          ? 'position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(255,46,136,.16) 32%,rgba(245,197,24,.18) 47%,rgba(34,211,238,.16) 62%,transparent 74%);mix-blend-mode:overlay;animation:sanHolo 4s linear infinite'
+          : 'display:none',
+        plinthStyle: treatment === 'socle'
+          ? 'height:9px;margin:0 4%;background:radial-gradient(ellipse at 50% 0%,' + R.color + ' 0%,transparent 68%);opacity:.5;filter:blur(2px)'
+          : 'display:none',
+        langStyle: 'position:absolute;top:6px;left:6px;width:18px;height:18px;background:' + LANG_BG[c.lang] +
+          ';border:1px solid #3A2E1C;color:transparent;font-family:Orbitron,sans-serif;font-size:7px;font-weight:700;display:grid;place-items:center;clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);z-index:3',
+        rarityStyle: 'color:' + R.color + ';text-transform:uppercase;letter-spacing:.08em;font-weight:600',
+        onOpen: () => this.setState({ preview: { name: c.name, code: c.code, rarity: R.label, r: c.r } })
+      };
+    });
+
+    const zone = (label, filled, accent) => ({
+      label: filled ? label : '',
+      style: 'width:38px;height:52px;flex:none;display:grid;place-items:center;text-align:center;' +
+        (filled
+          ? 'background:linear-gradient(150deg,#2A2216,#14100A);border:1px solid ' + accent + ';box-shadow:0 0 12px -2px ' + accent
+          : 'background:rgba(255,255,255,.02);border:1px dashed rgba(245,197,24,.22)')
+    });
+
+    const pv = this.state.preview;
+
+    return {
+      label: this.props.label ?? '', badge: this.props.badge ?? '',
+      outerStyle: 'width:' + Math.round(W * scale) + 'px;height:' + Math.round(H * scale) + 'px;flex:none;' +
+        (scale === 1 ? '' : 'overflow:hidden;'),
+      deviceStyle: 'position:relative;width:' + W + 'px;height:' + H + 'px;background:#0B0906;color:#F5EFE0;' +
+        'font-family:Rajdhani,system-ui,sans-serif;border-radius:' + (isIos ? '44px' : '32px') + ';border:1px solid rgba(245,197,24,.35);' +
+        'overflow:hidden;isolation:isolate;box-shadow:0 0 44px rgba(245,197,24,.14);transform:scale(' + scale + ');transform-origin:0 0',
+      statusStyle: 'position:absolute;top:' + statusTop + 'px;left:0;right:0;padding:0 ' + (isIos ? 32 : 22) + 'px;display:flex;justify-content:space-between;align-items:center;z-index:250;font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;color:' + (s === 'scan' ? '#fff' : '#F5EFE0') + ';pointer-events:none',
+      headerStyle: 'position:absolute;top:44px;left:0;right:0;height:56px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;z-index:100;backdrop-filter:blur(14px) saturate(180%);background:linear-gradient(180deg,rgba(11,9,6,.85),rgba(11,9,6,.55));border-bottom:1px solid #3A2E1C',
+      bodyStyle: 'position:absolute;left:0;right:0;top:' + (chrome ? 100 : 0) + 'px;bottom:' + (chrome ? 0 : 0) + 'px;overflow-y:auto;z-index:5',
+      showChrome: chrome, showGlyphs: s !== 'scan',
+      isIos, isAndroid: !isIos,
+      isHome: s === 'home', isAuth, isCollection: s === 'collection',
+      isArena: s === 'deck-arena', isList: s === 'deck-list', isEditor: s === 'editor',
+      isSocial: s === 'social', isProfile: s === 'profile', isStates: s === 'states', isScan: s === 'scan',
+
+      goLogin: () => this.setState({ screen: 'login', auth: 'login' }),
+      goRegister: () => this.setState({ screen: 'register', auth: 'register' }),
+      goCollection: () => this.go('collection'),
+      goProfile: () => this.go('profile'),
+      goScan: () => this.go('scan'),
+      goArena: () => this.go('deck-arena'),
+      goList: () => this.go('deck-list'),
+
+      authKicker: authMode === 'register' ? '— Nouveau gardien —' : '— Retour au sanctuaire —',
+      authTitle: authMode === 'register' ? 'Ouvrir\nson temple' : 'Entrer',
+      authCta: authMode === 'register' ? 'Sceller mon compte' : 'Franchir le seuil',
+      authSwitch: authMode === 'register' ? "J'ai déjà un compte — entrer" : 'Pas encore de sanctuaire ? En ouvrir un',
+      toggleAuth: () => this.setState({ auth: authMode === 'register' ? 'login' : 'register', screen: authMode === 'register' ? 'login' : 'register' }),
+      authFields: authMode === 'register'
+        ? [{ label: 'Pseudo de duelliste', type: 'text', ph: 'kaiba_pa' }, { label: 'Courriel', type: 'email', ph: 'toi@exemple.fr' }, { label: 'Sceau (mot de passe)', type: 'password', ph: '••••••••' }]
+        : [{ label: 'Courriel ou pseudo', type: 'text', ph: 'kaiba_pa' }, { label: 'Sceau', type: 'password', ph: '••••••••' }],
+
+      chips: chipDefs.map((c, i) => ({
+        label: c.label, count: c.count,
+        onSelect: () => this.setState({ chip: i }),
+        style: 'flex:none;padding:7px 14px;border:1px solid ' + (this.state.chip === i ? '#F5C518' : '#3A2E1C') +
+          ';background:' + (this.state.chip === i ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510') +
+          ';color:' + (this.state.chip === i ? '#0B0906' : '#A99C86') +
+          ';font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;font-weight:' +
+          (this.state.chip === i ? 700 : 500) + ';clip-path:polygon(0 0,calc(100% - 6px) 0,100% 100%,6px 100%)' +
+          (this.state.chip === i ? ';box-shadow:0 0 10px rgba(245,197,24,.35)' : ''),
+        badgeStyle: 'margin-left:6px;padding:1px 4px;background:rgba(0,0,0,.3);border-radius:2px;font-size:8px'
+      })),
+
+      cards,
+
+      likes: this.state.liked ? 215 : 214,
+      toggleLike: () => this.setState({ liked: !this.state.liked }),
+      likeStyle: 'display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid ' +
+        (this.state.liked ? '#FF2E88' : '#3A2E1C') + ';background:' + (this.state.liked ? 'rgba(255,46,136,.16)' : '#1A1510') +
+        ';color:' + (this.state.liked ? '#FF2E88' : '#A99C86') +
+        ';font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%)',
+
+      arenaBack: [zone('M', true, 'rgba(245,197,24,.55)'), zone('M', true, 'rgba(245,197,24,.55)'), zone('M', true, 'rgba(245,197,24,.55)'), zone('', false), zone('', false)],
+      arenaFront: [zone('S', true, 'rgba(168,85,247,.55)'), zone('S', true, 'rgba(168,85,247,.55)'), zone('', false), zone('T', true, 'rgba(34,211,238,.5)'), zone('', false)],
+      arenaCounters: [
+        { label: 'Main', value: '40', valueStyle: 'font-family:Orbitron,sans-serif;font-size:15px;font-weight:700;color:#F5C518;font-variant-numeric:tabular-nums' },
+        { label: 'Extra', value: '12', valueStyle: 'font-family:Orbitron,sans-serif;font-size:15px;font-weight:700;color:#A855F7;font-variant-numeric:tabular-nums' },
+        { label: 'Side', value: '9', valueStyle: 'font-family:Orbitron,sans-serif;font-size:15px;font-weight:700;color:#22D3EE;font-variant-numeric:tabular-nums' }
+      ],
+      keyCards: CARDS.slice(0, 5).map(c => ({
+        name: c.name, qty: c.qty, artStyle: this.cardArt(c.r, treatment, { h: '124px' })
+      })),
+
+      deckSections: [
+        {
+          title: 'Deck principal', count: '40',
+          rows: [
+            { name: 'Dragon Blanc Yeux Bleus', meta: 'Monstre · Niv 8 · 3000/2500', qty: '×3', accent: '#F5C518', thumbStyle: this.cardArt('ultra', 'halo', { h: '32px' }) + ';width:24px;flex:none' },
+            { name: 'Kaibaman', meta: 'Monstre · Niv 3 · 200/700', qty: '×2', accent: '#C29A0F', thumbStyle: this.cardArt('common', 'halo', { h: '32px' }) + ';width:24px;flex:none' },
+            { name: 'Fusion des Dragons', meta: 'Magie · Fusion', qty: '×3', accent: '#A855F7', thumbStyle: this.cardArt('super', 'halo', { h: '32px' }) + ';width:24px;flex:none' },
+            { name: 'Cercle du Feu Solaire', meta: 'Piège · Continu', qty: '×2', accent: '#22D3EE', thumbStyle: this.cardArt('rare', 'halo', { h: '32px' }) + ';width:24px;flex:none' }
+          ]
+        },
+        {
+          title: 'Extra', count: '12',
+          rows: [
+            { name: 'Dragon Ultime Yeux Bleus', meta: 'Fusion · Niv 12 · 4500/3800', qty: '×1', accent: '#A855F7', thumbStyle: this.cardArt('secret', 'halo', { h: '32px' }) + ';width:24px;flex:none' },
+            { name: 'Dragon Spirituel Yeux Bleus', meta: 'Synchro · Niv 10', qty: '×2', accent: '#A855F7', thumbStyle: this.cardArt('ultra', 'halo', { h: '32px' }) + ';width:24px;flex:none' }
+          ]
+        },
+        {
+          title: 'Side', count: '9',
+          rows: [
+            { name: 'Trou Noir', meta: 'Magie · Normale', qty: '×2', accent: '#22D3EE', thumbStyle: this.cardArt('rare', 'halo', { h: '32px' }) + ';width:24px;flex:none' }
+          ]
+        }
+      ],
+
+      editorCounters: [
+        { label: 'Main', value: this.state.mainCount + '/40', style: 'flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:1px;background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.45);color:#F5C518;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)' },
+        { label: 'Extra', value: '12/15', style: 'flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:1px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.45);color:#C084FC;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)' },
+        { label: 'Side', value: '9/15', style: 'flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:1px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.4);color:#22D3EE;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)' }
+      ],
+      slots: Array.from({ length: 24 }, (_, i) => {
+        const filled = i < Math.min(24, this.state.mainCount);
+        return {
+          filled,
+          onTap: () => this.setState({ mainCount: Math.max(0, this.state.mainCount - 1) }),
+          style: 'aspect-ratio:59/86;display:grid;place-items:center;cursor:pointer;' + (filled
+            ? 'background:linear-gradient(150deg,#2A2216,#14100A);border:1px solid rgba(245,197,24,.4);box-shadow:inset 0 0 0 1px rgba(245,197,24,.08)'
+            : 'background:rgba(255,255,255,.015);border:1px dashed rgba(245,197,24,.2)')
+        };
+      }),
+      pool: CARDS.slice(0, 7).map(c => ({
+        name: c.name, artStyle: this.cardArt(c.r, treatment, { h: '104px' }),
+        onAdd: () => this.setState({ mainCount: Math.min(40, this.state.mainCount + 1) })
+      })),
+
+      sortTabs: ['Populaires', 'Récents', 'Suivis'].map((l, i) => ({
+        label: l, onSelect: () => this.setState({ sort: i }),
+        style: 'flex:1;padding:9px 0;border:1px solid ' + (this.state.sort === i ? '#F5C518' : '#3A2E1C') +
+          ';background:' + (this.state.sort === i ? 'rgba(245,197,24,.14)' : 'transparent') +
+          ';color:' + (this.state.sort === i ? '#F5C518' : '#A99C86') +
+          ';font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)'
+      })),
+      feed: [
+        { name: 'Sanctuaire Draconique', author: '@kaiba_pa', when: 'il y a 2 j', likes: '214', comments: '34', ratio: '40 · 12 · 9', tag: 'Blue-Eyes', wash: 'radial-gradient(ellipse at 80% 20%,rgba(245,197,24,.16),transparent 65%)' },
+        { name: 'Rituel des Ombres', author: '@yami_lou', when: 'il y a 5 h', likes: '96', comments: '12', ratio: '41 · 15 · 12', tag: 'Dark Magician', wash: 'radial-gradient(ellipse at 80% 20%,rgba(168,85,247,.2),transparent 65%)' },
+        { name: 'Machine Céleste', author: '@zone_x', when: 'hier', likes: '388', comments: '71', ratio: '40 · 14 · 15', tag: 'Cyber', wash: 'radial-gradient(ellipse at 80% 20%,rgba(34,211,238,.16),transparent 65%)' }
+      ],
+
+      profileStats: [
+        { label: 'Cartes', value: '3 214' }, { label: 'Decks', value: '11' }, { label: 'Abonnés', value: '482' }
+      ],
+      myDecks: [
+        { name: 'Sanctuaire Draconique', count: '40 · 12 · 9', likes: '214', onOpen: () => this.go('deck-arena') },
+        { name: 'Rituel des Ombres', count: '41 · 15 · 12', likes: '96', onOpen: () => this.go('deck-list') }
+      ],
+      skeletons: [1, 2],
+
+      locked: this.state.locked,
+      capture: () => this.setState({ locked: true }),
+      scanTitle: this.state.locked ? 'Relique identifiée' : 'Aligne la carte',
+      scanHint: this.state.locked ? 'Dragon Blanc Yeux Bleus · LOB-001 · Ultra' : "Pose la carte à plat, l'oracle fait le reste.",
+      scanCloseTop: (isIos ? 54 : 46) + 'px',
+      lockTL: this.lockStyle('top:0;left:0', 'border-top:2px solid #F5C518;border-left:2px solid #F5C518'),
+      lockTR: this.lockStyle('top:0;right:0', 'border-top:2px solid #F5C518;border-right:2px solid #F5C518'),
+      lockBL: this.lockStyle('bottom:0;left:0', 'border-bottom:2px solid #F5C518;border-left:2px solid #F5C518'),
+      lockBR: this.lockStyle('bottom:0;right:0', 'border-bottom:2px solid #F5C518;border-right:2px solid #F5C518'),
+      scanLineStyle: this.state.locked
+        ? 'display:none'
+        : 'position:absolute;left:8%;right:8%;top:0;height:1px;background:linear-gradient(90deg,transparent,#F5C518,transparent);box-shadow:0 0 12px rgba(245,197,24,.6);animation:sanSweep 2.6s ease-in-out infinite',
+
+      preview: !!pv,
+      previewName: pv ? pv.name : '',
+      previewRarity: pv ? pv.rarity : '',
+      previewCode: pv ? pv.code : '',
+      previewArtStyle: 'position:relative;width:212px;aspect-ratio:59/86;overflow:hidden;display:grid;place-items:center;border:1px solid ' +
+        (pv ? (RARITY[pv.r].color) : '#3A2E1C') + ';box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 40px rgba(245,197,24,.25)',
+      closePreview: () => this.setState({ preview: null }),
+
+      tabs: tabDefs.map((t, i) => ({
+        label: t.label, icon: t.icon, active: activeTab === i,
+        onSelect: () => this.go(t.to),
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 0;min-height:48px;background:transparent;border:0;cursor:pointer;position:relative;color:' +
+          (activeTab === i ? '#F5C518' : '#A99C86')
+      })),
+      tabbarStyle: 'position:absolute;bottom:0;left:0;right:0;height:' + (isIos ? 76 : 70) + 'px;padding:6px 8px ' + (isIos ? 22 : 16) + 'px;display:flex;z-index:100;background:linear-gradient(180deg,rgba(11,9,6,.6),rgba(11,9,6,.95));backdrop-filter:blur(20px) saturate(180%);border-top:1px solid #3A2E1C',
+      fabStyle: 'position:absolute;bottom:' + (isIos ? 92 : 86) + 'px;right:20px;width:60px;height:60px;background:linear-gradient(135deg,#A855F7,#6D28D9);color:#fff;border:0;cursor:pointer;display:grid;place-items:center;z-index:90;clip-path:polygon(0 20%,20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%);box-shadow:0 8px 30px rgba(168,85,247,.4),0 4px 10px rgba(0,0,0,.4)'
+    };
+  }
+
+  lockStyle(pos, borders) {
+    const off = this.state.locked ? 26 : 0;
+    return 'position:absolute;' + pos + ';width:34px;height:34px;' + borders +
+      ';transition:transform 420ms cubic-bezier(.2,.8,.2,1);transform:translate(' +
+      (pos.includes('left') ? off : -off) + 'px,' + (pos.includes('top') ? off : -off) + 'px)' +
+      (this.state.locked ? ';filter:drop-shadow(0 0 8px rgba(52,211,153,.8))' : '');
+  }
+}
+
+</script>
+</body>
+</html>
