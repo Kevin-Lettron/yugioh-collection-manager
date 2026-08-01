@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Mobile · v2 · Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0B0906;
+  --bg-elev: #14100A;
+  --panel: #1A1510;
+  --panel-2: #221B12;
+  --border: #3A2E1C;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100vh; background: #000; color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif; overflow-x: hidden;
+}
+body {
+  display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.08), transparent 60%), #000;
+}
+
+.device {
+  position: relative; width: 390px; height: 844px;
+  background: var(--bg); border-radius: 44px;
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  overflow: hidden; isolation: isolate;
+  animation: framePulse 4s ease-in-out infinite;
+}
+@keyframes framePulse {
+  0%,100% { box-shadow: 0 0 30px rgba(245,197,24,0.10), inset 0 0 0 1px rgba(245,197,24,0.10); }
+  50%     { box-shadow: 0 0 55px rgba(245,197,24,0.22), inset 0 0 0 1px rgba(245,197,24,0.20); }
+}
+@media (prefers-reduced-motion: reduce) { .device { animation: none; } }
+@media (max-width: 500px) {
+  body { padding: 0; }
+  .device { width: 100vw; height: 100vh; border-radius: 0; border: 0; animation: none; }
+}
+
+.notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 30px; background: #000; border-radius: 20px; z-index: 300; }
+.home-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 130px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 4px; z-index: 300; }
+.status-bar {
+  position: absolute; top: 14px; left: 0; right: 0; padding: 0 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 250; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700; color: var(--text);
+  pointer-events: none;
+}
+.status-bar .right { display: flex; gap: 6px; align-items: center; opacity: 0.85; font-size: 10px; }
+
+.parallax { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+.glyph {
+  position: absolute; color: var(--violet); opacity: 0.10;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.08; }
+.glyph.delay-1 { animation-delay: -3s; }
+.glyph.delay-2 { animation-delay: -6s; }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-24px) rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .glyph { animation: none; } }
+
+.corner {
+  position: absolute; width: 44px; height: 44px;
+  color: var(--gold); opacity: 0.4; z-index: 10; pointer-events: none;
+}
+.corner.tl { top: 90px; left: 8px; }
+.corner.tr { top: 90px; right: 8px; transform: scaleX(-1); }
+
+/* Header minimal */
+.header {
+  position: absolute;
+  top: 44px; left: 0; right: 0; height: 56px;
+  padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.5), transparent);
+}
+.icon-btn {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-muted); display: grid; place-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+.icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.screen {
+  position: absolute;
+  top: 100px; left: 0; right: 0;
+  bottom: 76px;
+  padding: 20px 20px 30px;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+/* Avatar géométrique gros */
+.avatar-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: enter 600ms var(--easing) both;
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .avatar-wrap { animation: none; } }
+
+.avatar {
+  width: 140px; height: 140px;
+  position: relative;
+  display: grid; place-items: center;
+  color: var(--gold);
+  filter: drop-shadow(0 0 20px var(--gold-glow));
+  animation: breath 4s ease-in-out infinite;
+}
+@keyframes breath {
+  0%,100% { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+  50%     { filter: drop-shadow(0 0 28px var(--gold-glow)); }
+}
+@media (prefers-reduced-motion: reduce) { .avatar { animation: none; } }
+.avatar-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--violet), #4C1D95);
+  clip-path: polygon(50% 0, 100% 30%, 100% 70%, 50% 100%, 0 70%, 0 30%);
+  border: 2px solid var(--gold);
+}
+.avatar-initials {
+  position: relative;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 44px; font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+/* Ring or animé */
+.avatar::after {
+  content: '';
+  position: absolute; inset: -8px;
+  border: 1px solid var(--gold);
+  opacity: 0.5;
+  clip-path: polygon(50% 0, 100% 30%, 100% 70%, 50% 100%, 0 70%, 0 30%);
+  animation: avatarRing 3s ease-out infinite;
+}
+@keyframes avatarRing {
+  0%   { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .avatar::after { animation: none; opacity: 0.35; } }
+
+.pseudo {
+  margin-top: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px; font-weight: 900;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  background: linear-gradient(180deg, var(--text) 0%, var(--gold-dim) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 12px rgba(245, 197, 24, 0.15));
+}
+.tagline {
+  margin-top: 2px;
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 13px; letter-spacing: 0.1em; color: var(--gold-dim);
+  text-align: center;
+  padding: 0 20px;
+}
+
+/* Stats 4 col compact */
+.stats-4 {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.stat {
+  padding: 12px 6px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.stat-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px; color: var(--text-muted);
+  letter-spacing: 0.18em; text-transform: uppercase;
+  text-align: center;
+}
+.stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px; font-weight: 700; color: var(--gold);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+
+/* Edit button */
+.edit-btn-wrap {
+  margin-top: 18px;
+}
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 24px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; letter-spacing: 0.16em;
+  font-weight: 700; text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0; cursor: pointer;
+  min-height: 46px;
+  transition: transform var(--duration-fast) var(--easing), filter var(--duration-mid) var(--easing);
+  margin-right: 5px;
+  width: 100%;
+}
+.cyber-btn::before, .cyber-btn::after {
+  content: ''; position: absolute; inset: 0;
+  clip-path: var(--clip); z-index: -1;
+}
+.cyber-btn::before { background: var(--shadow); transform: translateX(5px); }
+.cyber-btn::after { background: var(--main); }
+.cyber-btn:hover { filter: brightness(1.1); }
+.cyber-btn:active { transform: translate(2px, 1px); }
+.cyber-btn.glitch:hover::after {
+  animation: glitch 0.6s steps(4) infinite;
+}
+@keyframes glitch {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1px, 1px); filter: hue-rotate(15deg); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, -1px); filter: hue-rotate(-15deg); }
+  100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn.glitch:hover::after { animation: none; }
+}
+
+/* Section title */
+.section-title {
+  margin: 22px 0 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold);
+}
+.section-title-arcane {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 10px; letter-spacing: 0.16em; color: var(--gold-dim);
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+  opacity: 0.4;
+}
+
+/* Featured deck: mini card avec 3 cartes en fan */
+.featured {
+  position: relative;
+  padding: 16px 14px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+  display: flex; align-items: center; gap: 14px;
+}
+.featured-fan {
+  position: relative;
+  width: 88px; height: 100px;
+  flex-shrink: 0;
+}
+.fan-card {
+  position: absolute;
+  width: 54px; height: 78px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-elev));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  display: grid; place-items: center;
+}
+.fan-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 5px, var(--hieroglyph) 5px 6px);
+}
+.fan-card svg { position: relative; opacity: 0.5; color: var(--gold); }
+.fan-card.c1 {
+  top: 8px; left: 0;
+  transform: rotate(-14deg);
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.4);
+}
+.fan-card.c2 {
+  top: 4px; left: 18px;
+  z-index: 2;
+  box-shadow: inset 0 0 0 1px var(--gold), 0 0 12px var(--gold-glow);
+}
+.fan-card.c3 {
+  top: 8px; left: 36px;
+  transform: rotate(14deg);
+  box-shadow: inset 0 0 0 1px var(--magenta), 0 0 8px rgba(255,46,136,0.3);
+}
+.featured-info { flex: 1; min-width: 0; }
+.featured-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 3px;
+}
+.featured-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.featured-meta {
+  font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em;
+}
+.featured-meta strong { color: var(--gold-dim); }
+
+/* Recent decks grid 2 col */
+.decks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.deck-card-mini {
+  position: relative;
+  padding: 12px 10px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--violet);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  animation: enter 500ms var(--easing) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@media (prefers-reduced-motion: reduce) { .deck-card-mini { animation: none; } }
+.deck-card-mini:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+.deck-card-mini:active { transform: scale(0.97); }
+
+.deck-mini-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-bottom: 6px;
+}
+.deck-mini-stats {
+  display: flex; gap: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+.deck-mini-stats span strong {
+  color: var(--gold); font-weight: 700;
+}
+
+/* ═══ Tab bar ═══ */
+.tabbar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 76px;
+  padding: 6px 8px 22px;
+  display: flex;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.6), rgba(11, 9, 6, 0.95));
+  backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px;
+  padding: 6px 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--easing);
+  background: transparent; border: 0;
+  position: relative;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--gold); }
+.tab.active::before {
+  content: '';
+  position: absolute; top: 0; left: 25%; right: 25%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.tab-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M12 3 L14 5 L17 4 L18 7 L21 8 L20 11 L22 13 L20 15 L21 18 L18 19 L17 22 L14 21 L12 23 L10 21 L7 22 L6 19 L3 18 L4 15 L2 13 L4 11 L3 8 L6 7 L7 4 L10 5 Z"/>
+    <circle cx="12" cy="13" r="3"/>
+  </symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M4 20 L18 6 L15 3 L1 17 Z" transform="translate(2 1)"/>
+    <path d="M12 5 L15 8"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="10" width="50" height="30" opacity="0.4"/>
+    <path d="M10 50 H50 M10 57 H40" opacity="0.3"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-ankh" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="20" cy="12" r="6"/>
+    <path d="M20 18 V36 M12 22 H28"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+    <path d="M10 22 L30 22" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.2">
+    <path d="M0 0 L30 0 L30 3 L3 3 L3 30 L0 30 Z"/>
+    <path d="M8 8 L22 8 M8 8 L8 22" opacity="0.4"/>
+    <circle cx="8" cy="28" r="1.5" fill="currentColor"/>
+    <circle cx="28" cy="8" r="1.5" fill="currentColor"/>
+  </symbol>
+
+  <!-- Tab icons custom -->
+  <symbol id="tab-collection" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 6 L14 6 L14 20 L4 20 Z"/>
+    <path d="M7 4 L17 4 L17 18" opacity="0.6"/>
+    <path d="M10 2 L20 2 L20 16" opacity="0.35"/>
+  </symbol>
+  <symbol id="tab-decks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 4 L20 4 L20 20 L4 20 Z"/>
+    <path d="M4 8 L20 8 M4 12 L14 12 M4 16 L16 16"/>
+    <path d="M12 4 L12 20" opacity="0.4"/>
+  </symbol>
+  <symbol id="tab-social" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <circle cx="6" cy="7" r="2.5"/>
+    <circle cx="18" cy="7" r="2.5"/>
+    <circle cx="12" cy="18" r="2.5"/>
+    <path d="M7.6 8.8 L10.4 16.2 M16.4 8.8 L13.6 16.2 M8.5 7 L15.5 7" opacity="0.7"/>
+  </symbol>
+  <symbol id="tab-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M12 3 L20 18 L4 18 Z"/>
+    <path d="M12 3 L12 18" opacity="0.5"/>
+    <ellipse cx="12" cy="12" rx="3" ry="1.8" stroke-width="1.2"/>
+    <circle cx="12" cy="12" r="0.8" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="device">
+  <div class="notch"></div>
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <span class="right">
+      <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="2" height="6"/><rect x="4" y="2" width="2" height="8"/><rect x="8" y="0" width="2" height="10"/><rect x="12" y="0" width="2" height="10" opacity="0.5"/></svg>
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="14" height="9" rx="1.5"/><rect x="15.5" y="3" width="1.5" height="4" fill="currentColor"/><rect x="2" y="2" width="10" height="6" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="parallax">
+    <svg class="glyph" style="top:8%; left:-25px; width:130px; height:130px;"><use href="#i-glyph-ankh"/></svg>
+    <svg class="glyph gold delay-1" style="top:15%; right:-30px; width:140px; height:140px;"><use href="#i-glyph-pyramid"/></svg>
+    <svg class="glyph delay-2" style="bottom:20%; left:-20px; width:100px; height:100px;"><use href="#i-glyph-eye"/></svg>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div style="width: 36px;"></div>
+    <button class="icon-btn" title="Paramètres">
+      <svg width="18" height="18"><use href="#i-settings"/></svg>
+    </button>
+  </div>
+
+  <svg class="corner tl"><use href="#i-corner"/></svg>
+  <svg class="corner tr"><use href="#i-corner"/></svg>
+
+  <div class="screen">
+    <div class="avatar-wrap">
+      <div class="avatar">
+        <div class="avatar-bg"></div>
+        <div class="avatar-initials">PA</div>
+      </div>
+      <h1 class="pseudo">PharaonAtem</h1>
+      <p class="tagline">« Il est temps de déchaîner les Dieux Égyptiens. »</p>
+    </div>
+
+    <div class="stats-4">
+      <div class="stat">
+        <div class="stat-value">3 214</div>
+        <div class="stat-label">Cartes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">18</div>
+        <div class="stat-label">Decks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">247</div>
+        <div class="stat-label">Followers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">92</div>
+        <div class="stat-label">Suivi</div>
+      </div>
+    </div>
+
+    <div class="edit-btn-wrap">
+      <button class="cyber-btn glitch">
+        <svg width="12" height="12"><use href="#i-edit"/></svg>
+        Modifier profil
+      </button>
+    </div>
+
+    <div class="section-title">
+      <span class="section-title-text">Deck en vedette</span>
+      <span class="section-title-arcane">— arme de prédilection</span>
+    </div>
+
+    <div class="featured">
+      <div class="featured-fan">
+        <div class="fan-card c1">
+          <svg width="60%" height="60%"><use href="#i-card-placeholder"/></svg>
+        </div>
+        <div class="fan-card c2">
+          <svg width="60%" height="60%"><use href="#i-card-placeholder"/></svg>
+        </div>
+        <div class="fan-card c3">
+          <svg width="60%" height="60%"><use href="#i-card-placeholder"/></svg>
+        </div>
+      </div>
+      <div class="featured-info">
+        <div class="featured-label">Vedette</div>
+        <div class="featured-name">Dragon Blanc Control</div>
+        <div class="featured-meta"><strong>40</strong> Main · <strong>15</strong> Extra · <strong>247</strong> ♥</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span class="section-title-text">Derniers decks</span>
+    </div>
+
+    <div class="decks-grid">
+      <div class="deck-card-mini" style="--i:0">
+        <div class="deck-mini-name">Sky Striker Rush</div>
+        <div class="deck-mini-stats"><span><strong>40</strong>/60</span><span>♥ 88</span></div>
+      </div>
+      <div class="deck-card-mini" style="--i:1">
+        <div class="deck-mini-name">Salamangreat</div>
+        <div class="deck-mini-stats"><span><strong>42</strong>/60</span><span>♥ 34</span></div>
+      </div>
+      <div class="deck-card-mini" style="--i:2">
+        <div class="deck-mini-name">Numeronius</div>
+        <div class="deck-mini-stats"><span><strong>40</strong>/60</span><span>♥ 156</span></div>
+      </div>
+      <div class="deck-card-mini" style="--i:3">
+        <div class="deck-mini-name">Blackwing 2026</div>
+        <div class="deck-mini-stats"><span><strong>41</strong>/60</span><span>♥ 12</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar">
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-collection"/></svg>
+      <span class="tab-label">Collection</span>
+    </button>
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-decks"/></svg>
+      <span class="tab-label">Decks</span>
+    </button>
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-social"/></svg>
+      <span class="tab-label">Social</span>
+    </button>
+    <button class="tab active">
+      <svg width="22" height="22"><use href="#tab-profile"/></svg>
+      <span class="tab-label">Profil</span>
+    </button>
+  </nav>
+
+  <div class="home-bar"></div>
+</div>
+
+</body>
+</html>
