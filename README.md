@@ -103,13 +103,24 @@ cd server
 # Installer les dépendances
 npm install
 
-# Copier le fichier .env.example
-cp .env.example .env
-
-# Modifier .env avec vos paramètres
-# Éditez le fichier .env et configurez :
-# - DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
-# - JWT_SECRET (utilisez une clé sécurisée en production)
+# Créer server/.env (fichier ignoré par git, ne le partage jamais)
+# Variables minimales requises :
+#   PORT=5000
+#   NODE_ENV=development
+#   DB_HOST=localhost
+#   DB_PORT=5432
+#   DB_NAME=yugioh_collection
+#   DB_USER=postgres
+#   DB_PASSWORD=<ton mot de passe>
+#   JWT_SECRET=<64 caractères hex : node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+#   JWT_EXPIRES_IN=7d
+#   UPLOAD_DIR=uploads
+#   MAX_FILE_SIZE=5242880
+#   YGOPRODECK_API_URL=https://db.ygoprodeck.com/api/v7
+#   CLAUDE_API_KEY=<ta clé Anthropic>       # optionnel : AI + scan photo
+#   CLAUDE_API_MAX_CALLS=5                   # optionnel
+#   CLAUDE_SCAN_MAX_CALLS=30                 # optionnel
+#   CLAUDE_SCAN_MODEL=claude-haiku-4-5-20251001  # optionnel
 ```
 
 ### 4. Configuration Frontend

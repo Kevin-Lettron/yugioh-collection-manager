@@ -14,12 +14,10 @@ node_modules/
 **/dev-dist/
 **/build/
 
-# Environment variables
+# Environment variables — TOUS les .env sont ignores, y compris .example et .test.
+# Rien qui ressemble a une config d'env n'entre dans le repo.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 
 # Logs
 logs
