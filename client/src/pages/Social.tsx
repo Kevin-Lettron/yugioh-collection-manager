@@ -8,6 +8,9 @@ import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 const Social = () => {
   const { user } = useAuth();
@@ -135,35 +138,57 @@ const Social = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Fil d'actualités</h2>
+        <div className="mb-8">
+          <HeroTitle
+            kicker="— Vitrines ouvertes —"
+            title="Social"
+            sub="Les créations d'autres gardiens. Suis, commente, inspire-toi."
+          />
 
           {/* Tabs */}
-          <div className="flex space-x-4 border-b border-gray-200">
+          <div
+            className="flex gap-4 mt-6"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
             <button
               onClick={() => setActiveTab('decks')}
-              className={`pb-3 px-4 font-semibold transition ${
-                activeTab === 'decks'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
+              className="pb-3 px-4 transition"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                color: activeTab === 'decks' ? 'var(--gold)' : 'var(--text-muted)',
+                borderBottom: activeTab === 'decks' ? '2px solid var(--gold)' : '2px solid transparent',
+                marginBottom: -1,
+              }}
             >
               Decks publics
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`pb-3 px-4 font-semibold transition ${
-                activeTab === 'users'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
+              className="pb-3 px-4 transition"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                color: activeTab === 'users' ? 'var(--gold)' : 'var(--text-muted)',
+                borderBottom: activeTab === 'users' ? '2px solid var(--gold)' : '2px solid transparent',
+                marginBottom: -1,
+              }}
             >
               Trouver des utilisateurs
             </button>
@@ -179,10 +204,17 @@ const Social = () => {
                 return (
                   <div
                     key={deck.id}
-                    className="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden"
+                    className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
+                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
                   >
                     {/* Deck Cover */}
-                    <div className="h-48 bg-gradient-to-br from-purple-500 to-blue-500 relative">
+                    <div
+                      className="h-48 relative"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
+                      }}
+                    >
                       {deck.cover_image ? (
                         <img
                           src={deck.cover_image}
@@ -279,7 +311,7 @@ const Social = () => {
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 placeholder="Rechercher des utilisateurs..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 outline-none cyber-input"
               />
             </div>
 
@@ -288,7 +320,8 @@ const Social = () => {
               {users.map((searchUser) => (
                 <div
                   key={searchUser.id}
-                  className="bg-white rounded-lg shadow p-4 flex items-center space-x-4"
+                  className="cyber-tile p-4 flex items-center space-x-4"
+                  style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
                 >
                   {/* Avatar */}
                   {searchUser.profile_picture ? (

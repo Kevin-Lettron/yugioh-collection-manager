@@ -6,6 +6,10 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
+import CardTile from '../components/decor/CardTile';
 
 const DeckView = () => {
   const { deckId } = useParams<{ deckId: string }>();
@@ -197,23 +201,37 @@ const DeckView = () => {
   const isOwner = user?.id === deck.user_id;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Deck Header */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+        <div
+          className="cyber-panel p-4 sm:p-6 mb-6"
+          style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+        >
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-            <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 break-words">{deck.name}</h2>
-              <p className="text-gray-600">
-                par{' '}
-                <Link to={`/profile/${deck.user_id}`} className="text-blue-600 hover:text-blue-700">
-                  {deck.user?.username}
-                </Link>
-              </p>
+            <div className="min-w-0 flex-1">
+              <HeroTitle
+                kicker="— Arène ouverte —"
+                title={deck.name}
+                sub={
+                  <>
+                    par{' '}
+                    <Link
+                      to={`/profile/${deck.user_id}`}
+                      style={{ color: 'var(--gold)', textDecoration: 'none' }}
+                    >
+                      {deck.user?.username}
+                    </Link>
+                  </>
+                }
+              />
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm sm:text-base">
                 <span className={deck.is_public ? 'text-green-600' : 'text-gray-600'}>
                   {deck.is_public ? 'Public' : 'Privé'}
@@ -259,19 +277,31 @@ const DeckView = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-6">
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+            <div
+              className="p-3 sm:p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-xl sm:text-2xl font-bold text-gray-800">{mainDeckCount}</p>
               <p className="text-xs sm:text-sm text-gray-600">Deck Principal</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+            <div
+              className="p-3 sm:p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-xl sm:text-2xl font-bold text-gray-800">{extraDeckCount}</p>
               <p className="text-xs sm:text-sm text-gray-600">Extra Deck</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+            <div
+              className="p-3 sm:p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-xl sm:text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
               <p className="text-xs sm:text-sm text-gray-600">J'aime</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+            <div
+              className="p-3 sm:p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-xl sm:text-2xl font-bold text-gray-800">{deck.comments_count || 0}</p>
               <p className="text-xs sm:text-sm text-gray-600">Commentaires</p>
             </div>
@@ -313,59 +343,60 @@ const DeckView = () => {
           {/* Deck Lists */}
           <div className="lg:col-span-2 space-y-6">
             {/* Main Deck */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Deck Principal ({mainDeckCount})</h3>
+            <div
+              className="cyber-panel p-6"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
+              <h3 className="cyber-title mb-4">Deck Principal ({mainDeckCount})</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {deck.main_deck?.map((deckCard) => (
-                  <div key={deckCard.id} className="relative">
-                    <img
-                      src={deckCard.card?.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
-                      alt={deckCard.card?.name}
-                      className="w-full h-auto rounded shadow"
-                      title={deckCard.card?.name}
-                    />
-                    {deckCard.quantity > 1 && (
-                      <span className="absolute top-1 right-1 bg-black bg-opacity-75 text-white text-xs font-bold px-2 py-1 rounded">
-                        x{deckCard.quantity}
-                      </span>
-                    )}
-                  </div>
+                {deck.main_deck?.map((deckCard, i) => (
+                  <CardTile
+                    key={deckCard.id}
+                    uri={deckCard.card?.card_images?.[0]?.image_url_small}
+                    name={deckCard.card?.name}
+                    quantity={deckCard.quantity}
+                    index={i}
+                  />
                 ))}
               </div>
               {(!deck.main_deck || deck.main_deck.length === 0) && (
-                <p className="text-center text-gray-600 py-8">Aucune carte dans le deck principal</p>
+                <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
+                  Aucune carte dans le deck principal
+                </p>
               )}
             </div>
 
             {/* Extra Deck */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Extra Deck ({extraDeckCount})</h3>
+            <div
+              className="cyber-panel p-6"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
+              <h3 className="cyber-title mb-4">Extra Deck ({extraDeckCount})</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {deck.extra_deck?.map((deckCard) => (
-                  <div key={deckCard.id} className="relative">
-                    <img
-                      src={deckCard.card?.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
-                      alt={deckCard.card?.name}
-                      className="w-full h-auto rounded shadow"
-                      title={deckCard.card?.name}
-                    />
-                    {deckCard.quantity > 1 && (
-                      <span className="absolute top-1 right-1 bg-black bg-opacity-75 text-white text-xs font-bold px-2 py-1 rounded">
-                        x{deckCard.quantity}
-                      </span>
-                    )}
-                  </div>
+                {deck.extra_deck?.map((deckCard, i) => (
+                  <CardTile
+                    key={deckCard.id}
+                    uri={deckCard.card?.card_images?.[0]?.image_url_small}
+                    name={deckCard.card?.name}
+                    quantity={deckCard.quantity}
+                    index={i}
+                  />
                 ))}
               </div>
               {(!deck.extra_deck || deck.extra_deck.length === 0) && (
-                <p className="text-center text-gray-600 py-8">Aucune carte dans l'extra deck</p>
+                <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
+                  Aucune carte dans l'extra deck
+                </p>
               )}
             </div>
           </div>
 
           {/* Comments Section */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div
+              className="cyber-panel p-6"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-gray-800">Commentaires</h3>
                 <button

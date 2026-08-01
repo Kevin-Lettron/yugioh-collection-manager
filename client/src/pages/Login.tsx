@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
@@ -34,31 +37,65 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+      <AppBackground />
+      <CornerOrnaments />
+
+      <div
+        className="relative z-20 w-full max-w-md cyber-panel p-8"
+        style={{
+          background: 'var(--panel)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5), var(--glow)',
+        }}
+      >
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">YuGiOh Manager</h1>
-          <p className="text-gray-600">Connectez-vous à votre compte</p>
+          <HeroTitle
+            kicker="— Retour au Sanctuaire —"
+            title="Entrer"
+            sub="Reprends là où tu t'étais arrêté."
+            className="text-center"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-2">
-              Email ou nom d'utilisateur
+            <label
+              htmlFor="identifier"
+              className="block mb-2"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 11,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+              }}
+            >
+              Email ou pseudo
             </label>
             <input
               id="identifier"
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 outline-none cyber-input transition"
               placeholder="votre@email.com ou pseudo"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block mb-2"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 11,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+              }}
+            >
               Mot de passe
             </label>
             <input
@@ -66,7 +103,7 @@ const Login = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 outline-none cyber-input transition"
               placeholder="Entrez votre mot de passe"
               disabled={loading}
             />
@@ -80,15 +117,26 @@ const Login = () => {
             isLoading={loading}
             className="w-full"
           >
-            Se connecter
+            Entrer dans le sanctuaire
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Vous n'avez pas de compte ?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
-              Inscrivez-vous
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+            Pas encore de gardien ?{' '}
+            <Link
+              to="/register"
+              style={{
+                color: 'var(--gold)',
+                textDecoration: 'none',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+              }}
+            >
+              Ouvrir un temple
             </Link>
           </p>
         </div>

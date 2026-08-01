@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import AdminTopbar from './components/AdminTopbar';
 
 // Pages (will be created next)
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Collection from './pages/Collection';
@@ -134,9 +135,9 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/collection" />} />
-      <Route path="*" element={<Navigate to="/collection" />} />
+      {/* Landing publique : Home v2 si non logué, sinon redirection vers la collection */}
+      <Route path="/" element={user ? <Navigate to="/collection" /> : <Home />} />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };

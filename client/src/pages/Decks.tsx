@@ -5,6 +5,9 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 interface WishlistItem {
   id: number;
@@ -100,31 +103,51 @@ const Decks = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-200 rounded-lg p-1 mb-6 max-w-md">
+        <div
+          className="flex gap-1 p-1 mb-8 max-w-md cyber-cut-sm"
+          style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+        >
           <button
             onClick={() => setActiveTab('mydecks')}
-            className={`flex-1 py-2 px-4 rounded-md font-semibold transition ${
-              activeTab === 'mydecks'
-                ? 'bg-white text-blue-600 shadow'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className="flex-1 py-2 px-4 transition"
+            style={{
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 12,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              background: activeTab === 'mydecks' ? 'var(--gold)' : 'transparent',
+              color: activeTab === 'mydecks' ? 'var(--on-gold)' : 'var(--text-muted)',
+              clipPath:
+                'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+            }}
           >
             Mes Decks ({decks.length})
           </button>
           <button
             onClick={() => setActiveTab('wishlist')}
-            className={`flex-1 py-2 px-4 rounded-md font-semibold transition ${
-              activeTab === 'wishlist'
-                ? 'bg-white text-purple-600 shadow'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className="flex-1 py-2 px-4 transition"
+            style={{
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 12,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              background: activeTab === 'wishlist' ? 'var(--violet)' : 'transparent',
+              color: activeTab === 'wishlist' ? '#fff' : 'var(--text-muted)',
+              clipPath:
+                'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+            }}
           >
             Wishlist ({wishlist.length})
           </button>
@@ -133,11 +156,12 @@ const Decks = () => {
         {activeTab === 'mydecks' ? (
           <>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Mes Decks</h2>
-                <p className="text-gray-600 mt-1">{decks.length} deck(s)</p>
-              </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
+              <HeroTitle
+                kicker="— Grimoires du Sanctuaire —"
+                title="Mes Decks"
+                sub={`${decks.length} grimoire${decks.length > 1 ? 's' : ''} en préparation`}
+              />
               <Button
                 variant="primary"
                 size="lg"
@@ -149,7 +173,10 @@ const Decks = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div
+              className="p-6 mb-6 cyber-tile"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -195,10 +222,20 @@ const Decks = () => {
                     return (
                       <div
                         key={deck.id}
-                        className="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden"
+                        className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
+                        style={{
+                          background: 'var(--panel)',
+                          border: '1px solid var(--border)',
+                        }}
                       >
                         {/* Deck Cover */}
-                        <div className="h-48 bg-gradient-to-br from-purple-500 to-blue-500 relative">
+                        <div
+                          className="h-48 relative"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
+                          }}
+                        >
                           {deck.cover_image ? (
                             <img
                               src={deck.cover_image}
@@ -213,7 +250,18 @@ const Decks = () => {
                             </div>
                           )}
                           {deck.is_public && (
-                            <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                            <span
+                              className="absolute top-2 right-2 text-xs px-2 py-1"
+                              style={{
+                                background: 'var(--panel)',
+                                border: '1px solid var(--success)',
+                                color: 'var(--success)',
+                                fontFamily: "'Orbitron', sans-serif",
+                                letterSpacing: '0.12em',
+                                textTransform: 'uppercase',
+                                fontWeight: 700,
+                              }}
+                            >
                               Public
                             </span>
                           )}
@@ -286,7 +334,10 @@ const Decks = () => {
 
                 {/* Empty state */}
                 {decks.length === 0 && (
-                  <div className="text-center py-12">
+                  <div
+                    className="text-center py-12 cyber-panel"
+                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+                  >
                     <p className="text-gray-600 text-lg mb-4">Vous n'avez pas encore de deck.</p>
                     <Button
                       variant="primary"
@@ -303,11 +354,12 @@ const Decks = () => {
         ) : (
           <>
             {/* Wishlist Header */}
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">Ma Wishlist</h2>
-              <p className="text-gray-600 mt-1">
-                {wishlist.length} deck(s) sauvegardes d'autres joueurs
-              </p>
+            <div className="mb-8">
+              <HeroTitle
+                kicker="— Codex des envies —"
+                title="Ma Wishlist"
+                sub={`${wishlist.length} deck(s) sauvegardés d'autres joueurs`}
+              />
             </div>
 
             {/* Loading */}
@@ -325,10 +377,20 @@ const Decks = () => {
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden border-2 border-purple-200"
+                        className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
+                        style={{
+                          background: 'var(--panel)',
+                          border: '1px solid var(--violet)',
+                        }}
                       >
                         {/* Deck Cover */}
-                        <div className="h-48 bg-gradient-to-br from-purple-600 to-pink-500 relative">
+                        <div
+                          className="h-48 relative"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(255,46,136,0.15))',
+                          }}
+                        >
                           {deck.cover_image ? (
                             <img
                               src={deck.cover_image}
@@ -422,7 +484,10 @@ const Decks = () => {
 
                 {/* Empty state */}
                 {wishlist.length === 0 && (
-                  <div className="text-center py-12 bg-white rounded-lg shadow">
+                  <div
+                    className="text-center py-12 cyber-panel"
+                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+                  >
                     <svg
                       className="mx-auto h-16 w-16 text-purple-300 mb-4"
                       fill="none"

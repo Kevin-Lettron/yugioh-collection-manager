@@ -22,6 +22,9 @@ interface AISelectedCard {
 }
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   EN: 'Anglais',
@@ -870,16 +873,21 @@ const DeckEditor = () => {
   const isExtraDeckFull = extraDeckCount + selectedExtraCount >= 15;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            {isEditing ? 'Modifier le deck' : 'Créer un nouveau deck'}
-          </h2>
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+          <HeroTitle
+            kicker="— Atelier —"
+            title={isEditing ? deckName || 'Modifier le deck' : 'Nouveau grimoire'}
+            sub={isEditing ? 'Ajuste, forge, valide, sauvegarde.' : 'Construis ton prochain deck depuis ta collection.'}
+          />
           {isEditing && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {/* View public page button */}
@@ -912,7 +920,7 @@ const DeckEditor = () => {
           {/* Left Column - Deck Settings & Search */}
           <div className="lg:col-span-1 space-y-6">
             {/* Deck Settings */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="cyber-panel p-6" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <h3 className="text-xl font-bold text-gray-800 mb-4">Paramètres du deck</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -1006,7 +1014,7 @@ const DeckEditor = () => {
             </div>
 
             {/* Card Search */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="cyber-panel p-6" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <h3 className="text-xl font-bold text-gray-800 mb-4">Ajouter des cartes</h3>
 
               {/* Quick search */}
@@ -1100,7 +1108,7 @@ const DeckEditor = () => {
           {/* Right Column - Deck Lists */}
           <div className="lg:col-span-2 space-y-6">
             {/* Main Deck */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="cyber-panel p-6" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <h3 className="text-xl font-bold text-gray-800 mb-4">
                 Deck Principal ({mainDeckCount} cartes)
               </h3>
@@ -1174,7 +1182,7 @@ const DeckEditor = () => {
             </div>
 
             {/* Extra Deck */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="cyber-panel p-6" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <h3 className="text-xl font-bold text-gray-800 mb-4">
                 Extra Deck ({extraDeckCount} cartes)
               </h3>
@@ -1249,7 +1257,7 @@ const DeckEditor = () => {
 
             {/* AI Suggestions Block - Below Extra Deck */}
             {(aiSuggestions.length > 0 || aiExplanation) && (
-              <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <div className="cyber-panel p-6 mt-6" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-3">
                     <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

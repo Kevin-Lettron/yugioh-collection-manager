@@ -3,6 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Deck, DeckCard } from '../../../shared/types';
 import api from '../services/api';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
+import CardTile from '../components/decor/CardTile';
+import { GlyphPyramid } from '../components/decor/Glyphs';
 
 const DeckShare = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -68,21 +73,41 @@ const DeckShare = () => {
   const extraDeckCount = extraDeck.reduce((sum, card) => sum + card.quantity, 0);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation - Guest version */}
-      <nav className="bg-white shadow-md">
+      <nav
+        className="sticky top-0 z-40 backdrop-blur-md"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(11,8,19,0.85), rgba(11,8,19,0.55))',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-blue-600">YuGiOh Manager</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-500 text-sm">Mode Visiteur</span>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate('/login')}
+            <div className="flex items-center gap-3">
+              <GlyphPyramid style={{ width: 24, height: 24, color: 'var(--gold)' }} />
+              <span
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontWeight: 900,
+                  fontSize: 15,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text)',
+                }}
               >
+                Keit<span style={{ color: 'var(--gold)' }}>land</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span style={{ color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Orbitron', sans-serif" }}>
+                Mode Visiteur
+              </span>
+              <Button variant="primary" size="sm" onClick={() => navigate('/login')}>
                 Se connecter
               </Button>
             </div>
@@ -91,16 +116,18 @@ const DeckShare = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with deck info */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800">{deck.name}</h2>
-              <p className="text-gray-600 mt-1">
-                Cree par <span className="font-semibold">{deck.user?.username || 'Utilisateur inconnu'}</span>
-              </p>
-            </div>
+        <div
+          className="cyber-panel p-6 mb-6"
+          style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <HeroTitle
+              kicker="— Vitrine ouverte —"
+              title={deck.name}
+              sub={`Créé par ${deck.user?.username || 'Utilisateur inconnu'}`}
+            />
             <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
               {deck.is_public && (
                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
@@ -115,25 +142,37 @@ const DeckShare = () => {
 
           {/* Deck Stats */}
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div
+              className="p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-sm text-gray-500">Main Deck</p>
               <p className={`text-2xl font-bold ${mainDeckCount >= 40 && mainDeckCount <= 60 ? 'text-green-600' : 'text-red-600'}`}>
                 {mainDeckCount}
               </p>
               <p className="text-xs text-gray-400">/ 40-60 cartes</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div
+              className="p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-sm text-gray-500">Extra Deck</p>
               <p className={`text-2xl font-bold ${extraDeckCount <= 15 ? 'text-green-600' : 'text-red-600'}`}>
                 {extraDeckCount}
               </p>
               <p className="text-xs text-gray-400">/ 0-15 cartes</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div
+              className="p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-sm text-gray-500">Likes</p>
               <p className="text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div
+              className="p-4 text-center cyber-cut-sm"
+              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
+            >
               <p className="text-sm text-gray-500">Commentaires</p>
               <p className="text-2xl font-bold text-blue-600">{deck.comments_count || 0}</p>
             </div>
@@ -143,56 +182,50 @@ const DeckShare = () => {
         {/* Deck Lists */}
         <div className="space-y-6">
           {/* Main Deck */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              Deck Principal ({mainDeckCount} cartes)
-            </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {mainDeck.map((deckCard) => (
-                <div key={deckCard.id} className="relative group">
-                  <img
-                    src={deckCard.card?.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
-                    alt={deckCard.card?.name}
-                    className="w-full h-auto rounded shadow cursor-pointer hover:opacity-90 transition"
-                    onClick={() => setSelectedCardDetail(deckCard)}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-1">
-                    <p className="text-[10px] font-semibold truncate">{deckCard.card?.name}</p>
-                    <p className="text-[10px] text-center font-bold">x{deckCard.quantity}</p>
-                  </div>
-                </div>
+          <div
+            className="cyber-panel p-6"
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+          >
+            <h3 className="cyber-title mb-4">Deck Principal ({mainDeckCount} cartes)</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {mainDeck.map((deckCard, i) => (
+                <CardTile
+                  key={deckCard.id}
+                  uri={deckCard.card?.card_images?.[0]?.image_url_small}
+                  name={deckCard.card?.name}
+                  quantity={deckCard.quantity}
+                  index={i}
+                  onClick={() => setSelectedCardDetail(deckCard)}
+                />
               ))}
             </div>
             {mainDeck.length === 0 && (
-              <p className="text-center text-gray-600 py-8">
+              <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
                 Aucune carte dans le Deck Principal.
               </p>
             )}
           </div>
 
           {/* Extra Deck */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              Extra Deck ({extraDeckCount} cartes)
-            </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {extraDeck.map((deckCard) => (
-                <div key={deckCard.id} className="relative group">
-                  <img
-                    src={deckCard.card?.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
-                    alt={deckCard.card?.name}
-                    className="w-full h-auto rounded shadow cursor-pointer hover:opacity-90 transition"
-                    onClick={() => setSelectedCardDetail(deckCard)}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-1">
-                    <p className="text-[10px] font-semibold truncate">{deckCard.card?.name}</p>
-                    <p className="text-[10px] text-center font-bold">x{deckCard.quantity}</p>
-                  </div>
-                </div>
+          <div
+            className="cyber-panel p-6"
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+          >
+            <h3 className="cyber-title mb-4">Extra Deck ({extraDeckCount} cartes)</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {extraDeck.map((deckCard, i) => (
+                <CardTile
+                  key={deckCard.id}
+                  uri={deckCard.card?.card_images?.[0]?.image_url_small}
+                  name={deckCard.card?.name}
+                  quantity={deckCard.quantity}
+                  index={i}
+                  onClick={() => setSelectedCardDetail(deckCard)}
+                />
               ))}
             </div>
             {extraDeck.length === 0 && (
-              <p className="text-center text-gray-600 py-8">
+              <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
                 Aucune carte dans l'Extra Deck.
               </p>
             )}
@@ -200,17 +233,26 @@ const DeckShare = () => {
         </div>
 
         {/* Call to action */}
-        <div className="mt-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-8 text-center text-white">
-          <h3 className="text-2xl font-bold mb-2">Creez votre propre collection !</h3>
-          <p className="mb-4 opacity-90">Inscrivez-vous gratuitement pour creer vos propres decks et gerer votre collection Yu-Gi-Oh.</p>
-          <Button
-            variant="primary"
-            size="lg"
-            glitch
-            onClick={() => navigate('/register')}
-          >
-            S'inscrire gratuitement
-          </Button>
+        <div
+          className="mt-8 cyber-panel cyber-panel--glow p-8 text-center"
+          style={{ background: 'var(--panel)', border: '1px solid var(--gold-dim)' }}
+        >
+          <HeroTitle
+            kicker="— Rejoins-nous —"
+            title="Ta propre vitrine t'attend"
+            sub="Inscris-toi gratuitement pour créer tes propres decks et gérer ta collection."
+            className="text-center"
+          />
+          <div className="mt-6">
+            <Button
+              variant="primary"
+              size="lg"
+              glitch
+              onClick={() => navigate('/register')}
+            >
+              S'inscrire gratuitement
+            </Button>
+          </div>
         </div>
       </div>
 

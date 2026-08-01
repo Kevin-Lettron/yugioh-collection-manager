@@ -6,6 +6,10 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
+import CardTile from '../components/decor/CardTile';
 
 interface CardSet {
   set_name: string;
@@ -231,18 +235,26 @@ const Collection = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Ma Collection</h2>
-            <p className="text-gray-600 mt-1">Total : {totalCards} cartes</p>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
+          <HeroTitle
+            kicker="— Vitrine du Millénium —"
+            title="Ma Collection"
+            sub={
+              totalCards > 0
+                ? `${totalCards.toLocaleString('fr-FR')} carte${totalCards > 1 ? 's' : ''} rassemblée${totalCards > 1 ? 's' : ''}`
+                : 'Votre sanctuaire est encore vide'
+            }
+          />
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="lg" glitch onClick={() => setShowAddModal(true)}>
               + Ajouter une carte
@@ -251,7 +263,8 @@ const Collection = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="cyber-panel p-6 mb-6"
+             style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm font-medium text-gray-700">Filtres</span>
             {(search || type || attribute || rarity) && (
@@ -373,63 +386,63 @@ const Collection = () => {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
-          {cards.map((userCard) => (
-            <div
-              key={userCard.id}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden"
-            >
-              <img
-                src={userCard.card?.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
-                alt={userCard.card?.name}
-                className="w-full h-auto cursor-pointer hover:opacity-90 transition"
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          {cards.map((userCard, i) => (
+            <div key={userCard.id} className="flex flex-col gap-2">
+              <CardTile
+                uri={userCard.card?.card_images?.[0]?.image_url_small}
+                name={userCard.card?.name}
+                rarity={userCard.rarity}
+                quantity={userCard.quantity}
+                language={userCard.language}
+                setCode={userCard.set_code}
+                index={i}
                 onClick={() => setSelectedCardDetail(userCard)}
               />
-              <div className="p-2 sm:p-3">
-                <h3
-                  className="font-semibold text-xs sm:text-sm text-gray-800 truncate cursor-pointer hover:text-blue-600"
-                  onClick={() => setSelectedCardDetail(userCard)}
-                >
-                  {userCard.card?.name}
-                </h3>
-                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                  <span>{userCard.rarity}</span>
-                  <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-medium">
-                    {userCard.language || 'EN'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUpdateQuantity(userCard.id, userCard.quantity - 1);
-                      }}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 w-6 h-6 rounded flex items-center justify-center"
-                    >
-                      -
-                    </button>
-                    <span className="font-semibold">{userCard.quantity}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUpdateQuantity(userCard.id, userCard.quantity + 1);
-                      }}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 w-6 h-6 rounded flex items-center justify-center"
-                    >
-                      +
-                    </button>
-                  </div>
+              {/* Quick actions under tile */}
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5">
                   <button
+                    aria-label="Diminuer la quantité"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRemoveCard(userCard.id);
+                      handleUpdateQuantity(userCard.id, userCard.quantity - 1);
                     }}
-                    className="text-red-600 hover:text-red-700 text-sm"
+                    className="w-6 h-6 flex items-center justify-center text-xs font-bold border transition-colors"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-muted)',
+                      background: 'var(--panel)',
+                    }}
                   >
-                    Retirer
+                    −
+                  </button>
+                  <button
+                    aria-label="Augmenter la quantité"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpdateQuantity(userCard.id, userCard.quantity + 1);
+                    }}
+                    className="w-6 h-6 flex items-center justify-center text-xs font-bold border transition-colors"
+                    style={{
+                      borderColor: 'var(--gold-dim)',
+                      color: 'var(--gold)',
+                      background: 'var(--panel)',
+                    }}
+                  >
+                    +
                   </button>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCard(userCard.id);
+                  }}
+                  className="text-xs uppercase tracking-wider transition-colors"
+                  style={{ color: 'var(--danger)', fontFamily: "'Orbitron', sans-serif" }}
+                >
+                  Retirer
+                </button>
               </div>
             </div>
           ))}

@@ -6,6 +6,9 @@ import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -163,18 +166,30 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Mon Profil</h2>
+      <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <HeroTitle
+            kicker="— Gardien du Sanctuaire —"
+            title={user.username}
+            sub={`Membre depuis le ${new Date(user.created_at).toLocaleDateString('fr-FR')}`}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Column - Profile Info */}
           <div className="md:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div
+              className="cyber-panel p-6"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               {/* Avatar with edit icon */}
               <div className="text-center mb-6">
                 <div className="relative inline-block group">
@@ -220,18 +235,18 @@ const Profile = () => {
 
               {/* Stats */}
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="p-4 cyber-cut-sm" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
                   <p className="text-2xl font-bold text-gray-800 text-center">{stats.totalCards}</p>
                   <p className="text-sm text-gray-600 text-center">Cartes dans la collection</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="p-4 cyber-cut-sm" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
                   <p className="text-2xl font-bold text-gray-800 text-center">{stats.totalDecks}</p>
                   <p className="text-sm text-gray-600 text-center">Decks créés</p>
                 </div>
 
                 <Link to="/followers" className="block">
-                  <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition">
+                  <div className="p-4 cyber-cut-sm transition-transform hover:-translate-y-0.5" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-lg font-bold text-gray-800">{stats.followersCount}</p>
@@ -250,7 +265,10 @@ const Profile = () => {
 
           {/* Right Column - Edit Form */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div
+              className="cyber-panel p-6"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Informations du compte</h3>
                 {!editing && (

@@ -6,6 +6,9 @@ import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
 import Button from '../components/ui/Button';
+import AppBackground from '../components/decor/AppBackground';
+import CornerOrnaments from '../components/decor/CornerOrnaments';
+import HeroTitle from '../components/decor/HeroTitle';
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -144,25 +147,46 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <AppBackground />
+      <CornerOrnaments />
+
       {/* Navigation */}
       <AppNavbar />
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div
+          className="cyber-panel p-6 mb-8"
+          style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+        >
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
             {/* Avatar */}
             {profileUser.profile_picture ? (
               <img
                 src={getImageUrl(profileUser.profile_picture)}
                 alt={profileUser.username}
-                className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
+                className="w-32 h-32 rounded-full object-cover"
+                style={{ border: '2px solid var(--gold)', boxShadow: '0 0 24px rgba(245,197,24,0.35)' }}
               />
             ) : (
-              <div className="w-32 h-32 rounded-full bg-blue-500 flex items-center justify-center border-4 border-blue-600">
-                <span className="text-white text-4xl font-bold">
+              <div
+                className="w-32 h-32 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
+                  border: '2px solid var(--gold)',
+                  boxShadow: '0 0 24px rgba(245,197,24,0.35)',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--on-gold)',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 40,
+                    fontWeight: 900,
+                  }}
+                >
                   {profileUser.username.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -170,13 +194,14 @@ const UserProfile = () => {
 
             {/* User Info */}
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{profileUser.username}</h2>
-              <p className="text-gray-600 mb-4">
-                Membre depuis {new Date(profileUser.created_at).toLocaleDateString()}
-              </p>
+              <HeroTitle
+                kicker="— Visite guidée —"
+                title={profileUser.username}
+                sub={`Membre depuis le ${new Date(profileUser.created_at).toLocaleDateString('fr-FR')}`}
+              />
 
               {/* Stats */}
-              <div className="flex justify-center md:justify-start space-x-6 mb-4">
+              <div className="mt-6 flex justify-center md:justify-start space-x-6 mb-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-gray-800">{stats.followersCount}</p>
                   <p className="text-sm text-gray-600">Abonnes</p>
@@ -216,7 +241,7 @@ const UserProfile = () => {
 
         {/* Public Decks Section */}
         <div className="mb-6">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Decks publics de {profileUser.username}</h3>
+          <h3 className="cyber-title text-xl">Decks publics de {profileUser.username}</h3>
         </div>
 
         {decksLoading ? (
@@ -230,10 +255,17 @@ const UserProfile = () => {
               return (
                 <div
                   key={deck.id}
-                  className="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden"
+                  className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
+                  style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
                 >
                   {/* Deck Cover */}
-                  <div className="h-48 bg-gradient-to-br from-purple-500 to-blue-500 relative">
+                  <div
+                    className="h-48 relative"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
+                    }}
+                  >
                     {deck.cover_image ? (
                       <img
                         src={deck.cover_image}
@@ -295,7 +327,7 @@ const UserProfile = () => {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
+          <div className="cyber-panel p-12 text-center" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
             <svg
               className="mx-auto h-12 w-12 text-gray-400 mb-4"
               fill="none"
