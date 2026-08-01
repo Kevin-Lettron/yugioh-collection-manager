@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Collection · Deck Editor v2 « Sanctuaire du Millénium »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══ TOKENS ═══ */
+:root {
+  --bg-0: #050307;
+  --bg-1: #0B0813;
+  --bg-2: #14101C;
+  --panel: #1A1424;
+  --panel-2: #22182F;
+  --border: #3A2B4C;
+  --border-gold: #4A3C1E;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --text-dim: #6B5E45;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --grid: rgba(245, 197, 24, 0.06);
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+  --duration-slow: 600ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background-color: var(--bg-0);
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(168, 85, 247, 0.18), transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 100%, rgba(245, 197, 24, 0.06), transparent 60%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 50%, var(--bg-0));
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px, 100% 100%;
+  background-attachment: fixed;
+  padding-bottom: 100px; /* pour bar stats collée en bas */
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: grain 8s steps(6) infinite;
+}
+@keyframes grain {
+  0%,100% { transform: translate(0,0); }
+  16% { transform: translate(-3%, -1%); }
+  33% { transform: translate(2%, 3%); }
+  50% { transform: translate(-2%, 2%); }
+  66% { transform: translate(3%, -2%); }
+  83% { transform: translate(-1%, 3%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+.parallax-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.glyph {
+  position: absolute;
+  color: var(--violet);
+  opacity: 0.08;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.06; }
+.glyph.delay-1 { animation-delay: -2s; }
+.glyph.delay-2 { animation-delay: -5s; }
+.glyph.delay-3 { animation-delay: -8s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-30px) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glyph { animation: none; }
+}
+
+.corner-ornament {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--gold);
+  opacity: 0.45;
+  animation: cornerPulse 4s ease-in-out infinite;
+}
+.corner-ornament.tl { top: 12px; left: 12px; }
+.corner-ornament.tr { top: 12px; right: 12px; transform: scaleX(-1); }
+.corner-ornament.bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
+.corner-ornament.br { bottom: 12px; right: 12px; transform: scale(-1); }
+@keyframes cornerPulse {
+  0%,100% { opacity: 0.35; filter: drop-shadow(0 0 0 var(--gold-glow)); }
+  50%     { opacity: 0.55; filter: drop-shadow(0 0 8px var(--gold-glow)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .corner-ornament { animation: none; }
+}
+
+/* ═══ NAVBAR ═══ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(11, 8, 19, 0.85), rgba(11, 8, 19, 0.55));
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+  animation: brandBreath 4s ease-in-out infinite;
+}
+.brand-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.brand-name .accent { color: var(--gold); }
+@keyframes brandBreath {
+  0%,100% { filter: drop-shadow(0 0 4px var(--gold-glow)); }
+  50%     { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+}
+.navlinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+.navlink {
+  padding: 10px 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  position: relative;
+  transition: color var(--duration-fast) var(--easing);
+}
+.navlink:hover { color: var(--text); }
+.navlink.active { color: var(--gold); }
+.navlink.active::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.nav-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+.nav-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+/* ═══ LAYOUT ═══ */
+main {
+  position: relative;
+  z-index: 5;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px 32px 120px;
+}
+
+/* ═══ CYBER BUTTON ═══ */
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  min-height: 48px;
+  transition: transform var(--duration-fast) var(--easing), filter var(--duration-mid) var(--easing);
+  margin-right: 5px;
+}
+.cyber-btn::before, .cyber-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--clip);
+  z-index: -1;
+}
+.cyber-btn::before { background: var(--shadow); transform: translateX(5px); }
+.cyber-btn::after { background: var(--main); }
+.cyber-btn:hover { filter: brightness(1.1); }
+.cyber-btn:active { transform: translate(2px, 1px); }
+.cyber-btn.secondary { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
+.cyber-btn.danger { --main: var(--danger); --shadow: var(--magenta); --fg: #fff; }
+.cyber-btn.small { padding: 10px 18px; min-height: 38px; font-size: 10px; }
+.cyber-btn.ghost {
+  --main: transparent; --shadow: transparent; --fg: var(--gold);
+  border: 1px solid var(--gold);
+}
+.cyber-btn.ghost::before, .cyber-btn.ghost::after { display: none; }
+.cyber-btn.glitch:hover::after { animation: glitch 0.6s steps(4) infinite; }
+@keyframes glitch {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1px, 1px); filter: hue-rotate(15deg); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, -1px); filter: hue-rotate(-15deg); }
+  100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn.glitch:hover::after { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDITOR HERO — nom éditable + toggles + actions
+   ═══════════════════════════════════════════════════════════════════════════ */
+.editor-hero {
+  padding: 24px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+}
+.editor-hero-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.editor-crumb {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.editor-crumb::before {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold));
+}
+.deckname-input {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px dashed var(--border);
+  padding: 6px 0;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--easing);
+  width: 100%;
+  min-width: 0;
+}
+.deckname-input:hover, .deckname-input:focus {
+  border-bottom-color: var(--gold);
+}
+.deckname-input:focus + .edit-hint { opacity: 1; }
+.edit-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--easing);
+}
+
+.editor-toggles { display: flex; gap: 14px; align-items: center; }
+.toggle-cyber {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%);
+}
+.toggle-cyber:hover { border-color: var(--gold-dim); }
+.toggle-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.toggle-switch {
+  width: 34px;
+  height: 18px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background var(--duration-fast) var(--easing);
+}
+.toggle-switch::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 14px;
+  height: 14px;
+  background: var(--text-muted);
+  transition: all var(--duration-fast) var(--easing);
+}
+.toggle-cyber.on .toggle-switch {
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  border-color: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.toggle-cyber.on .toggle-switch::before {
+  left: 18px;
+  background: var(--bg-0);
+}
+.toggle-cyber.on .toggle-label { color: var(--gold); }
+
+.editor-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI DECK BUILDER (collapsible)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ai-builder {
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  background: linear-gradient(135deg, rgba(34, 24, 47, 0.5), rgba(11, 8, 19, 0.5));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  overflow: hidden;
+}
+.ai-builder-head {
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--duration-fast) var(--easing);
+}
+.ai-builder-head:hover { background: rgba(168, 85, 247, 0.08); }
+.ai-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  color: var(--bg-0);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+}
+.ai-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+  flex: 1;
+}
+.ai-caret {
+  color: var(--text-muted);
+  font-family: 'Orbitron', sans-serif;
+  transition: transform var(--duration-mid) var(--easing);
+}
+.ai-builder.open .ai-caret { transform: rotate(90deg); }
+.ai-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-mid) var(--easing);
+}
+.ai-builder.open .ai-body { max-height: 320px; }
+.ai-body-inner {
+  padding: 8px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ai-hint {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+.ai-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  transition: all var(--duration-fast) var(--easing);
+}
+.ai-textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+.ai-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
+.ai-actions .spacer { flex: 1; font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDITOR LAYOUT — 2 colonnes
+   ═══════════════════════════════════════════════════════════════════════════ */
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  min-height: 60vh;
+}
+.pane {
+  background: linear-gradient(135deg, rgba(26, 20, 36, 0.5), rgba(11, 8, 19, 0.5));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pane-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+.pane-head::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.pane-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.pane-title .marker {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+}
+.pane-title .cnt {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+/* Search + filters bar inside pane */
+.pane-search {
+  padding: 12px 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px dashed var(--border);
+}
+.mini-search {
+  flex: 1;
+  position: relative;
+}
+.mini-search input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: all var(--duration-fast) var(--easing);
+}
+.mini-search input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,197,24,0.12); }
+.mini-search svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+}
+
+.chips-mini {
+  display: flex;
+  gap: 6px;
+  padding: 8px 20px 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px dashed var(--border);
+}
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-muted);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
+  font-weight: 500;
+}
+.chip:hover { color: var(--text); border-color: var(--gold-dim); }
+.chip.active {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+  color: var(--bg-0);
+  border-color: var(--gold);
+  font-weight: 700;
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.pane-body {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+  max-height: 62vh;
+}
+.pane-body::-webkit-scrollbar { width: 8px; }
+.pane-body::-webkit-scrollbar-track { background: transparent; }
+.pane-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold-dim), var(--violet));
+  border-radius: 0;
+}
+
+/* Editor cards — smaller, actionable */
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+.ecard {
+  position: relative;
+  aspect-ratio: 59 / 100;
+  cursor: pointer;
+  animation: cardIn 400ms var(--easing) both;
+  animation-delay: calc(var(--i, 0) * 20ms);
+  transition: transform var(--duration-fast) var(--easing);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ecard { animation: none; }
+}
+.ecard:hover { transform: translateY(-4px); }
+.ecard-art {
+  width: 100%;
+  height: 80%;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-1));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.ecard-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 9px, var(--hieroglyph) 9px 10px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-1));
+}
+.ecard.common .ecard-art { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.ecard.rare .ecard-art { box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4), 0 0 12px rgba(59, 130, 246, 0.15); }
+.ecard.super .ecard-art { box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 15px rgba(168, 85, 247, 0.2); }
+.ecard.ultra .ecard-art { box-shadow: inset 0 0 0 1px var(--gold), 0 0 18px var(--gold-glow); }
+.ecard.secret .ecard-art { box-shadow: inset 0 0 0 1px var(--magenta), 0 0 10px rgba(255, 46, 136, 0.4); }
+.ecard.secret .ecard-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,46,136,0.15) 30%, rgba(245,197,24,0.15) 45%, rgba(34,211,238,0.15) 60%, transparent 70%);
+  mix-blend-mode: overlay;
+  animation: holoShift 4s linear infinite;
+}
+@keyframes holoShift { 0%,100%{transform:translateX(-30%);} 50%{transform:translateX(30%);} }
+@media (prefers-reduced-motion: reduce) {
+  .ecard.secret .ecard-art::after { animation: none; }
+}
+.ecard-mini-name {
+  padding: 6px 4px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* Quantity badge */
+.ecard-qty {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 3px 8px;
+  background: linear-gradient(135deg, var(--bg-0), var(--panel));
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  z-index: 3;
+}
+
+/* Collection card actions (hover) */
+.ecard-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 20%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+  background: linear-gradient(180deg, transparent 30%, rgba(5,3,7,0.9));
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing);
+  z-index: 4;
+}
+.ecard:hover .ecard-actions { opacity: 1; }
+.ecard-btn {
+  padding: 6px 4px;
+  background: var(--gold);
+  color: var(--bg-0);
+  border: 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 100%, 4px 100%);
+  transition: transform var(--duration-fast) var(--easing);
+}
+.ecard-btn:hover { transform: scale(1.04); }
+.ecard-btn.extra { background: var(--violet); color: #fff; }
+.ecard-btn.remove { background: var(--danger); color: #fff; }
+
+/* Deck side: quantity controls */
+.ecard-qty-ctrl {
+  position: absolute;
+  bottom: 22%;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing);
+  z-index: 4;
+}
+.ecard.in-deck:hover .ecard-qty-ctrl { opacity: 1; }
+.qty-btn {
+  width: 22px;
+  height: 22px;
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+}
+.qty-btn:hover { background: var(--gold); color: var(--bg-0); }
+.qty-num {
+  padding: 2px 8px;
+  background: var(--bg-0);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sub-section titles in deck pane */
+.deck-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 6px 2px 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+.deck-subhead:not(:first-child) { margin-top: 24px; }
+.deck-subhead .name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deck-subhead .name::before {
+  content: '';
+  width: 10px;
+  height: 1px;
+  background: var(--gold);
+}
+.deck-subhead .num {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+}
+.deck-subhead .num .cur { color: var(--gold); }
+.deck-subhead .num.warn .cur { color: var(--danger); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATS BAR — collée en bas
+   ═══════════════════════════════════════════════════════════════════════════ */
+.stats-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  padding: 12px 32px;
+  background: linear-gradient(180deg, rgba(11, 8, 19, 0.6), rgba(5, 3, 7, 0.95));
+  backdrop-filter: blur(14px) saturate(180%);
+  border-top: 1px solid var(--border-gold);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stats-dock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+.dock-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%);
+}
+.dock-stat.warn { border-color: var(--danger); }
+.dock-stat.warn .dock-value { color: var(--danger); animation: warnPulse 1.5s ease-in-out infinite; }
+@keyframes warnPulse {
+  0%,100% { text-shadow: 0 0 0 var(--danger); }
+  50%     { text-shadow: 0 0 12px var(--danger); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-stat.warn .dock-value { animation: none; }
+}
+.dock-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.dock-value {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.dock-value.ok { color: var(--success); }
+.dock-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+.dock-warnings {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.warn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
+}
+.warn-chip svg { color: var(--danger); }
+
+/* ═══ DEMO NOTE ═══ */
+.demo-note {
+  position: fixed;
+  bottom: 82px;
+  left: 12px;
+  background: rgba(11, 8, 19, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 260px;
+  z-index: 90;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.demo-note b { color: var(--gold); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 1100px) {
+  .editor-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .navbar { padding: 12px 16px; gap: 12px; }
+  .navlinks { display: none; }
+  main { padding: 20px 16px 220px; }
+  .editor-hero { grid-template-columns: 1fr; gap: 16px; padding: 16px 0; }
+  .editor-toggles { flex-wrap: wrap; }
+  .editor-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .editor-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .corner-ornament { width: 60px; height: 60px; }
+  .cyber-btn { padding: 10px 16px; font-size: 11px; }
+  .stats-dock { padding: 10px 12px; gap: 8px; }
+  .dock-stat { padding: 4px 8px; }
+  .dock-value { font-size: 13px; }
+  .pane-body { max-height: 45vh; }
+  .demo-note { max-width: 200px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SVG symbols ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-millennium" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+    <path d="M4 4 L28 4 L16 29 Z"/>
+    <path d="M9 10 L23 10 L16 24 Z" stroke-width="0.8" opacity="0.55"/>
+    <ellipse cx="16" cy="13" rx="5.4" ry="3.1" stroke-width="1.3"/>
+    <circle cx="16" cy="13" r="1.7" fill="currentColor" stroke="none"/>
+    <path d="M16 16.5 L16 20 M13 16 L11.5 19 M19 16 L20.5 19" stroke-width="0.9"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M0 0 L60 0 L60 4 L4 4 L4 60 L0 60 Z"/>
+    <path d="M10 10 L44 10 M10 10 L10 44" opacity="0.4"/>
+    <path d="M20 20 L34 20 L34 24 L24 24 L24 34 L20 34 Z" opacity="0.7"/>
+    <circle cx="12" cy="52" r="2" fill="currentColor"/>
+    <circle cx="52" cy="12" r="2" fill="currentColor"/>
+    <path d="M60 60 L70 60 L70 62 L62 62 L62 70 L60 70 Z" opacity="0.3"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <circle cx="10" cy="10" r="6"/>
+    <path d="M15 15 L21 21"/>
+  </symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M6 10 V6 L12 3 L18 6 V10 L20 15 L4 15 Z"/>
+    <path d="M10 18 A2 2 0 0 0 14 18"/>
+  </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 20 L4 18 L20 18 L20 20 M12 4 L16 8 L12 12 L8 8 Z"/>
+  </symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M3 8 V3 H8 M16 3 H21 V8 M21 16 V21 H16 M8 21 H3 V16"/>
+    <path d="M3 12 H21" stroke-width="1.6"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="8" width="50" height="30" opacity="0.4"/>
+    <path d="M10 45 H50 M10 52 H50 M10 59 H50 M10 66 H35" opacity="0.3"/>
+    <rect x="5" y="80" width="15" height="8" opacity="0.4"/>
+    <rect x="40" y="80" width="15" height="8" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-ankh" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="20" cy="12" r="6"/>
+    <path d="M20 18 V36 M12 22 H28"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+    <path d="M10 22 L30 22" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-glyph-scarab" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4">
+    <ellipse cx="20" cy="22" rx="9" ry="12"/>
+    <path d="M20 10 V34 M11 22 H29" opacity="0.5"/>
+    <path d="M6 16 L11 20 M34 16 L29 20 M6 30 L11 26 M34 30 L29 26" opacity="0.6"/>
+    <circle cx="20" cy="8" r="3"/>
+  </symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M4 4 H16 L20 8 V20 H4 Z"/>
+    <path d="M7 4 V10 H15 V4 M7 20 V14 H17 V20" opacity="0.6"/>
+  </symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <circle cx="6" cy="12" r="3"/>
+    <circle cx="18" cy="5" r="3"/>
+    <circle cx="18" cy="19" r="3"/>
+    <path d="M8.5 10.5 L15.5 6.5 M8.5 13.5 L15.5 17.5"/>
+  </symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M12 3 L22 20 L2 20 Z"/>
+    <path d="M12 10 V14 M12 17 V17.5" stroke-width="2"/>
+  </symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter">
+    <path d="M12 3 L14 10 L21 12 L14 14 L12 21 L10 14 L3 12 L10 10 Z"/>
+  </symbol>
+  <symbol id="i-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M9 6 L15 12 L9 18"/>
+  </symbol>
+</svg>
+
+<svg class="corner-ornament tl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament tr"><use href="#i-corner"/></svg>
+<svg class="corner-ornament bl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament br"><use href="#i-corner"/></svg>
+
+<div class="parallax-layer" data-depth="0.15">
+  <svg class="glyph gold" style="top:16%; left:5%; width:80px; height:80px;"><use href="#i-glyph-eye"/></svg>
+  <svg class="glyph delay-1" style="top:44%; right:6%; width:100px; height:100px;"><use href="#i-glyph-scarab"/></svg>
+  <svg class="glyph gold delay-2" style="top:72%; left:8%; width:70px; height:70px;"><use href="#i-glyph-ankh"/></svg>
+</div>
+<div class="parallax-layer" data-depth="0.3">
+  <svg class="glyph delay-2" style="top:28%; left:38%; width:40px; height:40px;"><use href="#i-glyph-pyramid"/></svg>
+</div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar">
+  <a href="#" class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32"><use href="#i-millennium"/></svg>
+    <span class="brand-name">Keit<span class="accent">land</span></span>
+  </a>
+  <div class="navlinks">
+    <a href="#" class="navlink">Collection</a>
+    <a href="#" class="navlink active">Decks</a>
+    <a href="#" class="navlink">Social</a>
+    <a href="#" class="navlink">Scan</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn" title="Rechercher"><svg width="18" height="18"><use href="#i-search"/></svg></button>
+    <button class="nav-btn" title="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button>
+    <button class="nav-btn" title="Profil"><svg width="18" height="18"><use href="#i-user"/></svg></button>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section class="editor-hero">
+    <div class="editor-hero-left">
+      <div class="editor-crumb">— Forge du duelliste —</div>
+      <input class="deckname-input" type="text" value="Blue-Eyes Sanctuary v2">
+      <span class="edit-hint">Clique pour renommer ton grimoire.</span>
+    </div>
+    <div class="editor-toggles">
+      <label class="toggle-cyber on">
+        <span class="toggle-label">Public</span>
+        <span class="toggle-switch"></span>
+      </label>
+      <label class="toggle-cyber on">
+        <span class="toggle-label">Banlist OCG</span>
+        <span class="toggle-switch"></span>
+      </label>
+    </div>
+    <div class="editor-actions">
+      <button class="cyber-btn ghost small">Annuler</button>
+      <button class="cyber-btn secondary small">
+        <svg width="14" height="14"><use href="#i-share"/></svg>
+        Partager
+      </button>
+      <button class="cyber-btn glitch">
+        <svg width="14" height="14"><use href="#i-save"/></svg>
+        Sauvegarder
+      </button>
+    </div>
+  </section>
+
+  <!-- AI DECK BUILDER -->
+  <div class="ai-builder open" id="aiBuilder">
+    <div class="ai-builder-head" onclick="document.getElementById('aiBuilder').classList.toggle('open')">
+      <span class="ai-tag">AI</span>
+      <span class="ai-title">Oracle Builder — décris ton deck, laisse-le émerger</span>
+      <span class="ai-caret"><svg width="16" height="16"><use href="#i-caret"/></svg></span>
+    </div>
+    <div class="ai-body">
+      <div class="ai-body-inner">
+        <p class="ai-hint">L'Oracle lit ta collection et sculpte un deck jouable en 2 phrases. Sois précis sur l'archétype, le style (control / combo / burn), et la banlist visée.</p>
+        <textarea class="ai-textarea" placeholder="Ex: Un deck Blue-Eyes control axé sur la stabilité, banlist OCG 2026, avec Ash + Maxx C au side. Priorité aux Ultra Rares que je possède déjà."></textarea>
+        <div class="ai-actions">
+          <div class="spacer">L'Oracle prend en compte ta collection et respecte la banlist active.</div>
+          <button class="cyber-btn ghost small">Aperçu</button>
+          <button class="cyber-btn secondary glitch">
+            <svg width="14" height="14"><use href="#i-sparkle"/></svg>
+            Générer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYOUT 2 COLONNES -->
+  <div class="editor-layout">
+    <!-- COLLECTION (gauche) -->
+    <div class="pane">
+      <div class="pane-head">
+        <h3 class="pane-title">
+          <span class="marker">— I —</span>
+          Ma Collection
+          <span class="cnt">1 892 uniques · 3 214 totales</span>
+        </h3>
+      </div>
+      <div class="pane-search">
+        <div class="mini-search">
+          <svg width="16" height="16"><use href="#i-search"/></svg>
+          <input type="text" placeholder="Cherche dans ta collection…">
+        </div>
+        <button class="cyber-btn ghost small">Filtres</button>
+      </div>
+      <div class="chips-mini">
+        <button class="chip active">Toutes</button>
+        <button class="chip">Monstres</button>
+        <button class="chip">Magies</button>
+        <button class="chip">Pièges</button>
+        <button class="chip">Blue-Eyes</button>
+        <button class="chip">Ultra+</button>
+        <button class="chip">Récentes</button>
+      </div>
+      <div class="pane-body">
+        <div class="editor-grid" id="collGrid"></div>
+      </div>
+    </div>
+
+    <!-- DECK (droite) -->
+    <div class="pane">
+      <div class="pane-head">
+        <h3 class="pane-title">
+          <span class="marker">— II —</span>
+          Deck en forge
+          <span class="cnt">67 cartes placées</span>
+        </h3>
+      </div>
+      <div class="pane-body">
+        <div class="deck-subhead">
+          <div class="name">Main Deck</div>
+          <div class="num"><span class="cur">38</span> / 60 <span style="color:var(--text-dim);margin-left:8px">min 40</span></div>
+        </div>
+        <div class="editor-grid" id="mainGrid"></div>
+
+        <div class="deck-subhead">
+          <div class="name">Extra Deck</div>
+          <div class="num"><span class="cur">12</span> / 15</div>
+        </div>
+        <div class="editor-grid" id="extraGrid"></div>
+
+        <div class="deck-subhead">
+          <div class="name">Side Deck</div>
+          <div class="num"><span class="cur">6</span> / 15</div>
+        </div>
+        <div class="editor-grid" id="sideGrid"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ STATS DOCK — collée en bas ═══ -->
+<div class="stats-dock">
+  <div class="dock-stat warn">
+    <span class="dock-label">Main</span>
+    <span class="dock-value">38 / 60</span>
+  </div>
+  <div class="dock-stat">
+    <span class="dock-label">Extra</span>
+    <span class="dock-value ok">12 / 15</span>
+  </div>
+  <div class="dock-stat">
+    <span class="dock-label">Side</span>
+    <span class="dock-value ok">6 / 15</span>
+  </div>
+  <div class="dock-sep"></div>
+  <div class="dock-warnings">
+    <span class="warn-chip">
+      <svg width="12" height="12"><use href="#i-warn"/></svg>
+      Main deck sous 40 (+2 requis)
+    </span>
+    <span class="warn-chip">
+      <svg width="12" height="12"><use href="#i-warn"/></svg>
+      Maxx C ×3 → limité à ×1 (OCG)
+    </span>
+    <span class="warn-chip">
+      <svg width="12" height="12"><use href="#i-warn"/></svg>
+      Called by the Grave ×2 → semi-limité
+    </span>
+  </div>
+</div>
+
+<!-- ═══ Demo note ═══ -->
+<div class="demo-note">
+  <b>Maquette v2 · DeckEditor</b> — collection à gauche, deck à droite. Hover les cartes
+  pour voir les actions. AI Builder collapsible. Prefers-reduced-motion respecté.
+</div>
+
+<script>
+// Données de démo
+const rarities = [
+  { cls: 'common', label: 'C' },
+  { cls: 'rare', label: 'R' },
+  { cls: 'super', label: 'SR' },
+  { cls: 'ultra', label: 'UR' },
+  { cls: 'secret', label: 'ScR' },
+];
+const names = [
+  'Blue-Eyes W.D.', 'Kaibaman', 'Sage of Silver Wings', 'W.S. of Ancients',
+  'Blue-Eyes Alt.', 'Dragon Shrine', 'Trade-In', 'Ash Blossom',
+  'Maxx C', 'Nibiru', 'Effect Veiler', 'Called by Grave',
+  'Return of White', 'Cards of Consonance', 'Silver Guardian', 'Melody Awake.',
+  'Chaos MAX', 'Priestess Eyes', 'Sage Blue Eyes', 'Ritual Sanctuary',
+  'Chaos Form', 'Ultimate Fusion', 'Dragon Spirit', 'Neo B.E.',
+  'Spirit Dragon', 'Azure-Eyes', 'Twin Burst', 'Cosmic Blazar',
+  'Stardust Spark', 'True Light', 'Firewall Drag.', 'Accesscode',
+];
+
+function makeCard(name, i, inDeck=false, forceRarity=null) {
+  const r = forceRarity || rarities[Math.min(4, Math.floor(Math.pow(Math.random(),1.5)*5))];
+  const q = Math.random() > 0.6 ? Math.floor(Math.random()*2)+2 : 1;
+  const actions = inDeck ? `
+    <div class="ecard-qty-ctrl">
+      <button class="qty-btn">−</button>
+      <span class="qty-num">${q}</span>
+      <button class="qty-btn">+</button>
+    </div>
+    <div class="ecard-actions">
+      <button class="ecard-btn remove">Retirer</button>
+    </div>
+  ` : `
+    <div class="ecard-actions">
+      <button class="ecard-btn">+ Main</button>
+      <button class="ecard-btn extra">+ Extra</button>
+    </div>
+  `;
+  return `
+    <div class="ecard ${r.cls} ${inDeck?'in-deck':''}" style="--i:${i}">
+      <div class="ecard-art">
+        <span class="ecard-qty">×${q}</span>
+        <svg width="60%" height="60%" style="color:var(--gold);opacity:0.3"><use href="#i-card-placeholder"/></svg>
+        ${actions}
+      </div>
+      <div class="ecard-mini-name">${name}</div>
+    </div>`;
+}
+
+const collGrid = document.getElementById('collGrid');
+const mainGrid = document.getElementById('mainGrid');
+const extraGrid = document.getElementById('extraGrid');
+const sideGrid = document.getElementById('sideGrid');
+
+// Collection : 24 cartes
+for (let i = 0; i < 24; i++) {
+  collGrid.insertAdjacentHTML('beforeend', makeCard(names[i % names.length], i, false));
+}
+// Main deck en construction : 14 cartes (représentatif)
+for (let i = 0; i < 14; i++) {
+  mainGrid.insertAdjacentHTML('beforeend', makeCard(names[i % names.length], i, true));
+}
+// Extra deck : 6 cartes
+for (let i = 0; i < 6; i++) {
+  extraGrid.insertAdjacentHTML('beforeend', makeCard(names[24 + i], i, true, rarities[Math.min(4, 3+i%2)]));
+}
+// Side deck : 4 cartes
+for (let i = 0; i < 4; i++) {
+  sideGrid.insertAdjacentHTML('beforeend', makeCard(names[16+i], i, true, rarities[2]));
+}
+
+// Toggles
+document.querySelectorAll('.toggle-cyber').forEach(t => {
+  t.addEventListener('click', e => {
+    e.preventDefault();
+    t.classList.toggle('on');
+  });
+});
+
+// Parallax
+const layers = document.querySelectorAll('.parallax-layer');
+const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!prefersReduced) {
+  let mx = 0, my = 0, sy = 0;
+  addEventListener('mousemove', e => {
+    mx = (e.clientX / innerWidth - 0.5) * 20;
+    my = (e.clientY / innerHeight - 0.5) * 20;
+    render();
+  });
+  addEventListener('scroll', () => { sy = scrollY; render(); }, { passive: true });
+  function render() {
+    layers.forEach(l => {
+      const d = parseFloat(l.dataset.depth || 0.2);
+      l.style.transform = `translate3d(${mx * d}px, ${-sy * d + my * d}px, 0)`;
+    });
+  }
+}
+</script>
+</body>
+</html>

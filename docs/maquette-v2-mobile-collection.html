@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Mobile · v2 · Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0B0906;
+  --bg-elev: #14100A;
+  --panel: #1A1510;
+  --panel-2: #221B12;
+  --border: #3A2E1C;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100vh;
+  background: #000;
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+body {
+  display: grid; place-items: center; padding: 24px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.06), transparent 60%),
+    #000;
+}
+
+/* ═══ Device frame ═══ */
+.device {
+  position: relative;
+  width: 390px; height: 844px;
+  background: var(--bg);
+  border-radius: 44px;
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  overflow: hidden;
+  isolation: isolate;
+  animation: framePulse 4s ease-in-out infinite;
+}
+@keyframes framePulse {
+  0%,100% { box-shadow: 0 0 30px rgba(245,197,24,0.10), inset 0 0 0 1px rgba(245,197,24,0.10); }
+  50%     { box-shadow: 0 0 55px rgba(245,197,24,0.22), inset 0 0 0 1px rgba(245,197,24,0.20); }
+}
+@media (prefers-reduced-motion: reduce) { .device { animation: none; } }
+@media (max-width: 500px) {
+  body { padding: 0; }
+  .device { width: 100vw; height: 100vh; border-radius: 0; border: 0; animation: none; }
+}
+
+.notch {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 30px; background: #000; border-radius: 20px; z-index: 300;
+}
+.home-bar {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 130px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 4px; z-index: 300;
+}
+.status-bar {
+  position: absolute; top: 14px; left: 0; right: 0; padding: 0 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 250;
+  font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700; color: var(--text);
+  pointer-events: none;
+}
+.status-bar .right { display: flex; gap: 6px; align-items: center; opacity: 0.85; font-size: 10px; }
+
+.parallax {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+}
+.glyph {
+  position: absolute; color: var(--violet); opacity: 0.08;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.06; }
+.glyph.delay-1 { animation-delay: -3s; }
+.glyph.delay-2 { animation-delay: -6s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-24px) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) { .glyph { animation: none; } }
+
+.corner {
+  position: absolute; width: 44px; height: 44px;
+  color: var(--gold); opacity: 0.4; z-index: 10; pointer-events: none;
+}
+.corner.tl { top: 90px; left: 8px; }
+.corner.tr { top: 90px; right: 8px; transform: scaleX(-1); }
+
+/* ═══ Header sticky ═══ */
+.header {
+  position: absolute;
+  top: 44px; left: 0; right: 0; height: 56px;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 100;
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.85), rgba(11, 9, 6, 0.55));
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+}
+.brand-mark {
+  width: 26px; height: 26px; color: var(--gold);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+  animation: brandBreath 4s ease-in-out infinite;
+}
+@keyframes brandBreath {
+  0%,100% { filter: drop-shadow(0 0 4px var(--gold-glow)); }
+  50%     { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+}
+@media (prefers-reduced-motion: reduce) { .brand-mark { animation: none; } }
+.brand-name {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text);
+}
+.brand-name .accent { color: var(--gold); }
+
+.header-actions { display: flex; gap: 10px; align-items: center; }
+.header-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+  position: relative;
+}
+.header-btn:hover { border-color: var(--gold); color: var(--gold); }
+.badge-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 6px; height: 6px; background: var(--magenta);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--magenta);
+}
+.avatar-btn {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--violet), var(--gold-dim));
+  color: var(--bg);
+  display: grid; place-items: center;
+  font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900;
+  cursor: pointer;
+  clip-path: polygon(50% 0, 100% 30%, 100% 70%, 50% 100%, 0 70%, 0 30%);
+  border: 1px solid var(--gold);
+}
+
+/* ═══ Screen scrollable ═══ */
+.screen {
+  position: absolute;
+  top: 100px;
+  left: 0; right: 0;
+  bottom: 76px;
+  padding: 18px 20px 90px;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+/* Hero compact */
+.hero {
+  margin-top: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  animation: enter 500ms var(--easing) both;
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .hero { animation: none; } }
+
+.hero-arcane {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 10px; letter-spacing: 0.28em; color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px; font-weight: 900; letter-spacing: 0.03em;
+  line-height: 0.95; text-transform: uppercase;
+  background: linear-gradient(180deg, var(--text) 0%, var(--gold-dim) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 12px rgba(245, 197, 24, 0.15));
+}
+.hero-sub {
+  margin-top: 6px;
+  font-size: 13px; color: var(--text-muted); letter-spacing: 0.04em;
+}
+
+/* Stats compact 2 col */
+.stats-row {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.stat {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  display: flex; flex-direction: column; gap: 2px;
+  position: relative; overflow: hidden;
+}
+.stat::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--gold); opacity: 0.6;
+}
+.stat-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; color: var(--text-muted);
+  letter-spacing: 0.2em; text-transform: uppercase;
+}
+.stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px; font-weight: 700; color: var(--text);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.stat-value.accent { color: var(--gold); }
+
+/* Search + filter button row */
+.action-row {
+  margin-top: 18px;
+  display: flex; gap: 8px; align-items: stretch;
+}
+.search-wrap {
+  flex: 1; position: relative;
+}
+.search {
+  width: 100%; padding: 11px 14px 11px 38px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif; font-size: 14px;
+  outline: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+}
+.search:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(245,197,24,0.15); }
+.search::placeholder { color: var(--text-muted); opacity: 0.6; }
+.search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--gold); pointer-events: none;
+}
+.filter-btn {
+  width: 44px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  display: grid; place-items: center;
+  cursor: pointer;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  transition: all var(--duration-fast) var(--easing);
+}
+.filter-btn:hover { border-color: var(--gold); box-shadow: 0 0 10px var(--gold-glow); }
+
+/* Chips scroll horizontal */
+.chips {
+  margin-top: 14px;
+  display: flex; gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-muted);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
+  font-weight: 500;
+}
+.chip:hover { color: var(--text); border-color: var(--gold-dim); }
+.chip.active {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+  color: var(--bg);
+  border-color: var(--gold); font-weight: 700;
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.chip .badge {
+  margin-left: 6px;
+  padding: 1px 4px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 2px;
+  font-size: 8px;
+}
+
+/* Grid 2 col cartes */
+.cards-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.card-tile {
+  position: relative;
+  aspect-ratio: 59 / 100;
+  cursor: pointer;
+  animation: cardIn 600ms var(--easing) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .card-tile { animation: none; } }
+.card-tile:active { transform: scale(0.97); }
+
+.card-art {
+  width: 100%; height: 82%;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-elev));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  overflow: hidden;
+  position: relative;
+  display: grid; place-items: center;
+}
+.card-art::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 8px, var(--hieroglyph) 8px 9px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-elev));
+}
+.card-art svg { position: relative; opacity: 0.3; }
+
+.card-tile.common .card-art { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.card-tile.rare .card-art {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4), 0 0 12px rgba(59, 130, 246, 0.18);
+}
+.card-tile.super .card-art {
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 15px rgba(168, 85, 247, 0.25);
+}
+.card-tile.ultra .card-art {
+  box-shadow: inset 0 0 0 1px var(--gold), 0 0 20px var(--gold-glow);
+  animation: ultraShimmer 3s ease-in-out infinite;
+}
+.card-tile.secret .card-art {
+  box-shadow:
+    inset 0 0 0 1px var(--magenta),
+    0 0 12px rgba(255, 46, 136, 0.4),
+    0 0 20px rgba(34, 211, 238, 0.3);
+}
+.card-tile.secret .card-art::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg,
+    transparent 20%, rgba(255,46,136,0.15) 30%,
+    rgba(245,197,24,0.15) 45%, rgba(34,211,238,0.15) 60%,
+    transparent 70%);
+  mix-blend-mode: overlay;
+  animation: holoShift 4s linear infinite;
+}
+@keyframes holoShift {
+  0%,100% { transform: translateX(-30%); }
+  50%     { transform: translateX(30%); }
+}
+@keyframes ultraShimmer {
+  0%,100% { box-shadow: inset 0 0 0 1px var(--gold), 0 0 20px var(--gold-glow); }
+  50%     { box-shadow: inset 0 0 0 1px var(--gold), 0 0 28px rgba(245,197,24,0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-tile.secret .card-art::after,
+  .card-tile.ultra .card-art { animation: none; }
+}
+
+.card-qty {
+  position: absolute; top: 6px; right: 6px;
+  padding: 3px 8px;
+  background: linear-gradient(135deg, var(--bg), var(--panel));
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  box-shadow: 0 0 6px var(--gold-glow);
+  z-index: 3;
+}
+.card-lang {
+  position: absolute; top: 6px; left: 6px;
+  width: 18px; height: 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px; font-weight: 700;
+  display: grid; place-items: center;
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+  z-index: 3;
+}
+.card-lang.fr { background: linear-gradient(180deg, #0055A4 33%, #fff 33% 66%, #EF4135 66%); color: transparent; }
+.card-lang.jp { background: #BC002D; color: #fff; }
+.card-lang.en { background: linear-gradient(180deg, #012169 33%, #fff 33% 66%, #C8102E 66%); color: transparent; }
+
+.card-info {
+  padding: 6px 4px 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.card-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card-meta {
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: var(--text-muted); letter-spacing: 0.03em;
+}
+.card-meta .rarity {
+  color: var(--gold-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+}
+
+/* ═══ FAB Scan ═══ */
+.fab {
+  position: absolute;
+  bottom: 92px;
+  right: 20px;
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, var(--violet), #6D28D9);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  display: grid; place-items: center;
+  z-index: 90;
+  clip-path: polygon(0 20%, 20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%);
+  box-shadow: 0 8px 30px var(--violet-glow), 0 4px 10px rgba(0,0,0,0.4);
+  transition: transform var(--duration-mid) var(--easing);
+  animation: fabPulse 3s ease-in-out infinite;
+}
+.fab:hover { transform: scale(1.08) rotate(-3deg); }
+.fab:active { transform: scale(0.95); }
+.fab::before {
+  content: '';
+  position: absolute; inset: -5px;
+  border: 1px solid var(--violet);
+  clip-path: polygon(0 20%, 20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%);
+  opacity: 0.6;
+  animation: fabRing 3s ease-out infinite;
+}
+@keyframes fabRing {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes fabPulse {
+  0%,100% { box-shadow: 0 8px 30px var(--violet-glow), 0 4px 10px rgba(0,0,0,0.4); }
+  50%     { box-shadow: 0 8px 50px var(--violet-glow), 0 4px 10px rgba(0,0,0,0.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab, .fab::before { animation: none; }
+}
+
+/* ═══ Bottom tab bar ═══ */
+.tabbar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 76px;
+  padding: 6px 8px 22px;
+  display: flex;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.6), rgba(11, 9, 6, 0.95));
+  backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px;
+  padding: 6px 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--easing);
+  background: transparent; border: 0;
+  position: relative;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--gold); }
+.tab.active::before {
+  content: '';
+  position: absolute; top: 0; left: 25%; right: 25%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.tab-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-millennium" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+    <path d="M4 4 L28 4 L16 29 Z"/>
+    <path d="M9 10 L23 10 L16 24 Z" stroke-width="0.8" opacity="0.55"/>
+    <ellipse cx="16" cy="13" rx="5.4" ry="3.1" stroke-width="1.3"/>
+    <circle cx="16" cy="13" r="1.7" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.2">
+    <path d="M0 0 L30 0 L30 3 L3 3 L3 30 L0 30 Z"/>
+    <path d="M8 8 L22 8 M8 8 L8 22" opacity="0.4"/>
+    <circle cx="8" cy="28" r="1.5" fill="currentColor"/>
+    <circle cx="28" cy="8" r="1.5" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <circle cx="10" cy="10" r="6"/>
+    <path d="M15 15 L21 21"/>
+  </symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M6 10 V6 L12 3 L18 6 V10 L20 15 L4 15 Z"/>
+    <path d="M10 18 A2 2 0 0 0 14 18"/>
+  </symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M3 5 L21 5 L14 13 L14 20 L10 18 L10 13 Z"/>
+  </symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M3 8 V3 H8 M16 3 H21 V8 M21 16 V21 H16 M8 21 H3 V16"/>
+    <path d="M3 12 H21" stroke-width="1.6"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="8" width="50" height="30" opacity="0.4"/>
+    <path d="M10 45 H50 M10 52 H50 M10 59 H50 M10 66 H35" opacity="0.3"/>
+    <rect x="5" y="80" width="15" height="8" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+    <path d="M10 22 L30 22" opacity="0.4"/>
+  </symbol>
+
+  <!-- Tab icons custom, style angles vifs -->
+  <symbol id="tab-collection" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 6 L14 6 L14 20 L4 20 Z"/>
+    <path d="M7 4 L17 4 L17 18" opacity="0.6"/>
+    <path d="M10 2 L20 2 L20 16" opacity="0.35"/>
+  </symbol>
+  <symbol id="tab-decks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 4 L20 4 L20 20 L4 20 Z"/>
+    <path d="M4 8 L20 8 M4 12 L14 12 M4 16 L16 16"/>
+    <path d="M12 4 L12 20" opacity="0.4"/>
+  </symbol>
+  <symbol id="tab-social" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <circle cx="6" cy="7" r="2.5"/>
+    <circle cx="18" cy="7" r="2.5"/>
+    <circle cx="12" cy="18" r="2.5"/>
+    <path d="M7.6 8.8 L10.4 16.2 M16.4 8.8 L13.6 16.2 M8.5 7 L15.5 7" opacity="0.7"/>
+  </symbol>
+  <symbol id="tab-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M12 3 L20 18 L4 18 Z"/>
+    <path d="M12 3 L12 18" opacity="0.5"/>
+    <ellipse cx="12" cy="12" rx="3" ry="1.8" stroke-width="1.2"/>
+    <circle cx="12" cy="12" r="0.8" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="device">
+  <div class="notch"></div>
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <span class="right">
+      <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="2" height="6"/><rect x="4" y="2" width="2" height="8"/><rect x="8" y="0" width="2" height="10"/><rect x="12" y="0" width="2" height="10" opacity="0.5"/></svg>
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="14" height="9" rx="1.5"/><rect x="15.5" y="3" width="1.5" height="4" fill="currentColor"/><rect x="2" y="2" width="10" height="6" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="parallax">
+    <svg class="glyph" style="top:15%; left:-20px; width:110px; height:110px;"><use href="#i-glyph-pyramid"/></svg>
+    <svg class="glyph gold delay-1" style="top:55%; right:-30px; width:130px; height:130px;"><use href="#i-glyph-eye"/></svg>
+    <svg class="glyph delay-2" style="bottom:20%; left:30%; width:60px; height:60px;"><use href="#i-glyph-pyramid"/></svg>
+  </div>
+
+  <!-- Header sticky -->
+  <div class="header">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32"><use href="#i-millennium"/></svg>
+      <span class="brand-name">Keit<span class="accent">land</span></span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" title="Notifications">
+        <svg width="16" height="16"><use href="#i-bell"/></svg>
+        <span class="badge-dot"></span>
+      </button>
+      <button class="avatar-btn" title="Profil">PA</button>
+    </div>
+  </div>
+
+  <svg class="corner tl"><use href="#i-corner"/></svg>
+  <svg class="corner tr"><use href="#i-corner"/></svg>
+
+  <div class="screen">
+    <div class="hero">
+      <div class="hero-arcane">— Vitrine du Millénium —</div>
+      <h1 class="hero-title">Ma Collection</h1>
+      <p class="hero-sub">3 214 cartes rassemblées.</p>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">Ultra rares +</div>
+          <div class="stat-value accent">128</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Valeur estimée</div>
+          <div class="stat-value">2 840 €</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <div class="search-wrap">
+        <svg class="search-icon" width="16" height="16"><use href="#i-search"/></svg>
+        <input class="search" type="text" placeholder="Cherche une carte…">
+      </div>
+      <button class="filter-btn" title="Filtres">
+        <svg width="18" height="18"><use href="#i-filter"/></svg>
+      </button>
+    </div>
+
+    <div class="chips">
+      <button class="chip active">Toutes <span class="badge">3214</span></button>
+      <button class="chip">Monstres <span class="badge">1420</span></button>
+      <button class="chip">Magies <span class="badge">908</span></button>
+      <button class="chip">Pièges <span class="badge">632</span></button>
+      <button class="chip">Extra</button>
+      <button class="chip">Ultra ↑</button>
+    </div>
+
+    <div class="cards-grid" id="grid"></div>
+  </div>
+
+  <!-- FAB Scan -->
+  <button class="fab" title="Scanner">
+    <svg width="26" height="26"><use href="#i-scan"/></svg>
+  </button>
+
+  <!-- Tab bar -->
+  <nav class="tabbar">
+    <button class="tab active">
+      <svg width="22" height="22"><use href="#tab-collection"/></svg>
+      <span class="tab-label">Collection</span>
+    </button>
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-decks"/></svg>
+      <span class="tab-label">Decks</span>
+    </button>
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-social"/></svg>
+      <span class="tab-label">Social</span>
+    </button>
+    <button class="tab">
+      <svg width="22" height="22"><use href="#tab-profile"/></svg>
+      <span class="tab-label">Profil</span>
+    </button>
+  </nav>
+
+  <div class="home-bar"></div>
+</div>
+
+<script>
+const grid = document.getElementById('grid');
+const rarities = [
+  { cls: 'common', label: 'Common', lang: 'en' },
+  { cls: 'rare', label: 'Rare', lang: 'fr' },
+  { cls: 'super', label: 'Super', lang: 'fr' },
+  { cls: 'ultra', label: 'Ultra', lang: 'jp' },
+  { cls: 'secret', label: 'Secret', lang: 'jp' },
+  { cls: 'common', label: 'Common', lang: 'fr' },
+  { cls: 'rare', label: 'Rare', lang: 'en' },
+  { cls: 'ultra', label: 'Ultra', lang: 'fr' },
+];
+const names = [
+  'Dragon Blanc Yeux Bleus', 'Magicien Sombre', 'Elfe Mystique',
+  'Kuriboh', 'Cyber Dragon', 'Jinzo',
+  'Stardust Dragon', 'Number 39', 'Firewall',
+  'Sky Striker', 'Junk Warrior', 'Time Wizard',
+];
+for (let i = 0; i < 10; i++) {
+  const r = rarities[i % rarities.length];
+  const n = names[i % names.length];
+  const q = Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 2 : 1;
+  grid.insertAdjacentHTML('beforeend', `
+    <div class="card-tile ${r.cls}" style="--i:${i}">
+      <div class="card-art">
+        <span class="card-qty">x${q}</span>
+        <span class="card-lang ${r.lang}">${r.lang.toUpperCase()}</span>
+        <svg width="55%" height="55%" style="color:var(--gold)"><use href="#i-card-placeholder"/></svg>
+      </div>
+      <div class="card-info">
+        <div class="card-name">${n}</div>
+        <div class="card-meta">
+          <span class="rarity">${r.label}</span>
+          <span>LOB-001</span>
+        </div>
+      </div>
+    </div>
+  `);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Collection · Deck View v2 « Sanctuaire du Millénium »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg-0: #050307;
+  --bg-1: #0B0813;
+  --bg-2: #14101C;
+  --panel: #1A1424;
+  --panel-2: #22182F;
+  --border: #3A2B4C;
+  --border-gold: #4A3C1E;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --text-dim: #6B5E45;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --grid: rgba(245, 197, 24, 0.06);
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+  --duration-slow: 600ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background-color: var(--bg-0);
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(168, 85, 247, 0.18), transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 100%, rgba(245, 197, 24, 0.06), transparent 60%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 50%, var(--bg-0));
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px, 100% 100%;
+  background-attachment: fixed;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: grain 8s steps(6) infinite;
+}
+@keyframes grain {
+  0%,100% { transform: translate(0,0); }
+  16% { transform: translate(-3%, -1%); }
+  33% { transform: translate(2%, 3%); }
+  50% { transform: translate(-2%, 2%); }
+  66% { transform: translate(3%, -2%); }
+  83% { transform: translate(-1%, 3%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+/* ═══ PARALLAX ═══ */
+.parallax-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.glyph {
+  position: absolute;
+  color: var(--violet);
+  opacity: 0.08;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.06; }
+.glyph.delay-1 { animation-delay: -2s; }
+.glyph.delay-2 { animation-delay: -5s; }
+.glyph.delay-3 { animation-delay: -8s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-30px) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glyph { animation: none; }
+}
+
+/* ═══ CORNER ORNAMENTS ═══ */
+.corner-ornament {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--gold);
+  opacity: 0.45;
+  animation: cornerPulse 4s ease-in-out infinite;
+}
+.corner-ornament.tl { top: 12px; left: 12px; }
+.corner-ornament.tr { top: 12px; right: 12px; transform: scaleX(-1); }
+.corner-ornament.bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
+.corner-ornament.br { bottom: 12px; right: 12px; transform: scale(-1); }
+@keyframes cornerPulse {
+  0%,100% { opacity: 0.35; filter: drop-shadow(0 0 0 var(--gold-glow)); }
+  50%     { opacity: 0.55; filter: drop-shadow(0 0 8px var(--gold-glow)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .corner-ornament { animation: none; }
+}
+
+/* ═══ NAVBAR ═══ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(11, 8, 19, 0.85), rgba(11, 8, 19, 0.55));
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+  animation: brandBreath 4s ease-in-out infinite;
+}
+.brand-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.brand-name .accent { color: var(--gold); }
+@keyframes brandBreath {
+  0%,100% { filter: drop-shadow(0 0 4px var(--gold-glow)); }
+  50%     { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+}
+.navlinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+.navlink {
+  padding: 10px 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  position: relative;
+  transition: color var(--duration-fast) var(--easing);
+}
+.navlink:hover { color: var(--text); }
+.navlink.active { color: var(--gold); }
+.navlink.active::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.nav-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+.nav-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+/* ═══ LAYOUT ═══ */
+main {
+  position: relative;
+  z-index: 5;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ═══ CYBER BUTTON ═══ */
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  min-height: 48px;
+  transition: transform var(--duration-fast) var(--easing), filter var(--duration-mid) var(--easing);
+  margin-right: 5px;
+}
+.cyber-btn::before, .cyber-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--clip);
+  z-index: -1;
+}
+.cyber-btn::before {
+  background: var(--shadow);
+  transform: translateX(5px);
+}
+.cyber-btn::after { background: var(--main); }
+.cyber-btn:hover { filter: brightness(1.1); }
+.cyber-btn:active { transform: translate(2px, 1px); }
+.cyber-btn.secondary { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
+.cyber-btn.danger { --main: var(--danger); --shadow: var(--magenta); --fg: #fff; }
+.cyber-btn.ghost {
+  --main: transparent;
+  --shadow: transparent;
+  --fg: var(--gold);
+  border: 1px solid var(--gold);
+}
+.cyber-btn.ghost::before, .cyber-btn.ghost::after { display: none; }
+.cyber-btn.small { padding: 10px 18px; min-height: 38px; font-size: 10px; }
+
+.cyber-btn.glitch:hover::after {
+  animation: glitch 0.6s steps(4) infinite;
+}
+@keyframes glitch {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1px, 1px); filter: hue-rotate(15deg); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, -1px); filter: hue-rotate(-15deg); }
+  100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn.glitch:hover::after { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DECK HERO — le deck comme œuvre exposée
+   ═══════════════════════════════════════════════════════════════════════════ */
+.deck-hero {
+  position: relative;
+  padding: 40px 0 44px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: end;
+}
+.deck-hero-decor {
+  position: absolute;
+  top: 30px;
+  right: 30%;
+  width: 260px;
+  height: 260px;
+  color: var(--violet);
+  opacity: 0.10;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+.deck-crumb {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.deck-crumb::before {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold));
+}
+.deck-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(36px, 5.4vw, 62px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 0.98;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--gold-dim) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 20px rgba(245, 197, 24, 0.15));
+}
+.deck-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--violet), var(--gold));
+  clip-path: polygon(0 20%, 20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%);
+  display: grid;
+  place-items: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  color: var(--bg-0);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  position: relative;
+}
+.avatar::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--gold);
+  clip-path: polygon(0 20%, 20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%);
+  opacity: 0.5;
+}
+.deck-author-info { display: flex; flex-direction: column; gap: 2px; }
+.deck-author-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+.deck-author-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+.badges-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.badge-flag {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
+}
+.badge-flag.public { color: var(--cyan); border-color: rgba(34, 211, 238, 0.4); }
+.badge-flag.banlist { color: var(--gold); border-color: var(--gold-dim); }
+.badge-flag .dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+
+.deck-mini-stats {
+  display: flex;
+  gap: 24px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px));
+  min-width: 340px;
+}
+.deck-mini-stats .mini {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.deck-mini-stats .mini-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.deck-mini-stats .mini-value {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1;
+}
+.deck-mini-stats .mini-value.gold { color: var(--gold); }
+.deck-mini-stats .mini-value.small { font-size: 16px; }
+.mini-sep { width: 1px; background: var(--border); }
+
+/* ═══ REACTIONS BAR ═══ */
+.reactions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 44px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(26, 20, 36, 0.75), rgba(34, 24, 47, 0.75));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  align-items: center;
+}
+.reactions .count {
+  font-family: 'Orbitron', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.reactions-spacer { flex: 1; }
+
+/* ═══ SECTION HEADER ═══ */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 48px 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+  position: relative;
+}
+.section-header::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.section-title .marker {
+  color: var(--gold);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+}
+.section-count {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}
+.section-count .cur { color: var(--gold); }
+
+/* ═══ LAYOUT WITH SIDEBAR ═══ */
+.deck-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 40px;
+}
+.deck-main { min-width: 0; }
+
+/* ═══ CARDS GRID ═══ */
+.cards-grid {
+  display: grid;
+  gap: 18px;
+}
+.cards-grid.main { grid-template-columns: repeat(6, 1fr); }
+.cards-grid.extra { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+.card-tile {
+  position: relative;
+  aspect-ratio: 59 / 100;
+  cursor: pointer;
+  perspective: 1000px;
+  animation: cardIn 600ms var(--easing) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-tile { animation: none; }
+}
+.card-tile__inner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--duration-mid) var(--easing);
+  position: relative;
+}
+.card-tile:hover .card-tile__inner {
+  transform: rotateY(-8deg) rotateX(4deg) scale(1.05);
+}
+.card-art {
+  width: 100%;
+  height: 78%;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-1));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.card-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 9px, var(--hieroglyph) 9px 10px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-1));
+}
+.card-art svg { position: relative; opacity: 0.3; }
+.card-tile.common .card-art { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.card-tile.rare .card-art { box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.15); }
+.card-tile.super .card-art { box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.25); }
+.card-tile.ultra .card-art { box-shadow: inset 0 0 0 1px var(--gold), 0 0 30px var(--gold-glow); animation: ultraShimmer 3s ease-in-out infinite; }
+.card-tile.secret .card-art {
+  box-shadow: inset 0 0 0 1px var(--magenta), 0 0 12px rgba(255, 46, 136, 0.4), 0 0 30px rgba(34, 211, 238, 0.3);
+}
+.card-tile.secret .card-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,46,136,0.15) 30%, rgba(245,197,24,0.15) 45%, rgba(34,211,238,0.15) 60%, transparent 70%);
+  mix-blend-mode: overlay;
+  animation: holoShift 4s linear infinite;
+}
+@keyframes holoShift {
+  0%,100% { transform: translateX(-30%); }
+  50%     { transform: translateX(30%); }
+}
+@keyframes ultraShimmer {
+  0%,100% { box-shadow: inset 0 0 0 1px var(--gold), 0 0 30px var(--gold-glow); }
+  50%     { box-shadow: inset 0 0 0 1px var(--gold), 0 0 40px rgba(245,197,24,0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-tile.secret .card-art::after,
+  .card-tile.ultra .card-art { animation: none; }
+}
+.card-qty {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, var(--bg-0), var(--panel));
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  box-shadow: 0 0 8px var(--gold-glow);
+  z-index: 3;
+}
+.card-info {
+  padding: 10px 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+.card-meta .rarity { color: var(--gold-dim); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+
+/* ═══ EMPTY SIDE DECK ═══ */
+.empty-vault {
+  padding: 60px 32px;
+  border: 1px dashed var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px));
+  background: linear-gradient(135deg, rgba(26, 20, 36, 0.4), rgba(11, 8, 19, 0.6));
+  position: relative;
+}
+.empty-vault svg {
+  width: 60px;
+  height: 60px;
+  color: var(--violet);
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+.empty-vault .title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.empty-vault .sub {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+/* ═══ COMMENTAIRES ═══ */
+.comment-form {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+  margin-bottom: 24px;
+}
+.comment-form .avatar { flex-shrink: 0; width: 42px; height: 42px; font-size: 15px; }
+.comment-form-inner { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.comment-form textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  transition: all var(--duration-fast) var(--easing);
+}
+.comment-form textarea:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+.comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.comment-form-hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+}
+
+.comments-list { display: flex; flex-direction: column; gap: 18px; }
+.comment {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(26, 20, 36, 0.6), rgba(11, 8, 19, 0.6));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  position: relative;
+  animation: fadeSlide 500ms var(--easing) both;
+}
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comment { animation: none; }
+}
+.comment.reply {
+  margin-left: 44px;
+  border-left: 3px solid var(--gold-dim);
+}
+.comment .avatar { width: 38px; height: 38px; font-size: 14px; flex-shrink: 0; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.comment-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+.comment-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+.comment-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.comment-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.comment-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  transition: color var(--duration-fast) var(--easing);
+}
+.comment-action:hover { color: var(--gold); }
+.comment-action .count {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar { display: flex; flex-direction: column; gap: 28px; }
+.side-card {
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(26, 20, 36, 0.7), rgba(34, 24, 47, 0.7));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+  position: relative;
+}
+.side-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 60px;
+  background: var(--gold);
+}
+.side-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.side-title::before {
+  content: '';
+  width: 12px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.similar-list { display: flex; flex-direction: column; gap: 12px; }
+.similar-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.similar-item:hover {
+  border-color: var(--gold-dim);
+  background: var(--panel);
+}
+.similar-thumb {
+  width: 48px;
+  height: 68px;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-1));
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  opacity: 0.6;
+}
+.similar-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.similar-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.similar-meta { font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; }
+.similar-meta .heart { color: var(--gold); font-weight: 700; }
+
+/* Bars stats deck */
+.stat-bars { display: flex; flex-direction: column; gap: 14px; }
+.bar-row { display: flex; flex-direction: column; gap: 6px; }
+.bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.bar-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.bar-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.bar-track {
+  height: 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+  position: relative;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  box-shadow: 0 0 8px var(--gold-glow);
+  position: relative;
+  animation: barFill 900ms var(--easing) both;
+  transform-origin: left;
+}
+.bar-fill.violet { background: linear-gradient(90deg, #6B21A8, var(--violet)); box-shadow: 0 0 8px var(--violet-glow); }
+.bar-fill.cyan { background: linear-gradient(90deg, #0891B2, var(--cyan)); box-shadow: 0 0 8px rgba(34, 211, 238, 0.35); }
+@keyframes barFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill { animation: none; }
+}
+
+/* ═══ DEMO NOTE ═══ */
+.demo-note {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(11, 8, 19, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 260px;
+  z-index: 60;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.demo-note b { color: var(--gold); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 1100px) {
+  .deck-layout { grid-template-columns: 1fr; }
+  .cards-grid.main { grid-template-columns: repeat(5, 1fr); }
+  .cards-grid.extra { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 720px) {
+  .navbar { padding: 12px 16px; gap: 12px; }
+  .navlinks { display: none; }
+  main { padding: 24px 16px 100px; }
+  .deck-hero { grid-template-columns: 1fr; gap: 20px; padding: 20px 0 30px; }
+  .deck-hero-decor { display: none; }
+  .deck-mini-stats { min-width: 0; flex-wrap: wrap; gap: 16px; padding: 14px 16px; }
+  .deck-mini-stats .mini-value { font-size: 18px; }
+  .cards-grid.main { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .cards-grid.extra { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .corner-ornament { width: 60px; height: 60px; }
+  .reactions { padding: 14px 14px; gap: 8px; }
+  .cyber-btn { padding: 10px 16px; font-size: 11px; }
+  .section-title { font-size: 18px; }
+  .comment.reply { margin-left: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SVG symbols ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-millennium" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+    <path d="M4 4 L28 4 L16 29 Z"/>
+    <path d="M9 10 L23 10 L16 24 Z" stroke-width="0.8" opacity="0.55"/>
+    <ellipse cx="16" cy="13" rx="5.4" ry="3.1" stroke-width="1.3"/>
+    <circle cx="16" cy="13" r="1.7" fill="currentColor" stroke="none"/>
+    <path d="M16 16.5 L16 20 M13 16 L11.5 19 M19 16 L20.5 19" stroke-width="0.9"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M0 0 L60 0 L60 4 L4 4 L4 60 L0 60 Z"/>
+    <path d="M10 10 L44 10 M10 10 L10 44" opacity="0.4"/>
+    <path d="M20 20 L34 20 L34 24 L24 24 L24 34 L20 34 Z" opacity="0.7"/>
+    <circle cx="12" cy="52" r="2" fill="currentColor"/>
+    <circle cx="52" cy="12" r="2" fill="currentColor"/>
+    <path d="M60 60 L70 60 L70 62 L62 62 L62 70 L60 70 Z" opacity="0.3"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <circle cx="10" cy="10" r="6"/>
+    <path d="M15 15 L21 21"/>
+  </symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M6 10 V6 L12 3 L18 6 V10 L20 15 L4 15 Z"/>
+    <path d="M10 18 A2 2 0 0 0 14 18"/>
+  </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 20 L4 18 L20 18 L20 20 M12 4 L16 8 L12 12 L8 8 Z"/>
+  </symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M3 8 V3 H8 M16 3 H21 V8 M21 16 V21 H16 M8 21 H3 V16"/>
+    <path d="M3 12 H21" stroke-width="1.6"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="8" width="50" height="30" opacity="0.4"/>
+    <path d="M10 45 H50 M10 52 H50 M10 59 H50 M10 66 H35" opacity="0.3"/>
+    <rect x="5" y="80" width="15" height="8" opacity="0.4"/>
+    <rect x="40" y="80" width="15" height="8" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-ankh" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="20" cy="12" r="6"/>
+    <path d="M20 18 V36 M12 22 H28"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+    <path d="M10 22 L30 22" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-glyph-scarab" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4">
+    <ellipse cx="20" cy="22" rx="9" ry="12"/>
+    <path d="M20 10 V34 M11 22 H29" opacity="0.5"/>
+    <path d="M6 16 L11 20 M34 16 L29 20 M6 30 L11 26 M34 30 L29 26" opacity="0.6"/>
+    <circle cx="20" cy="8" r="3"/>
+  </symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M12 21 L4 13 L4 8 L8 4 L12 8 L16 4 L20 8 L20 13 Z"/>
+  </symbol>
+  <symbol id="i-broken-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M12 21 L4 13 L4 8 L8 4 L11 8 L9 11 L13 13 L11 16 L12 21"/>
+    <path d="M12 21 L20 13 L20 8 L16 4 L13 8" opacity="0.7"/>
+  </symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 4 H20 V16 H12 L8 20 L8 16 H4 Z"/>
+  </symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M8 8 H18 V20 H8 Z"/>
+    <path d="M6 4 H16 V6 M6 4 L6 16 H8" opacity="0.7"/>
+  </symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M4 20 L4 16 L16 4 L20 8 L8 20 Z"/>
+    <path d="M13 7 L17 11" opacity="0.7"/>
+  </symbol>
+  <symbol id="i-vault" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="8" y="12" width="44" height="40"/>
+    <circle cx="30" cy="32" r="10"/>
+    <circle cx="30" cy="32" r="4"/>
+    <path d="M30 22 L30 18 M30 42 L30 46 M20 32 L16 32 M40 32 L44 32" opacity="0.5"/>
+  </symbol>
+</svg>
+
+<!-- ═══ Corner ornaments ═══ -->
+<svg class="corner-ornament tl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament tr"><use href="#i-corner"/></svg>
+<svg class="corner-ornament bl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament br"><use href="#i-corner"/></svg>
+
+<!-- ═══ Parallax glyphes ═══ -->
+<div class="parallax-layer" data-depth="0.15">
+  <svg class="glyph gold" style="top:14%; left:5%; width:80px; height:80px;"><use href="#i-glyph-eye"/></svg>
+  <svg class="glyph delay-1" style="top:36%; right:6%; width:110px; height:110px;"><use href="#i-glyph-pyramid"/></svg>
+  <svg class="glyph gold delay-2" style="top:68%; left:10%; width:70px; height:70px;"><use href="#i-glyph-scarab"/></svg>
+  <svg class="glyph delay-3" style="top:88%; right:12%; width:70px; height:70px;"><use href="#i-glyph-ankh"/></svg>
+</div>
+<div class="parallax-layer" data-depth="0.3">
+  <svg class="glyph delay-2" style="top:26%; left:32%; width:40px; height:40px;"><use href="#i-glyph-pyramid"/></svg>
+  <svg class="glyph gold delay-1" style="top:76%; right:38%; width:50px; height:50px;"><use href="#i-glyph-ankh"/></svg>
+</div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar">
+  <a href="#" class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32"><use href="#i-millennium"/></svg>
+    <span class="brand-name">Keit<span class="accent">land</span></span>
+  </a>
+  <div class="navlinks">
+    <a href="#" class="navlink">Collection</a>
+    <a href="#" class="navlink active">Decks</a>
+    <a href="#" class="navlink">Social</a>
+    <a href="#" class="navlink">Scan</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn" title="Rechercher"><svg width="18" height="18"><use href="#i-search"/></svg></button>
+    <button class="nav-btn" title="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button>
+    <button class="nav-btn" title="Profil"><svg width="18" height="18"><use href="#i-user"/></svg></button>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<main>
+  <!-- HERO DECK -->
+  <section class="deck-hero">
+    <svg class="deck-hero-decor"><use href="#i-glyph-scarab"/></svg>
+    <div>
+      <div class="deck-crumb">— Artefact du duelliste —</div>
+      <h1 class="deck-title">Blue-Eyes<br>Sanctuary</h1>
+      <div class="deck-author">
+        <div class="avatar">KN</div>
+        <div class="deck-author-info">
+          <div class="deck-author-name">KEITO_NAGAYAMI</div>
+          <div class="deck-author-meta">Publié il y a 3 jours · Mis à jour hier</div>
+        </div>
+      </div>
+      <div class="badges-row">
+        <span class="badge-flag public"><span class="dot"></span> Public</span>
+        <span class="badge-flag banlist"><span class="dot"></span> Banlist OCG 2026</span>
+        <span class="badge-flag"><span class="dot"></span> Tournoi</span>
+        <span class="badge-flag"><span class="dot"></span> Meta</span>
+      </div>
+    </div>
+    <div class="deck-mini-stats">
+      <div class="mini">
+        <div class="mini-label">Main</div>
+        <div class="mini-value gold">40 <span style="font-size:14px;color:var(--text-muted)">/ 60</span></div>
+      </div>
+      <div class="mini-sep"></div>
+      <div class="mini">
+        <div class="mini-label">Extra</div>
+        <div class="mini-value">15 <span style="font-size:14px;color:var(--text-muted)">/ 15</span></div>
+      </div>
+      <div class="mini-sep"></div>
+      <div class="mini">
+        <div class="mini-label">Likes</div>
+        <div class="mini-value small" style="color:var(--danger)"><svg width="14" height="14" style="vertical-align:-2px"><use href="#i-heart"/></svg> 128</div>
+      </div>
+      <div class="mini-sep"></div>
+      <div class="mini">
+        <div class="mini-label">Comments</div>
+        <div class="mini-value small" style="color:var(--cyan)"><svg width="14" height="14" style="vertical-align:-2px"><use href="#i-chat"/></svg> 34</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REACTIONS BAR -->
+  <div class="reactions">
+    <button class="cyber-btn glitch">
+      <svg width="14" height="14"><use href="#i-heart"/></svg>
+      J'aime <span class="count">128</span>
+    </button>
+    <button class="cyber-btn danger small">
+      <svg width="14" height="14"><use href="#i-broken-heart"/></svg>
+      Dislike <span class="count" style="color:#fff">7</span>
+    </button>
+    <button class="cyber-btn secondary">
+      <svg width="14" height="14"><use href="#i-copy"/></svg>
+      Copier dans ma wishlist
+    </button>
+    <div class="reactions-spacer"></div>
+    <button class="cyber-btn glitch">
+      <svg width="14" height="14"><use href="#i-edit"/></svg>
+      Éditer
+    </button>
+    <button class="cyber-btn ghost small">Partager</button>
+  </div>
+
+  <!-- LAYOUT AVEC SIDEBAR -->
+  <div class="deck-layout">
+    <div class="deck-main">
+      <!-- MAIN DECK -->
+      <div class="section-header">
+        <h2 class="section-title"><span class="marker">I.</span>Main Deck</h2>
+        <div class="section-count"><span class="cur">40</span> / 60</div>
+      </div>
+      <div class="cards-grid main" id="grid-main"></div>
+
+      <!-- EXTRA DECK -->
+      <div class="section-header">
+        <h2 class="section-title"><span class="marker">II.</span>Extra Deck</h2>
+        <div class="section-count"><span class="cur">15</span> / 15</div>
+      </div>
+      <div class="cards-grid extra" id="grid-extra"></div>
+
+      <!-- SIDE DECK -->
+      <div class="section-header">
+        <h2 class="section-title"><span class="marker">III.</span>Side Deck</h2>
+        <div class="section-count"><span class="cur">0</span> / 15</div>
+      </div>
+      <div class="empty-vault">
+        <svg><use href="#i-vault"/></svg>
+        <div class="title">— Coffre scellé —</div>
+        <div class="sub">Le duelliste n'a pas encore préparé sa réserve.<br>Reviens quand le grimoire aura frémi.</div>
+      </div>
+
+      <!-- COMMENTAIRES -->
+      <div class="section-header">
+        <h2 class="section-title"><span class="marker">IV.</span>Chambre du conseil</h2>
+        <div class="section-count"><span class="cur">34</span> messages</div>
+      </div>
+
+      <div class="comment-form">
+        <div class="avatar">KN</div>
+        <div class="comment-form-inner">
+          <textarea placeholder="Laisse ta trace dans le sanctuaire…"></textarea>
+          <div class="comment-form-actions">
+            <div class="comment-form-hint">Sois respectueux — les esprits écoutent.</div>
+            <button class="cyber-btn ghost small">Aperçu</button>
+            <button class="cyber-btn glitch small">Poster</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="comments-list">
+        <div class="comment" style="animation-delay:60ms">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--cyan),var(--violet))">YM</div>
+          <div class="comment-body">
+            <div class="comment-head">
+              <span class="comment-name">YAMI_MUTOU</span>
+              <span class="comment-date">— il y a 2 heures —</span>
+            </div>
+            <div class="comment-text">Le ratio de tuners est absolument surréaliste. Comment tu tiens la stabilité en early ? Le Maxx C sideboard suffit vraiment vs. Snake-Eye ?</div>
+            <div class="comment-actions">
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-heart"/></svg> <span class="count">14</span></button>
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-chat"/></svg> Répondre</button>
+              <button class="comment-action">Signaler</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment reply" style="animation-delay:120ms">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--gold),var(--violet))">KN</div>
+          <div class="comment-body">
+            <div class="comment-head">
+              <span class="comment-name">KEITO_NAGAYAMI</span>
+              <span class="comment-date">— il y a 1 heure —</span>
+            </div>
+            <div class="comment-text">Pour le mirror c'est chaud, je t'avoue. Le trick c'est de garder l'Ash side 2 en priorité et scoper au moindre call. Sinon Maxx C carry pas mal, oui.</div>
+            <div class="comment-actions">
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-heart"/></svg> <span class="count">7</span></button>
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-chat"/></svg> Répondre</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment reply" style="animation-delay:160ms">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--magenta),var(--gold))">DS</div>
+          <div class="comment-body">
+            <div class="comment-head">
+              <span class="comment-name">DARK_SEER</span>
+              <span class="comment-date">— il y a 45 min —</span>
+            </div>
+            <div class="comment-text">+1, joué la même chose au régional de Lille. Tu peux tester Called by the Grave en side aussi, ça élargit tes outs.</div>
+            <div class="comment-actions">
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-heart"/></svg> <span class="count">3</span></button>
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-chat"/></svg> Répondre</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment" style="animation-delay:220ms">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--violet),var(--magenta))">SR</div>
+          <div class="comment-body">
+            <div class="comment-head">
+              <span class="comment-name">SETH_RA</span>
+              <span class="comment-date">— hier —</span>
+            </div>
+            <div class="comment-text">Deck magnifique visuellement en plus. Tu penses partager la liste import YDK ? Je veux tester ça sur EDOPRO ce weekend.</div>
+            <div class="comment-actions">
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-heart"/></svg> <span class="count">22</span></button>
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-chat"/></svg> Répondre</button>
+              <button class="comment-action">Signaler</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment" style="animation-delay:280ms">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--success),var(--cyan))">MA</div>
+          <div class="comment-body">
+            <div class="comment-head">
+              <span class="comment-name">MAI_ATSUKO</span>
+              <span class="comment-date">— avant-hier —</span>
+            </div>
+            <div class="comment-text">Choix des Secret Rare au top. Ça respire l'archétype, félicitations pour le rendu. Question : c'est du build custom ou tu suis une meta liste JP ?</div>
+            <div class="comment-actions">
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-heart"/></svg> <span class="count">9</span></button>
+              <button class="comment-action"><svg width="12" height="12"><use href="#i-chat"/></svg> Répondre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="side-card">
+        <div class="side-title">Decks similaires</div>
+        <div class="similar-list">
+          <div class="similar-item">
+            <div class="similar-thumb"><svg width="26" height="26"><use href="#i-glyph-pyramid"/></svg></div>
+            <div class="similar-info">
+              <div class="similar-name">Blue-Eyes Legacy</div>
+              <div class="similar-meta">par SETH_RA · <span class="heart">♥ 94</span></div>
+            </div>
+          </div>
+          <div class="similar-item">
+            <div class="similar-thumb"><svg width="26" height="26"><use href="#i-glyph-eye"/></svg></div>
+            <div class="similar-info">
+              <div class="similar-name">White Aura Storm</div>
+              <div class="similar-meta">par YAMI_MUTOU · <span class="heart">♥ 61</span></div>
+            </div>
+          </div>
+          <div class="similar-item">
+            <div class="similar-thumb"><svg width="26" height="26"><use href="#i-glyph-ankh"/></svg></div>
+            <div class="similar-info">
+              <div class="similar-name">Chaos Blue-Eyes</div>
+              <div class="similar-meta">par DARK_SEER · <span class="heart">♥ 47</span></div>
+            </div>
+          </div>
+          <div class="similar-item">
+            <div class="similar-thumb"><svg width="26" height="26"><use href="#i-glyph-scarab"/></svg></div>
+            <div class="similar-info">
+              <div class="similar-name">Millennium Duel</div>
+              <div class="similar-meta">par MAI_ATSUKO · <span class="heart">♥ 38</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">Statistiques du deck</div>
+        <div class="stat-bars">
+          <div class="bar-row">
+            <div class="bar-head">
+              <span class="bar-label">Monstres</span>
+              <span class="bar-value">22 · 55%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:55%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-head">
+              <span class="bar-label">Magies</span>
+              <span class="bar-value">12 · 30%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill violet" style="width:30%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-head">
+              <span class="bar-label">Pièges</span>
+              <span class="bar-value">6 · 15%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill cyan" style="width:15%"></div></div>
+          </div>
+          <div class="bar-row" style="margin-top:8px;padding-top:12px;border-top:1px dashed var(--border)">
+            <div class="bar-head">
+              <span class="bar-label">Ratio Ultra+</span>
+              <span class="bar-value">18 / 40</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:45%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-head">
+              <span class="bar-label">Consistance</span>
+              <span class="bar-value" style="color:var(--success)">A+</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:92%"></div></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ═══ Demo note ═══ -->
+<div class="demo-note">
+  <b>Maquette v2 · DeckView</b> — vue d'un deck comme œuvre exposée. Hover cartes,
+  scroll parallax. Prefers-reduced-motion respecté.
+</div>
+
+<script>
+// Génération grille Main Deck (24 cartes) et Extra (10 cartes)
+const rarities = [
+  { cls: 'common', label: 'Common' },
+  { cls: 'rare', label: 'Rare' },
+  { cls: 'super', label: 'Super' },
+  { cls: 'ultra', label: 'Ultra' },
+  { cls: 'secret', label: 'Secret' },
+];
+const namesMain = [
+  'Dragon Blanc aux Yeux Bleus','Kaibaman','Sage of Silver Wings','White Stone of Ancients',
+  'Dragon Spirit of White','Blue-Eyes Alternative','Dragon Shrine','Trade-In',
+  'Ash Blossom','Maxx C','Nibiru','Effect Veiler',
+  'Called by the Grave','Return of the White','Cards of Consonance','Silver Guardian',
+  'Melody of Awakening','Blue-Eyes Chaos MAX','Priestess with Eyes of Blue','Sage with Eyes of Blue',
+  'The Melody of Awakening','Chaos Form','Ultimate Fusion','Ritual Sanctuary',
+];
+const namesExtra = [
+  'Blue-Eyes Spirit Dragon','Azure-Eyes Silver Dragon','Blue-Eyes Twin Burst','Chaos MAX',
+  'Neo Blue-Eyes','Cosmic Blazar Dragon','Stardust Spark','True Light',
+  'Firewall Dragon','Accesscode Talker',
+];
+
+const gridMain = document.getElementById('grid-main');
+const gridExtra = document.getElementById('grid-extra');
+
+function makeCard(name, i, forceRarity){
+  const r = forceRarity || rarities[Math.min(4, Math.floor(Math.pow(Math.random(),1.4)*5))];
+  const q = Math.random() > 0.7 ? Math.floor(Math.random()*2)+2 : 1;
+  return `
+    <div class="card-tile ${r.cls}" style="--i:${i}">
+      <div class="card-tile__inner">
+        <div class="card-art">
+          <span class="card-qty">× ${q}</span>
+          <svg width="60%" height="60%" style="color:var(--gold)"><use href="#i-card-placeholder"/></svg>
+        </div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">${name}</div>
+        <div class="card-meta">
+          <span class="rarity">${r.label}</span>
+          <span>LOB-001</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+namesMain.forEach((n,i)=>gridMain.insertAdjacentHTML('beforeend', makeCard(n,i)));
+namesExtra.forEach((n,i)=>gridExtra.insertAdjacentHTML('beforeend', makeCard(n,i, i<3 ? rarities[4] : (i<6 ? rarities[3] : rarities[2]))));
+
+// Parallax
+const layers = document.querySelectorAll('.parallax-layer');
+const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!prefersReduced) {
+  let mx = 0, my = 0, sy = 0;
+  addEventListener('mousemove', e => {
+    mx = (e.clientX / innerWidth - 0.5) * 20;
+    my = (e.clientY / innerHeight - 0.5) * 20;
+    render();
+  });
+  addEventListener('scroll', () => { sy = scrollY; render(); }, { passive: true });
+  function render() {
+    layers.forEach(l => {
+      const d = parseFloat(l.dataset.depth || 0.2);
+      l.style.transform = `translate3d(${mx * d}px, ${-sy * d + my * d}px, 0)`;
+    });
+  }
+}
+
+// Glow qui suit la souris sur les cartes
+document.querySelectorAll('.card-tile').forEach(tile => {
+  tile.addEventListener('mousemove', e => {
+    const rect = tile.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * 100;
+    const my = ((e.clientY - rect.top) / rect.height) * 100;
+    tile.style.setProperty('--mx', `${mx}%`);
+    tile.style.setProperty('--my', `${my}%`);
+  });
+});
+</script>
+</body>
+</html>

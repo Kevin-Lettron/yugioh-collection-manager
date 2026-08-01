@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Collection · Landing v2 « Sanctuaire du Millénium »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS (identiques à maquette-v2-collection.html)
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg-0: #050307;
+  --bg-1: #0B0813;
+  --bg-2: #14101C;
+  --panel: #1A1424;
+  --panel-2: #22182F;
+  --border: #3A2B4C;
+  --border-gold: #4A3C1E;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --text-dim: #6B5E45;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --grid: rgba(245, 197, 24, 0.06);
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+  --duration-slow: 600ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background-color: var(--bg-0);
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(168, 85, 247, 0.22), transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 100%, rgba(245, 197, 24, 0.08), transparent 60%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 50%, var(--bg-0));
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px, 100% 100%;
+  background-attachment: fixed;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: grain 8s steps(6) infinite;
+}
+@keyframes grain {
+  0%,100% { transform: translate(0,0); }
+  16% { transform: translate(-3%, -1%); }
+  33% { transform: translate(2%, 3%); }
+  50% { transform: translate(-2%, 2%); }
+  66% { transform: translate(3%, -2%); }
+  83% { transform: translate(-1%, 3%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+/* Parallax layers */
+.parallax-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.glyph {
+  position: absolute;
+  color: var(--violet);
+  opacity: 0.08;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.06; }
+.glyph.delay-1 { animation-delay: -2s; }
+.glyph.delay-2 { animation-delay: -5s; }
+.glyph.delay-3 { animation-delay: -8s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-30px) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glyph { animation: none; }
+}
+
+/* Corner ornaments */
+.corner-ornament {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--gold);
+  opacity: 0.45;
+  animation: cornerPulse 4s ease-in-out infinite;
+}
+.corner-ornament.tl { top: 12px; left: 12px; }
+.corner-ornament.tr { top: 12px; right: 12px; transform: scaleX(-1); }
+.corner-ornament.bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
+.corner-ornament.br { bottom: 12px; right: 12px; transform: scale(-1); }
+@keyframes cornerPulse {
+  0%,100% { opacity: 0.35; filter: drop-shadow(0 0 0 var(--gold-glow)); }
+  50%     { opacity: 0.55; filter: drop-shadow(0 0 8px var(--gold-glow)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .corner-ornament { animation: none; }
+}
+
+/* Navbar */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(11, 8, 19, 0.85), rgba(11, 8, 19, 0.55));
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+  animation: brandBreath 4s ease-in-out infinite;
+}
+.brand-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.brand-name .accent { color: var(--gold); }
+@keyframes brandBreath {
+  0%,100% { filter: drop-shadow(0 0 4px var(--gold-glow)); }
+  50%     { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+}
+.navlinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+.navlink {
+  padding: 10px 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  position: relative;
+  transition: color var(--duration-fast) var(--easing);
+}
+.navlink:hover { color: var(--text); }
+.navlink.active { color: var(--gold); }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CYBER BUTTON
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  min-height: 48px;
+  transition: transform var(--duration-fast) var(--easing), filter var(--duration-mid) var(--easing);
+  margin-right: 5px;
+  text-decoration: none;
+}
+.cyber-btn::before, .cyber-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--clip);
+  z-index: -1;
+}
+.cyber-btn::before {
+  background: var(--shadow);
+  transform: translateX(5px);
+}
+.cyber-btn::after { background: var(--main); }
+.cyber-btn:hover { filter: brightness(1.1); }
+.cyber-btn:active { transform: translate(2px, 1px); }
+.cyber-btn.secondary { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
+.cyber-btn.ghost {
+  --main: transparent;
+  --shadow: transparent;
+  --fg: var(--gold);
+  border: 1px solid var(--gold);
+}
+.cyber-btn.ghost::before, .cyber-btn.ghost::after { display: none; }
+.cyber-btn.large { padding: 20px 40px; font-size: 14px; }
+
+.cyber-btn.glitch:hover::after { animation: glitch 0.6s steps(4) infinite; }
+@keyframes glitch {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1px, 1px); filter: hue-rotate(15deg); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, -1px); filter: hue-rotate(-15deg); }
+  100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn.glitch:hover::after { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+main {
+  position: relative;
+  z-index: 5;
+}
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 100px 32px;
+  position: relative;
+}
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(28px, 3.6vw, 44px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 12px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--gold-dim) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.section-eyebrow {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.section-sub {
+  font-size: 16px;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin-bottom: 60px;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO FULLSCREEN
+   ═══════════════════════════════════════════════════════════════════════════ */
+.hero {
+  min-height: 92vh;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  align-items: center;
+  gap: 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 32px 80px;
+  position: relative;
+}
+
+.hero-left { position: relative; z-index: 2; }
+
+.hero-baseline {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(48px, 8.5vw, 108px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--gold-dim) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 30px rgba(245, 197, 24, 0.18));
+  animation: heroReveal 900ms var(--easing) both;
+}
+.hero-baseline .eyebrow {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 0.22em;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  margin-bottom: 20px;
+  -webkit-text-fill-color: currentColor;
+}
+.hero-baseline .accent {
+  color: var(--gold);
+  -webkit-text-fill-color: var(--gold);
+  position: relative;
+  display: inline-block;
+}
+.hero-baseline .accent::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, transparent, var(--gold-glow), transparent);
+  filter: blur(6px);
+}
+
+.hero-sub {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 540px;
+  margin-bottom: 44px;
+  letter-spacing: 0.02em;
+  animation: heroReveal 900ms 150ms var(--easing) both;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  animation: heroReveal 900ms 300ms var(--easing) both;
+}
+
+@keyframes heroReveal {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-baseline, .hero-sub, .hero-cta { animation: none; }
+}
+
+/* Hero right — pilier holographique */
+.hero-right {
+  position: relative;
+  height: 620px;
+  display: grid;
+  place-items: center;
+}
+.hero-obelisk {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  animation: floaty 8s ease-in-out infinite;
+}
+@keyframes floaty {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-14px); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-obelisk { animation: none; } }
+
+.hero-obelisk::before {
+  /* Halo au sol */
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 40px;
+  background: radial-gradient(ellipse, var(--gold-glow), transparent 70%);
+  filter: blur(8px);
+}
+.hero-obelisk svg {
+  width: 100%;
+  height: 100%;
+  color: var(--gold);
+  filter: drop-shadow(0 0 30px var(--gold-glow));
+}
+
+/* Cartes flottantes autour de l'obélisque */
+.floating-card {
+  position: absolute;
+  width: 110px;
+  aspect-ratio: 59 / 100;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-1));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  animation: cardFloat 6s ease-in-out infinite;
+}
+.floating-card svg { color: var(--gold); opacity: 0.35; width: 60%; height: 60%; }
+.floating-card.f1 { top: 10%; left: -20px; transform: rotate(-8deg); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 30px var(--gold-glow); border-color: var(--gold); }
+.floating-card.f2 { top: 40%; right: -20px; transform: rotate(6deg); animation-delay: -2s; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 25px var(--violet-glow); border-color: var(--violet); }
+.floating-card.f3 { bottom: 15%; left: 30px; transform: rotate(-3deg); animation-delay: -4s; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(34,211,238,0.3); border-color: var(--cyan); }
+@keyframes cardFloat {
+  0%,100% { transform: rotate(var(--r, 0deg)) translateY(0); }
+  50%     { transform: rotate(var(--r, 0deg)) translateY(-16px); }
+}
+.floating-card.f1 { --r: -8deg; }
+.floating-card.f2 { --r: 6deg; }
+.floating-card.f3 { --r: -3deg; }
+@media (prefers-reduced-motion: reduce) { .floating-card { animation: none; } }
+
+/* Petit scroll cue en bas du hero */
+.scroll-cue {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-dim);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.scroll-cue::after {
+  content: '';
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, var(--gold), transparent);
+  animation: scrollLine 2s ease-in-out infinite;
+}
+@keyframes scrollLine {
+  0%,100% { transform: scaleY(0.3); transform-origin: top; opacity: 0.4; }
+  50%     { transform: scaleY(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .scroll-cue::after { animation: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION FEATURES — 4 tuiles biseautées
+   ═══════════════════════════════════════════════════════════════════════════ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.feature {
+  position: relative;
+  padding: 32px 28px;
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%);
+  transition: transform var(--duration-mid) var(--easing), border-color var(--duration-mid) var(--easing);
+  overflow: hidden;
+}
+.feature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(180deg, var(--gold), transparent);
+}
+.feature::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 100% 0%, var(--gold-glow), transparent 60%);
+  opacity: 0;
+  transition: opacity var(--duration-mid) var(--easing);
+  pointer-events: none;
+}
+.feature:hover {
+  transform: translateY(-6px);
+  border-color: var(--gold-dim);
+}
+.feature:hover::after { opacity: 0.3; }
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--gold);
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 8px var(--gold-glow));
+}
+.feature-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.feature-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION NUMBERS — stats produit
+   ═══════════════════════════════════════════════════════════════════════════ */
+.numbers-section {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.08), transparent 70%),
+    linear-gradient(180deg, transparent, rgba(11, 8, 19, 0.5), transparent);
+}
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px));
+}
+.number-cell {
+  background: linear-gradient(135deg, var(--panel), var(--bg-1));
+  padding: 60px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.number-cell::before {
+  content: '';
+  position: absolute;
+  top: 20px; left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  background: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+.number-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(48px, 6vw, 84px);
+  font-weight: 900;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 0 20px var(--gold-glow));
+}
+.number-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.number-sublabel {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION TESTIMONIALS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.testimonial {
+  padding: 32px 30px;
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  position: relative;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+}
+.testimonial-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 17px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  position: relative;
+  padding-left: 28px;
+}
+.testimonial-quote::before {
+  content: '\201C';
+  position: absolute;
+  left: -6px;
+  top: -20px;
+  font-size: 60px;
+  color: var(--gold);
+  opacity: 0.4;
+  font-family: 'Cormorant Garamond', serif;
+}
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--violet), var(--gold-dim));
+  clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%);
+  display: grid;
+  place-items: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bg-0);
+}
+.avatar.v2 { background: linear-gradient(135deg, var(--gold), var(--cyan)); }
+.avatar.v3 { background: linear-gradient(135deg, var(--cyan), var(--violet)); }
+.testimonial-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.testimonial-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CTA FINAL LARGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cta-final {
+  max-width: 1200px;
+  margin: 0 auto 100px;
+  padding: 80px 40px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(245, 197, 24, 0.12), transparent 60%),
+    linear-gradient(135deg, var(--panel), var(--bg-1));
+  border: 1px solid var(--gold-dim);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px));
+  position: relative;
+  overflow: hidden;
+}
+.cta-final::before {
+  content: '';
+  position: absolute;
+  top: -40%; left: -20%;
+  width: 140%; height: 40%;
+  background: linear-gradient(180deg, transparent, var(--gold-glow), transparent);
+  filter: blur(60px);
+  opacity: 0.4;
+}
+.cta-final::after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 1px dashed var(--border-gold);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px));
+  pointer-events: none;
+  opacity: 0.5;
+}
+.cta-final-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, var(--text), var(--gold-dim));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+}
+.cta-final-sub {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 540px;
+  margin: 0 auto 40px;
+  line-height: 1.55;
+  position: relative;
+}
+.cta-final-cta { position: relative; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 5;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}
+.footer-brand svg { width: 24px; height: 24px; color: var(--gold-dim); }
+.footer-links {
+  display: flex;
+  gap: 24px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.footer-links a { color: var(--text-muted); text-decoration: none; transition: color var(--duration-fast) var(--easing); }
+.footer-links a:hover { color: var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .numbers-grid { grid-template-columns: 1fr; }
+  .testimonials-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .navbar { padding: 12px 16px; gap: 12px; }
+  .navlinks { display: none; }
+  .section { padding: 60px 16px; }
+  .hero { padding: 40px 16px 60px; min-height: auto; }
+  .features-grid { grid-template-columns: 1fr; gap: 16px; }
+  .corner-ornament { width: 60px; height: 60px; }
+  .cta-final { padding: 50px 24px; margin-bottom: 60px; }
+  footer { flex-direction: column; text-align: center; padding: 30px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SVG symbols ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-millennium" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+    <path d="M4 4 L28 4 L16 29 Z"/>
+    <path d="M9 10 L23 10 L16 24 Z" stroke-width="0.8" opacity="0.55"/>
+    <ellipse cx="16" cy="13" rx="5.4" ry="3.1" stroke-width="1.3"/>
+    <circle cx="16" cy="13" r="1.7" fill="currentColor" stroke="none"/>
+    <path d="M16 16.5 L16 20 M13 16 L11.5 19 M19 16 L20.5 19" stroke-width="0.9"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M0 0 L60 0 L60 4 L4 4 L4 60 L0 60 Z"/>
+    <path d="M10 10 L44 10 M10 10 L10 44" opacity="0.4"/>
+    <path d="M20 20 L34 20 L34 24 L24 24 L24 34 L20 34 Z" opacity="0.7"/>
+    <circle cx="12" cy="52" r="2" fill="currentColor"/>
+    <circle cx="52" cy="12" r="2" fill="currentColor"/>
+    <path d="M60 60 L70 60 L70 62 L62 62 L62 70 L60 70 Z" opacity="0.3"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <circle cx="10" cy="10" r="6"/>
+    <path d="M15 15 L21 21"/>
+  </symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">
+    <path d="M3 8 V3 H8 M16 3 H21 V8 M21 16 V21 H16 M8 21 H3 V16"/>
+    <path d="M3 12 H21" stroke-width="1.6"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-ankh" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="20" cy="12" r="6"/>
+    <path d="M20 18 V36 M12 22 H28"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+    <path d="M10 22 L30 22" opacity="0.4"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="8" width="50" height="30" opacity="0.4"/>
+    <path d="M10 45 H50 M10 52 H50 M10 59 H50 M10 66 H35" opacity="0.3"/>
+    <rect x="5" y="80" width="15" height="8" opacity="0.4"/>
+    <rect x="40" y="80" width="15" height="8" opacity="0.4"/>
+  </symbol>
+  <!-- Icônes features -->
+  <symbol id="i-feat-collection" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <rect x="6" y="10" width="14" height="22"/>
+    <rect x="17" y="14" width="14" height="22" opacity="0.7"/>
+    <rect x="28" y="10" width="14" height="22" opacity="0.4"/>
+    <circle cx="13" cy="21" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-feat-deck" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M8 6 L40 6 L40 42 L8 42 Z"/>
+    <path d="M14 14 H34 M14 20 H34 M14 26 H26" opacity="0.5"/>
+    <path d="M8 38 L40 38 L36 42 L12 42 Z" opacity="0.6"/>
+  </symbol>
+  <symbol id="i-feat-scan" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M4 14 V4 H14 M34 4 H44 V14 M44 34 V44 H34 M14 44 H4 V34"/>
+    <rect x="14" y="14" width="20" height="20" opacity="0.5"/>
+    <path d="M4 24 H44" stroke-width="1.2"/>
+    <circle cx="24" cy="24" r="3" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-feat-social" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <circle cx="16" cy="18" r="6"/>
+    <path d="M4 40 A12 12 0 0 1 28 40"/>
+    <circle cx="34" cy="14" r="4" opacity="0.6"/>
+    <path d="M28 34 A8 8 0 0 1 44 36" opacity="0.6"/>
+  </symbol>
+  <symbol id="i-obelisk" viewBox="0 0 200 400" fill="none" stroke="currentColor" stroke-width="1.5">
+    <!-- Base -->
+    <path d="M40 380 L160 380 L150 360 L50 360 Z"/>
+    <path d="M50 360 L150 360 L145 340 L55 340 Z" opacity="0.7"/>
+    <!-- Fût -->
+    <path d="M60 340 L140 340 L130 60 L70 60 Z"/>
+    <path d="M70 60 L130 60 L100 20 Z"/>
+    <!-- Œil au centre -->
+    <ellipse cx="100" cy="180" rx="24" ry="14"/>
+    <circle cx="100" cy="180" r="7"/>
+    <circle cx="100" cy="180" r="3" fill="currentColor"/>
+    <!-- Glyphes verticaux -->
+    <path d="M100 220 V320 M85 240 H115 M85 260 H115 M85 280 H115 M85 300 H115" opacity="0.4"/>
+    <!-- Halo pointe -->
+    <path d="M100 8 L108 24 L92 24 Z" opacity="0.7"/>
+  </symbol>
+</svg>
+
+<!-- ═══ Ornements de coin ═══ -->
+<svg class="corner-ornament tl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament tr"><use href="#i-corner"/></svg>
+<svg class="corner-ornament bl"><use href="#i-corner"/></svg>
+<svg class="corner-ornament br"><use href="#i-corner"/></svg>
+
+<!-- ═══ Parallax glyphes ═══ -->
+<div class="parallax-layer" data-depth="0.15">
+  <svg class="glyph gold" style="top:8%; left:4%; width:100px; height:100px;"><use href="#i-glyph-eye"/></svg>
+  <svg class="glyph delay-1" style="top:30%; right:5%; width:140px; height:140px;"><use href="#i-glyph-pyramid"/></svg>
+  <svg class="glyph gold delay-2" style="top:62%; left:8%; width:80px; height:80px;"><use href="#i-glyph-ankh"/></svg>
+  <svg class="glyph delay-3" style="top:82%; right:12%; width:90px; height:90px;"><use href="#i-glyph-eye"/></svg>
+</div>
+<div class="parallax-layer" data-depth="0.32">
+  <svg class="glyph delay-2" style="top:22%; left:38%; width:50px; height:50px;"><use href="#i-glyph-pyramid"/></svg>
+  <svg class="glyph gold delay-1" style="top:75%; right:38%; width:60px; height:60px;"><use href="#i-glyph-ankh"/></svg>
+  <svg class="glyph delay-3" style="top:45%; left:22%; width:36px; height:36px;"><use href="#i-glyph-eye"/></svg>
+</div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar">
+  <a href="#" class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32"><use href="#i-millennium"/></svg>
+    <span class="brand-name">Keit<span class="accent">land</span></span>
+  </a>
+  <div class="navlinks">
+    <a href="#features" class="navlink">Fonctionnalités</a>
+    <a href="#numbers" class="navlink">Chiffres</a>
+    <a href="#voix" class="navlink">Témoignages</a>
+    <a href="maquette-v2-web-social.html" class="navlink">Feed public</a>
+  </div>
+  <div class="nav-actions">
+    <a href="maquette-v2-web-login.html" class="cyber-btn ghost">Se connecter</a>
+    <a href="maquette-v2-web-register.html" class="cyber-btn glitch">S'inscrire</a>
+  </div>
+</nav>
+
+<main>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="hero-left">
+      <h1 class="hero-baseline">
+        <span class="eyebrow">— Sanctuaire du Millénium —</span>
+        Ta collection<br>
+        mérite un<br>
+        <span class="accent">Sanctuaire.</span>
+      </h1>
+      <p class="hero-sub">
+        Cartographie chaque carte que tu possèdes. Construis des decks, invoque-les
+        devant la communauté, scanne tes nouveautés en un cliché. La vitrine que
+        les autres apps n'ont jamais su te donner.
+      </p>
+      <div class="hero-cta">
+        <a href="maquette-v2-web-register.html" class="cyber-btn glitch large">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          S'inscrire — c'est gratuit
+        </a>
+        <a href="maquette-v2-web-social.html" class="cyber-btn secondary large">
+          <svg width="16" height="16"><use href="#i-glyph-eye"/></svg>
+          Voir un deck public
+        </a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-obelisk">
+        <svg viewBox="0 0 200 400"><use href="#i-obelisk"/></svg>
+      </div>
+      <div class="floating-card f1"><svg><use href="#i-card-placeholder"/></svg></div>
+      <div class="floating-card f2"><svg><use href="#i-card-placeholder"/></svg></div>
+      <div class="floating-card f3"><svg><use href="#i-card-placeholder"/></svg></div>
+    </div>
+    <div class="scroll-cue">Descends</div>
+  </section>
+
+  <!-- ═══ FEATURES ═══ -->
+  <section class="section" id="features">
+    <span class="section-eyebrow">— Ce que tu peux faire —</span>
+    <h2 class="section-title">Quatre piliers.<br>Un seul temple.</h2>
+    <p class="section-sub">
+      Chaque fonctionnalité est pensée pour le duelliste qui prend sa collection au sérieux.
+      Pas de gadget, pas de bruit. Juste ce qu'il faut.
+    </p>
+    <div class="features-grid">
+      <div class="feature">
+        <svg class="feature-icon"><use href="#i-feat-collection"/></svg>
+        <div class="feature-title">Collection</div>
+        <p class="feature-desc">Chaque carte cataloguée, filtrée par langue, rareté, archétype. Halo dynamique selon la rareté. Compte les cartes uniques et la valeur estimée.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon"><use href="#i-feat-deck"/></svg>
+        <div class="feature-title">Deck Builder</div>
+        <p class="feature-desc">Construis Main, Extra et Side depuis ta collection. Validation banlist en temps réel. Import / export .ydk pour les tournois.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon"><use href="#i-feat-scan"/></svg>
+        <div class="feature-title">Scan IA</div>
+        <p class="feature-desc">Photographie tes nouvelles cartes, l'IA Claude Vision les identifie et les ajoute. Un booster complet en 30 secondes.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon"><use href="#i-feat-social"/></svg>
+        <div class="feature-title">Social</div>
+        <p class="feature-desc">Partage tes decks publics, suis les créateurs, commente et like. Une communauté qui célèbre l'art du deckbuilding, pas les leaderboards.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ NUMBERS ═══ -->
+  <section class="section numbers-section" id="numbers">
+    <span class="section-eyebrow">— Le sanctuaire en chiffres —</span>
+    <h2 class="section-title">Une communauté<br>déjà bien vivante.</h2>
+    <p class="section-sub">
+      Les décombres d'ancien forums, transformés en vitrine moderne.
+      Rejoins ceux qui construisent déjà.
+    </p>
+    <div class="numbers-grid">
+      <div class="number-cell">
+        <div class="number-value">13 240</div>
+        <div class="number-label">Cartes cataloguées</div>
+        <div class="number-sublabel">Banlist TCG · OCG · Master Duel</div>
+      </div>
+      <div class="number-cell">
+        <div class="number-value">2 847</div>
+        <div class="number-label">Duellistes actifs</div>
+        <div class="number-sublabel">Depuis les 30 derniers jours</div>
+      </div>
+      <div class="number-cell">
+        <div class="number-value">18 906</div>
+        <div class="number-label">Decks partagés</div>
+        <div class="number-sublabel">Meta, casuals, jank inclus</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ TESTIMONIALS ═══ -->
+  <section class="section" id="voix">
+    <span class="section-eyebrow">— Les voix du sanctuaire —</span>
+    <h2 class="section-title">Ce qu'on nous dit.</h2>
+    <p class="section-sub">
+      Trois joueurs qui ont troqué Excel et YGOProDeck contre Keitland. Ils racontent.
+    </p>
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <p class="testimonial-quote">
+          J'avais 2 300 cartes dans un classeur, aucune idée de ce que je possédais.
+          En un weekend et deux paquets de scans, tout est là. Enfin je respire.
+        </p>
+        <div class="testimonial-author">
+          <div class="avatar">SR</div>
+          <div>
+            <div class="testimonial-name">Sébastien R.</div>
+            <div class="testimonial-meta">Collectionneur · Lyon</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <p class="testimonial-quote">
+          Le deck builder valide ma banlist en temps réel, exporte en .ydk propre.
+          Zéro friction. Le reste du monde en 2010, ce site en 2026.
+        </p>
+        <div class="testimonial-author">
+          <div class="avatar v2">MK</div>
+          <div>
+            <div class="testimonial-name">Manon K.</div>
+            <div class="testimonial-meta">Compétitive · YCS regular</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <p class="testimonial-quote">
+          J'ai partagé mon deck Sky Striker sur le feed, reçu 40 likes en deux heures.
+          Le premier endroit où je poste un deck sans avoir honte du design.
+        </p>
+        <div class="testimonial-author">
+          <div class="avatar v3">TL</div>
+          <div>
+            <div class="testimonial-name">Thomas L.</div>
+            <div class="testimonial-meta">Deckbuilder · Bruxelles</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA FINAL ═══ -->
+  <div class="cta-final">
+    <h2 class="cta-final-title">Rejoins<br>le Sanctuaire.</h2>
+    <p class="cta-final-sub">
+      Compte gratuit. Aucune carte bancaire. Ta collection reste la tienne,
+      exportable à tout moment. Trente secondes pour commencer.
+    </p>
+    <div class="cta-final-cta">
+      <a href="maquette-v2-web-register.html" class="cyber-btn glitch large">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Créer mon compte
+      </a>
+      <a href="maquette-v2-web-login.html" class="cyber-btn ghost large">Déjà membre ? Se connecter</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-brand">
+    <svg viewBox="0 0 32 32"><use href="#i-millennium"/></svg>
+    <span>Keitland · Le sanctuaire des duellistes · MMXXVI</span>
+  </div>
+  <div class="footer-links">
+    <a href="#">Mentions légales</a>
+    <a href="#">Confidentialité</a>
+    <a href="#">API YGOProDeck</a>
+    <a href="#">GitHub</a>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// Parallax mouse + scroll
+// ═══════════════════════════════════════════════════════════════════════════
+const layers = document.querySelectorAll('.parallax-layer');
+const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (!prefersReduced) {
+  let mx = 0, my = 0, sy = 0, ticking = false;
+  addEventListener('mousemove', e => {
+    mx = (e.clientX / innerWidth - 0.5) * 24;
+    my = (e.clientY / innerHeight - 0.5) * 24;
+    schedule();
+  });
+  addEventListener('scroll', () => {
+    sy = scrollY;
+    schedule();
+  }, { passive: true });
+
+  function schedule() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      layers.forEach(l => {
+        const d = parseFloat(l.dataset.depth || 0.2);
+        l.style.transform = `translate3d(${mx * d}px, ${-sy * d + my * d}px, 0)`;
+      });
+      ticking = false;
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Compteurs qui montent (numbers section)
+// ═══════════════════════════════════════════════════════════════════════════
+const counterEls = document.querySelectorAll('.number-value');
+if (!prefersReduced && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = parseInt(el.textContent.replace(/\s/g, ''), 10);
+      let cur = 0;
+      const step = Math.max(1, Math.floor(target / 60));
+      const timer = setInterval(() => {
+        cur = Math.min(target, cur + step);
+        el.textContent = cur.toLocaleString('fr-FR').replace(/,/g, ' ');
+        if (cur >= target) clearInterval(timer);
+      }, 22);
+      io.unobserve(el);
+    });
+  }, { threshold: 0.4 });
+  counterEls.forEach(el => io.observe(el));
+}
+</script>
+</body>
+</html>

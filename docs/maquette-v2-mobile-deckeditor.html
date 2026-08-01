@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Mobile · v2 · DeckEditor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0B0906;
+  --bg-elev: #14100A;
+  --panel: #1A1510;
+  --panel-2: #221B12;
+  --border: #3A2E1C;
+  --text: #F5EFE0;
+  --text-muted: #A99C86;
+  --gold: #F5C518;
+  --gold-dim: #C29A0F;
+  --gold-glow: rgba(245, 197, 24, 0.35);
+  --violet: #A855F7;
+  --violet-glow: rgba(168, 85, 247, 0.35);
+  --cyan: #22D3EE;
+  --magenta: #FF2E88;
+  --success: #34D399;
+  --danger: #FF4D6D;
+  --hieroglyph: rgba(168, 85, 247, 0.04);
+  --easing: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 180ms;
+  --duration-mid: 320ms;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100vh; background: #000; color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif; overflow-x: hidden;
+}
+body {
+  display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(circle at 70% 30%, rgba(168, 85, 247, 0.06), transparent 60%), #000;
+}
+
+.device {
+  position: relative; width: 390px; height: 844px;
+  background: var(--bg); border-radius: 44px;
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  overflow: hidden; isolation: isolate;
+  animation: framePulse 4s ease-in-out infinite;
+}
+@keyframes framePulse {
+  0%,100% { box-shadow: 0 0 30px rgba(245,197,24,0.10), inset 0 0 0 1px rgba(245,197,24,0.10); }
+  50%     { box-shadow: 0 0 55px rgba(245,197,24,0.22), inset 0 0 0 1px rgba(245,197,24,0.20); }
+}
+@media (prefers-reduced-motion: reduce) { .device { animation: none; } }
+@media (max-width: 500px) {
+  body { padding: 0; }
+  .device { width: 100vw; height: 100vh; border-radius: 0; border: 0; animation: none; }
+}
+
+.notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 30px; background: #000; border-radius: 20px; z-index: 300; }
+.home-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 130px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 4px; z-index: 300; }
+.status-bar {
+  position: absolute; top: 14px; left: 0; right: 0; padding: 0 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 250; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700; color: var(--text);
+  pointer-events: none;
+}
+.status-bar .right { display: flex; gap: 6px; align-items: center; opacity: 0.85; font-size: 10px; }
+
+.parallax { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+.glyph {
+  position: absolute; color: var(--violet); opacity: 0.08;
+  animation: float 12s ease-in-out infinite;
+}
+.glyph.gold { color: var(--gold); opacity: 0.06; }
+.glyph.delay-1 { animation-delay: -4s; }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-24px) rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .glyph { animation: none; } }
+
+.corner {
+  position: absolute; width: 38px; height: 38px;
+  color: var(--gold); opacity: 0.35; z-index: 10; pointer-events: none;
+}
+.corner.tl { top: 90px; left: 8px; }
+.corner.tr { top: 90px; right: 8px; transform: scaleX(-1); }
+
+/* Header */
+.header {
+  position: absolute;
+  top: 44px; left: 0; right: 0; height: 56px;
+  padding: 0 10px;
+  display: flex; align-items: center; gap: 8px;
+  z-index: 100;
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.85), rgba(11, 9, 6, 0.55));
+  border-bottom: 1px solid var(--border);
+}
+.icon-btn {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text); display: grid; place-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+.icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+.name-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  color: var(--text);
+  font-family: 'Orbitron', sans-serif; font-size: 13px;
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  outline: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+.name-input:focus { box-shadow: 0 0 0 2px rgba(245,197,24,0.15); }
+
+/* Save button floating (styled cyber-btn compact) */
+.save-btn {
+  flex-shrink: 0;
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 92% 100%, 92% 78%, 78% 78%, 78% 100%, 10% 100%, 0 60%);
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; letter-spacing: 0.14em;
+  font-weight: 700; text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0; cursor: pointer;
+  transition: transform var(--duration-fast) var(--easing);
+  margin-right: 4px;
+}
+.save-btn::before, .save-btn::after {
+  content: ''; position: absolute; inset: 0;
+  clip-path: var(--clip); z-index: -1;
+}
+.save-btn::before { background: var(--shadow); transform: translateX(4px); }
+.save-btn::after { background: var(--main); }
+.save-btn:hover { filter: brightness(1.1); }
+.save-btn:active { transform: translate(2px, 1px); }
+
+.screen {
+  position: absolute;
+  top: 100px; left: 0; right: 0; bottom: 32px;
+  padding: 14px 18px 40px;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+/* Toggles row */
+.toggles {
+  display: flex; gap: 12px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+.toggle {
+  flex: 1;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.toggle-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text);
+}
+.switch {
+  width: 40px; height: 22px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing);
+}
+.switch::after {
+  content: ''; position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: var(--text-muted);
+  transition: all var(--duration-fast) var(--easing);
+}
+.switch.on { border-color: var(--gold); box-shadow: 0 0 6px var(--gold-glow); }
+.switch.on::after {
+  left: 20px;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+/* Stats row */
+.stats-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.stat {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+  display: flex; flex-direction: column; gap: 2px;
+  position: relative;
+}
+.stat::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--gold); opacity: 0.6;
+}
+.stat-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; color: var(--text-muted);
+  letter-spacing: 0.2em; text-transform: uppercase;
+}
+.stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px; font-weight: 700; color: var(--text);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.stat-value.accent { color: var(--gold); }
+.stat-value .of { color: var(--text-muted); font-size: 14px; }
+
+/* CTA row 3 buttons compact */
+.cta-row {
+  margin-top: 14px;
+  display: flex; gap: 6px;
+}
+.cyber-btn-mini {
+  flex: 1;
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: #0B0906;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 92% 100%, 92% 78%, 78% 78%, 78% 100%, 10% 100%, 0 60%);
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 10px 4px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; letter-spacing: 0.1em;
+  font-weight: 700; text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0; cursor: pointer;
+  transition: transform var(--duration-fast) var(--easing);
+  margin-right: 4px;
+}
+.cyber-btn-mini::before, .cyber-btn-mini::after {
+  content: ''; position: absolute; inset: 0;
+  clip-path: var(--clip); z-index: -1;
+}
+.cyber-btn-mini::before { background: var(--shadow); transform: translateX(4px); }
+.cyber-btn-mini::after { background: var(--main); }
+.cyber-btn-mini:hover { filter: brightness(1.1); }
+.cyber-btn-mini:active { transform: translate(2px, 1px); }
+.cyber-btn-mini.ai {
+  --main: var(--violet);
+  --shadow: var(--cyan);
+  --fg: #fff;
+  position: relative;
+}
+.cyber-btn-mini.ai::after { background: var(--violet); }
+.bot-tag {
+  position: absolute;
+  top: -6px; right: -2px;
+  padding: 1px 4px;
+  background: var(--magenta);
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px; font-weight: 900;
+  letter-spacing: 0.1em;
+  z-index: 5;
+  box-shadow: 0 0 6px rgba(255,46,136,0.6);
+}
+
+/* Section title */
+.section-title {
+  margin: 20px 0 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold);
+}
+.section-title-count {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; color: var(--text-muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+  opacity: 0.4;
+}
+
+/* Deck grid 4 col */
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.deck-card {
+  position: relative;
+  aspect-ratio: 59 / 86;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-elev));
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  overflow: hidden;
+  display: grid; place-items: center;
+  animation: cardIn 500ms var(--easing) both;
+  animation-delay: calc(var(--i, 0) * 25ms);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .deck-card { animation: none; } }
+.deck-card::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 5px, var(--hieroglyph) 5px 6px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-elev));
+}
+.deck-card svg { position: relative; opacity: 0.35; }
+.deck-card:active { transform: scale(0.94); }
+
+.deck-card.rare { box-shadow: inset 0 0 0 1px rgba(59,130,246,0.4), 0 0 6px rgba(59,130,246,0.2); }
+.deck-card.super { box-shadow: inset 0 0 0 1px rgba(168,85,247,0.5), 0 0 8px rgba(168,85,247,0.3); }
+.deck-card.ultra { box-shadow: inset 0 0 0 1px var(--gold), 0 0 10px var(--gold-glow); }
+.deck-card.secret {
+  box-shadow: inset 0 0 0 1px var(--magenta), 0 0 6px rgba(255,46,136,0.4), 0 0 10px rgba(34,211,238,0.3);
+}
+
+.deck-card-qty {
+  position: absolute; top: 3px; right: 3px;
+  padding: 1px 5px;
+  background: var(--bg);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px; font-weight: 700;
+  z-index: 3;
+}
+
+/* Une carte "selected" avec menu contextuel visible */
+.deck-card.selected {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 20px var(--gold-glow);
+}
+.deck-card-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: var(--bg);
+  border: 1px solid var(--gold);
+  display: flex; gap: 4px;
+  padding: 4px;
+  z-index: 20;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 55% 100%, 50% 115%, 45% 100%, 0 100%);
+  padding-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+.deck-card-menu button {
+  width: 26px; height: 26px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: grid; place-items: center;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px; font-weight: 900;
+}
+.deck-card-menu button.danger { color: var(--danger); border-color: var(--danger); }
+.deck-card-menu button:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Danger button */
+.danger-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  transition: all var(--duration-fast) var(--easing);
+}
+.danger-btn:hover {
+  background: rgba(255,77,109,0.1);
+  box-shadow: 0 0 12px rgba(255,77,109,0.3);
+}
+.danger-btn.solid {
+  background: var(--danger);
+  color: #fff;
+}
+.danger-btn.solid:hover {
+  filter: brightness(1.15);
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M15 5 L8 12 L15 19"/>
+  </symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M4 4 L16 4 L20 8 L20 20 L4 20 Z"/>
+    <path d="M8 4 L8 10 L16 10 L16 4"/>
+    <path d="M8 15 L16 15"/>
+  </symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter">
+    <path d="M12 5v14M5 12h14"/>
+  </symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter">
+    <path d="M5 6 L19 6 L18 20 L6 20 Z"/>
+    <path d="M9 6 L9 3 L15 3 L15 6"/>
+    <path d="M9 10 L9 17 M15 10 L15 17"/>
+  </symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+    <path d="M12 3 L18 8 L18 16 L12 21 L6 16 L6 8 Z"/>
+    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+    <path d="M12 8 L12 5 M12 19 L12 16 M8 12 L5 12 M19 12 L16 12"/>
+  </symbol>
+  <symbol id="i-card-placeholder" viewBox="0 0 60 100" fill="none" stroke="currentColor" stroke-width="1">
+    <rect x="5" y="8" width="50" height="30" opacity="0.4"/>
+    <path d="M10 45 H50 M10 52 H50 M10 59 H40" opacity="0.3"/>
+  </symbol>
+  <symbol id="i-glyph-eye" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="20" cy="20" rx="16" ry="9"/>
+    <circle cx="20" cy="20" r="5"/>
+    <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-glyph-pyramid" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M20 4 L36 32 L4 32 Z"/>
+    <path d="M20 4 L20 32" opacity="0.5"/>
+  </symbol>
+  <symbol id="i-corner" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.2">
+    <path d="M0 0 L30 0 L30 3 L3 3 L3 30 L0 30 Z"/>
+    <path d="M8 8 L22 8 M8 8 L8 22" opacity="0.4"/>
+    <circle cx="8" cy="28" r="1.5" fill="currentColor"/>
+    <circle cx="28" cy="8" r="1.5" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="device">
+  <div class="notch"></div>
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <span class="right">
+      <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="2" height="6"/><rect x="4" y="2" width="2" height="8"/><rect x="8" y="0" width="2" height="10"/><rect x="12" y="0" width="2" height="10" opacity="0.5"/></svg>
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="14" height="9" rx="1.5"/><rect x="15.5" y="3" width="1.5" height="4" fill="currentColor"/><rect x="2" y="2" width="10" height="6" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="parallax">
+    <svg class="glyph gold" style="top:15%; left:-30px; width:130px; height:130px;"><use href="#i-glyph-pyramid"/></svg>
+    <svg class="glyph delay-1" style="bottom:15%; right:-30px; width:150px; height:150px;"><use href="#i-glyph-eye"/></svg>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <button class="icon-btn" title="Retour"><svg width="18" height="18"><use href="#i-back"/></svg></button>
+    <input class="name-input" value="Dragon Blanc Control" spellcheck="false">
+    <button class="save-btn"><svg width="12" height="12"><use href="#i-save"/></svg> Save</button>
+  </div>
+
+  <svg class="corner tl"><use href="#i-corner"/></svg>
+  <svg class="corner tr"><use href="#i-corner"/></svg>
+
+  <div class="screen">
+    <div class="toggles">
+      <div class="toggle">
+        <span class="toggle-label">Public</span>
+        <div class="switch on"></div>
+      </div>
+      <div class="toggle">
+        <span class="toggle-label">Banlist</span>
+        <div class="switch"></div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-label">Main deck</div>
+        <div class="stat-value accent">40 <span class="of">/ 60</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Extra deck</div>
+        <div class="stat-value accent">15 <span class="of">/ 15</span></div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <button class="cyber-btn-mini">
+        <svg width="10" height="10"><use href="#i-plus"/></svg> Main
+      </button>
+      <button class="cyber-btn-mini">
+        <svg width="10" height="10"><use href="#i-plus"/></svg> Extra
+      </button>
+      <button class="cyber-btn-mini ai">
+        <span class="bot-tag">BOT</span>
+        <svg width="10" height="10"><use href="#i-ai"/></svg> AI
+      </button>
+    </div>
+
+    <div class="section-title">
+      <span class="section-title-text">Main Deck</span>
+      <span class="section-title-count">40 / 60</span>
+    </div>
+
+    <div class="deck-grid" id="main-grid"></div>
+
+    <div class="section-title">
+      <span class="section-title-text">Extra Deck</span>
+      <span class="section-title-count">15 / 15</span>
+    </div>
+
+    <div class="deck-grid" id="extra-grid"></div>
+
+    <div style="margin-top: 22px; display: flex; flex-direction: column; gap: 10px;">
+      <button class="danger-btn">
+        <svg width="12" height="12"><use href="#i-trash"/></svg>
+        Vider le deck
+      </button>
+      <button class="danger-btn solid">
+        <svg width="12" height="12"><use href="#i-trash"/></svg>
+        Supprimer le deck
+      </button>
+    </div>
+  </div>
+
+  <div class="home-bar"></div>
+</div>
+
+<script>
+const rarities = ['common', 'rare', 'super', 'ultra', 'secret'];
+const mainGrid = document.getElementById('main-grid');
+const extraGrid = document.getElementById('extra-grid');
+
+for (let i = 0; i < 16; i++) {
+  const r = rarities[Math.floor(Math.random() * rarities.length)];
+  const q = Math.random() > 0.55 ? Math.floor(Math.random() * 2) + 2 : 1;
+  // 5e carte : sélectionnée avec menu
+  const selected = i === 5;
+  mainGrid.insertAdjacentHTML('beforeend', `
+    <div class="deck-card ${r}${selected ? ' selected' : ''}" style="--i:${i}">
+      ${selected ? `
+        <div class="deck-card-menu">
+          <button title="Retirer">−</button>
+          <button title="Ajouter">+</button>
+          <button class="danger" title="Supprimer">×</button>
+        </div>
+      ` : ''}
+      ${q > 1 ? `<span class="deck-card-qty">x${q}</span>` : ''}
+      <svg width="60%" height="60%" style="color:var(--gold)"><use href="#i-card-placeholder"/></svg>
+    </div>
+  `);
+}
+for (let i = 0; i < 12; i++) {
+  const r = rarities[Math.floor(Math.random() * rarities.length)];
+  extraGrid.insertAdjacentHTML('beforeend', `
+    <div class="deck-card ${r}" style="--i:${i}">
+      <svg width="60%" height="60%" style="color:var(--gold)"><use href="#i-card-placeholder"/></svg>
+    </div>
+  `);
+}
+</script>
+</body>
+</html>
