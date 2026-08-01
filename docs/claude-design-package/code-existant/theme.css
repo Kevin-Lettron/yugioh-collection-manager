@@ -1,0 +1,459 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THÈME — Cyberpunk / Yu-Gi-Oh
+   ---------------------------------------------------------------------------
+   Source de vérité des couleurs. Deux jeux de valeurs : sombre (défaut) et
+   clair, sélectionnés par l'attribut `data-theme` sur <html>.
+
+   Les variables sont des triplets RGB « r g b » et non des `#hex`, pour que
+   Tailwind puisse y appliquer une opacité (`bg-white/50`) via <alpha-value>.
+
+   Le remap se fait dans tailwind.config.js : les ~900 classes de couleur déjà
+   écrites dans les pages (bg-white, text-gray-700, bg-blue-600…) pointent
+   désormais vers ces variables. Conséquence importante : en thème sombre
+   l'échelle de gris est INVERSÉE (gray-50 = surface la plus sombre,
+   gray-800 = texte le plus clair), et la famille `blue` est devenue l'or.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Tokens sémantiques — utilisés par les composants cyber */
+  --bg: #0b0906;
+  --bg-elev: #14100a;
+  --panel: #1a1510;
+  --panel-2: #221b12;
+  --border: #3a2e1c;
+  --text: #f5efe0;
+  --text-muted: #a99c86;
+  --gold: #f5c518;
+  --gold-dim: #c29a0f;
+  --violet: #a855f7;
+  --cyan: #22d3ee;
+  --magenta: #ff2e88;
+  --success: #34d399;
+  --danger: #ff4d6d;
+  --on-gold: #0b0906;
+  --grid: rgba(245, 197, 24, 0.055);
+  --glow: 0 0 24px rgba(245, 197, 24, 0.25);
+
+  /* Surfaces — `white` devient le panneau, pas du blanc */
+  --c-white: 26 21 16;
+
+  /* Gris inversé : 50 = plus sombre … 900 = plus clair */
+  --c-gray-50: 20 16 10;
+  --c-gray-100: 30 24 17;
+  --c-gray-200: 42 34 24;
+  --c-gray-300: 58 46 28;
+  --c-gray-400: 110 98 80;
+  --c-gray-500: 169 156 134;
+  --c-gray-600: 191 180 159;
+  --c-gray-700: 214 204 184;
+  --c-gray-800: 245 239 224;
+  --c-gray-900: 255 251 242;
+
+  /* `blue` = OR (primaire). Toutes les CTA existantes deviennent dorées. */
+  --c-blue-50: 36 28 8;
+  --c-blue-100: 51 39 8;
+  --c-blue-200: 74 58 16;
+  --c-blue-300: 110 86 21;
+  --c-blue-400: 194 154 15;
+  --c-blue-500: 224 180 20;
+  --c-blue-600: 245 197 24;
+  --c-blue-700: 255 216 74;
+  --c-blue-800: 255 232 148;
+  --c-blue-900: 255 243 196;
+
+  /* `purple` / `indigo` / `violet` = VIOLET (secondaire) */
+  --c-purple-50: 28 16 48;
+  --c-purple-100: 38 22 67;
+  --c-purple-200: 53 32 94;
+  --c-purple-300: 74 44 133;
+  --c-purple-400: 139 92 246;
+  --c-purple-500: 155 93 247;
+  --c-purple-600: 168 85 247;
+  --c-purple-700: 192 132 252;
+  --c-purple-800: 221 184 254;
+  --c-purple-900: 239 224 255;
+
+  /* `red` / `rose` = DANGER */
+  --c-red-50: 42 15 22;
+  --c-red-100: 59 20 30;
+  --c-red-200: 82 26 40;
+  --c-red-300: 122 35 56;
+  --c-red-400: 224 59 92;
+  --c-red-500: 255 77 109;
+  --c-red-600: 255 77 109;
+  --c-red-700: 255 107 133;
+  --c-red-800: 255 168 184;
+  --c-red-900: 255 213 221;
+
+  /* `green` / `emerald` = SUCCÈS */
+  --c-green-50: 12 33 25;
+  --c-green-100: 16 48 38;
+  --c-green-200: 22 66 53;
+  --c-green-300: 29 91 73;
+  --c-green-400: 34 185 138;
+  --c-green-500: 46 204 154;
+  --c-green-600: 52 211 153;
+  --c-green-700: 94 227 177;
+  --c-green-800: 167 243 208;
+  --c-green-900: 217 251 233;
+
+  /* `yellow` / `amber` / `orange` = AVERTISSEMENT */
+  --c-yellow-50: 42 30 6;
+  --c-yellow-100: 58 42 8;
+  --c-yellow-200: 81 58 11;
+  --c-yellow-300: 110 79 15;
+  --c-yellow-400: 209 154 26;
+  --c-yellow-500: 237 176 32;
+  --c-yellow-600: 245 197 24;
+  --c-yellow-700: 255 208 90;
+  --c-yellow-800: 255 227 160;
+  --c-yellow-900: 255 242 208;
+
+  /* `pink` = MAGENTA */
+  --c-pink-50: 43 15 30;
+  --c-pink-100: 61 20 41;
+  --c-pink-200: 87 29 58;
+  --c-pink-300: 124 40 81;
+  --c-pink-400: 229 43 123;
+  --c-pink-500: 255 46 136;
+  --c-pink-600: 255 46 136;
+  --c-pink-700: 255 111 172;
+  --c-pink-800: 255 176 208;
+  --c-pink-900: 255 221 235;
+
+  /* `teal` / `cyan` / `sky` = CYAN */
+  --c-teal-50: 6 35 43;
+  --c-teal-100: 8 48 59;
+  --c-teal-200: 11 69 82;
+  --c-teal-300: 15 95 114;
+  --c-teal-400: 28 182 210;
+  --c-teal-500: 34 211 238;
+  --c-teal-600: 34 211 238;
+  --c-teal-700: 95 227 246;
+  --c-teal-800: 165 239 250;
+  --c-teal-900: 214 248 253;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f7f3ea;
+  --bg-elev: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #f2ecdd;
+  --border: #dccfb0;
+  --text: #1a1206;
+  --text-muted: #6b5e45;
+  --gold: #8a6d0b;
+  --gold-dim: #6b5408;
+  --violet: #7c3aed;
+  --cyan: #0e7490;
+  --magenta: #c2185b;
+  --success: #047857;
+  --danger: #be123c;
+  --on-gold: #ffffff;
+  --grid: rgba(138, 109, 11, 0.07);
+  --glow: 0 0 20px rgba(138, 109, 11, 0.18);
+
+  --c-white: 255 255 255;
+
+  --c-gray-50: 247 243 234;
+  --c-gray-100: 240 234 219;
+  --c-gray-200: 227 218 196;
+  --c-gray-300: 220 207 176;
+  --c-gray-400: 162 149 123;
+  --c-gray-500: 107 94 69;
+  --c-gray-600: 87 75 54;
+  --c-gray-700: 62 53 38;
+  --c-gray-800: 26 18 6;
+  --c-gray-900: 14 9 3;
+
+  --c-blue-50: 251 243 216;
+  --c-blue-100: 247 233 184;
+  --c-blue-200: 239 217 138;
+  --c-blue-300: 222 191 78;
+  --c-blue-400: 184 144 26;
+  --c-blue-500: 156 122 14;
+  --c-blue-600: 138 109 11;
+  --c-blue-700: 107 84 8;
+  --c-blue-800: 78 61 6;
+  --c-blue-900: 50 39 3;
+
+  --c-purple-50: 243 235 255;
+  --c-purple-100: 231 216 255;
+  --c-purple-200: 211 184 254;
+  --c-purple-300: 185 140 251;
+  --c-purple-400: 155 93 247;
+  --c-purple-500: 139 61 242;
+  --c-purple-600: 124 58 237;
+  --c-purple-700: 100 40 196;
+  --c-purple-800: 76 29 149;
+  --c-purple-900: 53 19 107;
+
+  --c-red-50: 255 240 243;
+  --c-red-100: 255 224 230;
+  --c-red-200: 255 194 206;
+  --c-red-300: 255 147 170;
+  --c-red-400: 244 87 125;
+  --c-red-500: 222 44 92;
+  --c-red-600: 190 18 60;
+  --c-red-700: 159 15 51;
+  --c-red-800: 124 11 39;
+  --c-red-900: 88 8 27;
+
+  --c-green-50: 236 253 245;
+  --c-green-100: 209 250 229;
+  --c-green-200: 167 243 208;
+  --c-green-300: 110 231 183;
+  --c-green-400: 52 211 153;
+  --c-green-500: 16 185 129;
+  --c-green-600: 4 120 87;
+  --c-green-700: 3 99 72;
+  --c-green-800: 2 78 57;
+  --c-green-900: 1 58 42;
+
+  --c-yellow-50: 255 251 235;
+  --c-yellow-100: 254 243 199;
+  --c-yellow-200: 253 230 138;
+  --c-yellow-300: 252 211 77;
+  --c-yellow-400: 240 180 41;
+  --c-yellow-500: 201 148 0;
+  --c-yellow-600: 166 124 0;
+  --c-yellow-700: 133 95 0;
+  --c-yellow-800: 107 78 0;
+  --c-yellow-900: 74 54 0;
+
+  --c-pink-50: 255 240 246;
+  --c-pink-100: 255 224 236;
+  --c-pink-200: 255 194 217;
+  --c-pink-300: 255 148 188;
+  --c-pink-400: 245 85 154;
+  --c-pink-500: 224 43 128;
+  --c-pink-600: 194 24 91;
+  --c-pink-700: 158 16 73;
+  --c-pink-800: 122 11 56;
+  --c-pink-900: 86 7 38;
+
+  --c-teal-50: 236 254 255;
+  --c-teal-100: 207 250 254;
+  --c-teal-200: 165 243 252;
+  --c-teal-300: 103 232 249;
+  --c-teal-400: 34 211 238;
+  --c-teal-500: 14 155 184;
+  --c-teal-600: 14 116 144;
+  --c-teal-700: 11 92 115;
+  --c-teal-800: 8 68 86;
+  --c-teal-900: 6 46 58;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOND DE PAGE — trame de circuit + halo violet
+   ═══════════════════════════════════════════════════════════════════════════ */
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgba(168, 85, 247, 0.13), transparent);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+  background-attachment: fixed;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOUTON CYBER
+   Technique reprise du repo Kevin-Lettron/Cyberpunk : deux couches en
+   pseudo-éléments découpées au clip-path, la couche « ombre » décalée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cyber-btn {
+  --main: var(--gold);
+  --shadow: var(--violet);
+  --fg: var(--on-gold);
+  --offset: 5px;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  --clip-1: polygon(0 2%, 100% 2%, 100% 95%, 95% 95%, 95% 90%, 85% 90%, 85% 95%, 8% 95%, 0 70%);
+  --clip-2: polygon(0 78%, 100% 78%, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 78%);
+  --clip-3: polygon(0 44%, 100% 44%, 100% 54%, 95% 54%, 95% 54%, 85% 54%, 85% 54%, 8% 54%, 0 54%);
+  --clip-4: polygon(0 0, 100% 0, 100% 0, 95% 0, 95% 0, 85% 0, 85% 0, 8% 0, 0 0);
+  --clip-6: polygon(0 40%, 100% 40%, 100% 85%, 95% 85%, 95% 85%, 85% 85%, 85% 85%, 8% 85%, 0 70%);
+
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Orbitron', 'Rajdhani', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.2s ease;
+}
+
+.cyber-btn::before,
+.cyber-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--clip);
+  z-index: -1;
+}
+.cyber-btn::before {
+  background: var(--shadow);
+  transform: translate(var(--offset), 0);
+}
+.cyber-btn::after {
+  background: var(--main);
+}
+
+.cyber-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.cyber-btn:active:not(:disabled) {
+  transform: translate(2px, 1px);
+  filter: brightness(0.9);
+}
+.cyber-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
+}
+.cyber-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* Étiquette d'angle décorative */
+.cyber-btn__tag {
+  position: absolute;
+  right: 6%;
+  bottom: 2px;
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+/* Glitch au survol — réservé aux CTA principales via .cyber-btn--glitch */
+.cyber-btn__glitch {
+  position: absolute;
+  inset: calc(var(--offset) * -1);
+  background: var(--shadow);
+  clip-path: var(--clip);
+  display: none;
+  z-index: -2;
+}
+.cyber-btn--glitch:hover:not(:disabled) .cyber-btn__glitch {
+  display: block;
+  animation: cyber-glitch 2s infinite;
+}
+.cyber-btn__glitch::before {
+  content: '';
+  position: absolute;
+  inset: var(--offset);
+  background: var(--main);
+  clip-path: var(--clip);
+}
+
+@keyframes cyber-glitch {
+  0% { clip-path: var(--clip-1); }
+  2%, 8% { clip-path: var(--clip-2); transform: translate(-5%, 0); }
+  6% { clip-path: var(--clip-2); transform: translate(5%, 0); }
+  9% { clip-path: var(--clip-2); transform: translate(0, 0); }
+  10% { clip-path: var(--clip-3); transform: translate(5%, 0); }
+  13% { clip-path: var(--clip-3); transform: translate(0, 0); }
+  14%, 21% { clip-path: var(--clip-4); transform: translate(5%, 0); }
+  35%, 45% { clip-path: var(--clip-6); transform: translate(-5%, 0); }
+  40% { clip-path: var(--clip-6); transform: translate(5%, 0); }
+  50% { clip-path: var(--clip-6); transform: translate(0, 0); }
+  31%, 61%, 100% { clip-path: var(--clip-4); }
+}
+
+.cyber-btn--violet { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
+.cyber-btn--danger { --main: var(--danger); --shadow: var(--magenta); --fg: #fff; }
+.cyber-btn--ghost { --main: transparent; --shadow: transparent; --fg: var(--text); }
+.cyber-btn--ghost::after {
+  background: transparent;
+  border: 1px solid var(--gold);
+  clip-path: none;
+}
+.cyber-btn--ghost:hover:not(:disabled)::after {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SURFACES ANGULEUSES
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cyber-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+.cyber-panel--glow {
+  box-shadow: var(--glow);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+}
+.cyber-tile {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.cyber-cut-sm {
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* Titre de section avec filet dégradé */
+.cyber-title {
+  font-family: 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cyber-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* Champ à liseré doré */
+.cyber-input {
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold);
+}
+.cyber-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: var(--glow);
+}
+
+/* `white` est remappé vers la couleur de panneau (sombre en thème sombre), ce
+   qui est le bon comportement sur un aplat doré ou une surface. Mais sur un
+   vrai fond noir — aperçu caméra, incrustations posées sur l'illustration
+   d'une carte — le texte doit rester blanc, sinon il disparaît.
+
+   La règle cible les éléments qui portent les deux classes à la fois ;
+   sa spécificité (0,3,0) passe devant l'utilitaire Tailwind (0,1,0). */
+[data-theme] .bg-black.text-white,
+.camera-ui {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-btn--glitch:hover .cyber-btn__glitch {
+    animation: none;
+  }
+}
