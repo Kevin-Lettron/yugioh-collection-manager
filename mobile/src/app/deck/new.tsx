@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
-  ActivityIndicator,
   Alert,
   ScrollView,
   KeyboardAvoidingView,
@@ -17,6 +16,11 @@ import { useRouter } from 'expo-router';
 import { deckApi } from '@/services/deckApi';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { spacing } from '@/theme/palette';
 
 export default function NewDeckScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -46,112 +50,142 @@ export default function NewDeckScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nouveau deck</Text>
-        <View style={{ width: 30 }} />
-      </View>
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.body}>
-          <Text style={styles.label}>Nom du deck</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Ex : Dragons Nobles"
-            placeholderTextColor={colors.textMuted}
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleCreate}
-          />
-
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.toggleTitle}>Deck public</Text>
-              <Text style={styles.toggleHint}>Visible dans le feed social</Text>
-            </View>
-            <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: colors.gold }} />
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.toggleTitle}>Respecter la banlist</Text>
-              <Text style={styles.toggleHint}>Bloque les cartes bannies (TCG)</Text>
-            </View>
-            <Switch
-              value={respectBanlist}
-              onValueChange={setRespectBanlist}
-              trackColor={{ true: colors.gold }}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.createBtn, !canCreate && { opacity: 0.5 }]}
-            onPress={handleCreate}
-            disabled={!canCreate}>
-            {creating ? (
-              <ActivityIndicator color={colors.onGold} />
-            ) : (
-              <Text style={styles.createBtnText}>Créer le deck</Text>
-            )}
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+            <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <Text style={styles.headerCrumb}>Fondation</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.body}>
+            <HeroTitle
+              kicker="— Fonder un grimoire —"
+              title="Nouveau deck"
+              sub="Baptise ton grimoire et pose les premières règles."
+            />
+
+            <View style={styles.card}>
+              <Text style={styles.label}>Nom du deck</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Ex : Sanctuaire Draconique"
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleCreate}
+              />
+
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleTitle}>Deck public</Text>
+                  <Text style={styles.toggleHint}>Visible dans la vitrine sociale</Text>
+                </View>
+                <Switch
+                  value={isPublic}
+                  onValueChange={setIsPublic}
+                  trackColor={{ true: colors.gold, false: colors.border }}
+                  thumbColor={isPublic ? colors.onGold : colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleTitle}>Respecter la banlist</Text>
+                  <Text style={styles.toggleHint}>Bloque les cartes bannies (TCG)</Text>
+                </View>
+                <Switch
+                  value={respectBanlist}
+                  onValueChange={setRespectBanlist}
+                  trackColor={{ true: colors.gold, false: colors.border }}
+                  thumbColor={respectBanlist ? colors.onGold : colors.textMuted}
+                />
+              </View>
+
+              <CyberButton
+                label={creating ? 'Invocation…' : 'Sceller le grimoire'}
+                variant="primary"
+                onPress={handleCreate}
+                disabled={!canCreate}
+                loading={creating}
+                block
+                cutColor={colors.panel}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: t.colors.panel,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,
   },
-  closeBtn: { padding: 4, width: 30 },
-  closeText: { fontSize: 22, color: t.colors.textMuted },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
-  body: { padding: 16, gap: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: t.colors.text },
-  input: {
+  headerCrumb: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.gold,
+    textAlign: 'center',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  closeText: { fontSize: 20, color: t.colors.textMuted },
+  body: { padding: spacing[4], gap: spacing[4] },
+  card: {
     backgroundColor: t.colors.panel,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    gap: spacing[3],
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: t.colors.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  input: {
+    backgroundColor: t.colors.bgElev,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     fontSize: 15,
     borderWidth: 1,
     borderColor: t.colors.border,
+    borderLeftWidth: 2,
+    borderLeftColor: t.colors.gold,
     color: t.colors.text,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    backgroundColor: t.colors.panel,
-    borderRadius: 10,
+    padding: spacing[3],
+    backgroundColor: t.colors.bgElev,
     borderWidth: 1,
     borderColor: t.colors.border,
-    gap: 12,
+    gap: spacing[3],
   },
   toggleTitle: { fontSize: 14, fontWeight: '600', color: t.colors.text },
   toggleHint: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
-  createBtn: {
-    backgroundColor: t.colors.gold,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  createBtnText: { color: t.colors.onGold, fontSize: 15, fontWeight: '600' },
 });

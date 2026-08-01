@@ -14,6 +14,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { spacing } from '@/theme/palette';
 
 export default function LoginScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -40,108 +44,112 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>YuGiOh Collection</Text>
-          <Text style={styles.subtitle}>Connecte-toi à ton compte</Text>
-
-          <Text style={styles.label}>Email ou nom d'utilisateur</Text>
-          <TextInput
-            style={styles.input}
-            value={identifier}
-            onChangeText={setIdentifier}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            placeholder="ex : keito@example.com"
-            editable={!submitting}
-          />
-
-          <Text style={styles.label}>Mot de passe</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            editable={!submitting}
-            onSubmitEditing={handleSubmit}
-          />
-
-          <CyberButton
-            label={submitting ? 'CONNEXION…' : 'Se connecter'}
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            loading={submitting}
-            block
-            cutColor={colors.panel}
-          />
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Pas encore de compte ?</Text>
-            <Link href="/(auth)/register" style={styles.footerLink}>
-              Créer un compte
-            </Link>
+    <View style={styles.root}>
+      <AppBackground />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.heroWrap}>
+            <HeroTitle
+              kicker="— Retour au Sanctuaire —"
+              title="Entrer"
+              sub="Franchis le seuil pour retrouver ta vitrine."
+            />
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.card}>
+            <Text style={styles.label}>Courriel ou pseudo</Text>
+            <TextInput
+              style={styles.input}
+              value={identifier}
+              onChangeText={setIdentifier}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              placeholder="toi@exemple.fr"
+              placeholderTextColor={colors.textMuted}
+              editable={!submitting}
+            />
+
+            <Text style={styles.label}>Sceau</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="••••••••"
+              placeholderTextColor={colors.textMuted}
+              editable={!submitting}
+              onSubmitEditing={handleSubmit}
+            />
+
+            <CyberButton
+              label={submitting ? 'Invocation…' : 'Franchir le seuil'}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              loading={submitting}
+              block
+              cutColor={colors.panel}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Pas encore de sanctuaire ?</Text>
+              <Link href="/(auth)/register" style={styles.footerLink}>
+                En ouvrir un
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing[5] },
+  heroWrap: {
+    alignItems: 'center',
+    marginBottom: spacing[5],
+  },
   card: {
     backgroundColor: t.colors.panel,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: t.colors.camera,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    padding: spacing[5],
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    gap: spacing[3],
   },
-  title: { fontSize: 28, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
-  subtitle: {
-    fontSize: 14,
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
     color: t.colors.textMuted,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 24,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: spacing[2],
   },
-  label: { fontSize: 14, fontWeight: '500', color: t.colors.text, marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: t.colors.panel,
+    borderLeftWidth: 2,
+    borderLeftColor: t.colors.gold,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    fontSize: 15,
+    backgroundColor: t.colors.bgElev,
     color: t.colors.text,
   },
-  button: {
-    backgroundColor: t.colors.gold,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: t.colors.onGold, fontSize: 16, fontWeight: '600' },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: 20,
+    gap: spacing[2],
+    marginTop: spacing[4],
   },
   footerText: { color: t.colors.textMuted, fontSize: 14 },
   footerLink: { color: t.colors.gold, fontSize: 14, fontWeight: '600' },

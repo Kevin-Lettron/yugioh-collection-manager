@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -23,6 +22,11 @@ import { API_URL } from '@/config';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { CardTile } from '@/components/decor/CardTile';
+import { spacing } from '@/theme/palette';
 
 export default function DeckViewScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -139,8 +143,11 @@ export default function DeckViewScreen() {
 
   if (loading || !deck) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.gold} />
+      <View style={styles.root}>
+        <AppBackground />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.gold} />
+        </View>
       </View>
     );
   }
@@ -149,173 +156,177 @@ export default function DeckViewScreen() {
   const extraCount = deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-          <Text style={styles.iconBtnText}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {deck.name}
-        </Text>
-        <TouchableOpacity onPress={handleShare} style={styles.iconBtn}>
-          <Text style={styles.iconBtnText}>↗</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+            <Text style={styles.iconBtnText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerCrumb} numberOfLines={1}>
+            Arène
+          </Text>
+          <TouchableOpacity onPress={handleShare} style={styles.iconBtn}>
+            <Text style={styles.iconBtnText}>↗</Text>
+          </TouchableOpacity>
+        </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={80}>
-        <ScrollView
-          contentContainerStyle={styles.body}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchAll(); }} />
-          }>
-          {/* Meta */}
-          <View style={styles.metaBar}>
-            <Text style={styles.metaAuthor}>
-              {isOwner ? 'Toi' : deck.user?.username || 'Anonyme'}
-            </Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={80}>
+          <ScrollView
+            contentContainerStyle={styles.body}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => { setRefreshing(true); fetchAll(); }}
+                tintColor={colors.gold}
+              />
+            }>
+            <HeroTitle
+              kicker="— Arène ouverte —"
+              title={deck.name}
+              sub={`par ${isOwner ? 'toi' : deck.user?.username || 'Anonyme'} · ${mainCount} · ${extraCount}`}
+            />
+
+            {/* Meta badges */}
             <View style={styles.metaBadges}>
-              {deck.is_public && <Badge label="Public" color={colors.panel2} />}
-              {deck.is_shared && <Badge label="Partagé" color={colors.panel2} />}
-              {deck.respect_banlist && <Badge label="Banlist" color={colors.panel2} />}
+              {deck.is_public && <Badge label="Public" />}
+              {deck.is_shared && <Badge label="Partagé" />}
+              {deck.respect_banlist && <Badge label="Banlist" />}
             </View>
-          </View>
 
-          {/* Stats */}
-          <View style={styles.statsGrid}>
-            <StatCell label="Main" value={mainCount} />
-            <StatCell label="Extra" value={extraCount} />
-            <StatCell label="👍" value={deck.likes_count ?? 0} />
-            <StatCell label="💬" value={deck.comments_count ?? comments.length} />
-          </View>
+            {/* Stats */}
+            <View style={styles.statsGrid}>
+              <StatCell label="Main" value={mainCount} />
+              <StatCell label="Extra" value={extraCount} />
+              <StatCell label="Aimés" value={deck.likes_count ?? 0} />
+              <StatCell label="Voix" value={deck.comments_count ?? comments.length} />
+            </View>
 
-          {/* Reactions */}
-          <View style={styles.reactionsRow}>
-            <CyberButton
-              label="👍 J'aime"
-              variant={deck.user_reaction === 'like' ? 'primary' : 'ghost'}
-              onPress={() => handleReaction('like')}
-              disabled={reacting}
-              block
-              style={{ flex: 1 }}
-            />
-            <CyberButton
-              label="👎 J'aime pas"
-              variant={deck.user_reaction === 'dislike' ? 'danger' : 'ghost'}
-              onPress={() => handleReaction('dislike')}
-              disabled={reacting}
-              block
-              style={{ flex: 1 }}
-            />
-          </View>
+            {/* Reactions */}
+            <View style={styles.reactionsRow}>
+              <CyberButton
+                label={deck.user_reaction === 'like' ? "J'aime · Oui" : "J'aime"}
+                variant={deck.user_reaction === 'like' ? 'primary' : 'ghost'}
+                onPress={() => handleReaction('like')}
+                disabled={reacting}
+                block
+                style={{ flex: 1 }}
+                cutColor={colors.bg}
+              />
+              <CyberButton
+                label={deck.user_reaction === 'dislike' ? 'Pas fan' : 'Pas fan'}
+                variant={deck.user_reaction === 'dislike' ? 'danger' : 'ghost'}
+                onPress={() => handleReaction('dislike')}
+                disabled={reacting}
+                block
+                style={{ flex: 1 }}
+                cutColor={colors.bg}
+              />
+            </View>
 
-          {/* Owner actions */}
-          {isOwner && (
-            <CyberButton
-              label="Éditer le deck"
-              variant="primary"
-              onPress={() => router.push(`/deck/edit/${deck.id}`)}
-              block
-            />
-          )}
+            {/* Owner actions */}
+            {isOwner && (
+              <CyberButton
+                label="Éditer le deck"
+                variant="primary"
+                onPress={() => router.push(`/deck/edit/${deck.id}`)}
+                block
+                cutColor={colors.bg}
+              />
+            )}
 
-          {/* Main deck */}
-          <Text style={styles.sectionTitle}>Deck principal ({mainCount})</Text>
-          <View style={styles.cardGrid}>
-            {(deck.main_deck || []).map((dc) => (
-              <View key={dc.id} style={styles.cardBox}>
-                <Image
-                  source={{ uri: dc.card?.card_images?.[0]?.image_url_small }}
-                  style={styles.cardImage}
-                  resizeMode="cover"
-                />
-                {dc.quantity > 1 && (
-                  <View style={styles.qtyOverlay}>
-                    <Text style={styles.qtyOverlayText}>x{dc.quantity}</Text>
-                  </View>
-                )}
-              </View>
-            ))}
-            {mainCount === 0 && <Text style={styles.emptyDeck}>Deck principal vide</Text>}
-          </View>
-
-          {/* Extra deck */}
-          {(deck.extra_deck || []).length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Extra deck ({extraCount})</Text>
-              <View style={styles.cardGrid}>
-                {deck.extra_deck!.map((dc) => (
-                  <View key={dc.id} style={styles.cardBox}>
-                    <Image
-                      source={{ uri: dc.card?.card_images?.[0]?.image_url_small }}
-                      style={styles.cardImage}
-                      resizeMode="cover"
-                    />
-                    {dc.quantity > 1 && (
-                      <View style={styles.qtyOverlay}>
-                        <Text style={styles.qtyOverlayText}>x{dc.quantity}</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-
-          {/* Comments */}
-          <Text style={styles.sectionTitle}>Commentaires ({comments.length})</Text>
-          <View style={styles.commentInputRow}>
-            <TextInput
-              style={styles.commentInput}
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Ajouter un commentaire…"
-              placeholderTextColor={colors.textMuted}
-              multiline
-              editable={!postingComment}
-            />
-            <CyberButton
-              label="Poster"
-              variant="primary"
-              size="sm"
-              onPress={handlePostComment}
-              disabled={!commentText.trim()}
-              loading={postingComment}
-            />
-          </View>
-
-          {comments.length === 0 ? (
-            <Text style={styles.noComments}>Aucun commentaire pour l'instant.</Text>
-          ) : (
-            comments.map((c) => (
-              <View key={c.id} style={styles.commentBox}>
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentAuthor}>{c.user?.username || 'Anonyme'}</Text>
-                  <Text style={styles.commentDate}>
-                    {new Date(c.created_at).toLocaleDateString('fr-FR')}
-                  </Text>
+            {/* Main deck */}
+            <SectionTitle label="Deck principal" count={mainCount} />
+            <View style={styles.cardGrid}>
+              {(deck.main_deck || []).map((dc) => (
+                <View key={dc.id} style={styles.cardCell}>
+                  <CardTile
+                    uri={dc.card?.card_images?.[0]?.image_url_small}
+                    name={dc.card?.name}
+                    quantity={dc.quantity}
+                  />
                 </View>
-                <Text style={styles.commentText}>{c.content}</Text>
-                {(user?.id === c.user_id || isOwner) && (
-                  <TouchableOpacity onPress={() => handleDeleteComment(c)}>
-                    <Text style={styles.commentDelete}>Supprimer</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              ))}
+              {mainCount === 0 && <Text style={styles.emptyDeck}>Deck principal vide.</Text>}
+            </View>
+
+            {/* Extra deck */}
+            {(deck.extra_deck || []).length > 0 && (
+              <>
+                <SectionTitle label="Extra deck" count={extraCount} />
+                <View style={styles.cardGrid}>
+                  {deck.extra_deck!.map((dc) => (
+                    <View key={dc.id} style={styles.cardCell}>
+                      <CardTile
+                        uri={dc.card?.card_images?.[0]?.image_url_small}
+                        name={dc.card?.name}
+                        quantity={dc.quantity}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Comments */}
+            <SectionTitle label="Commentaires" count={comments.length} />
+            <View style={styles.commentInputRow}>
+              <TextInput
+                style={styles.commentInput}
+                value={commentText}
+                onChangeText={setCommentText}
+                placeholder="Ajouter un commentaire…"
+                placeholderTextColor={colors.textMuted}
+                multiline
+                editable={!postingComment}
+              />
+              <CyberButton
+                label="Poster"
+                variant="primary"
+                size="sm"
+                onPress={handlePostComment}
+                disabled={!commentText.trim()}
+                loading={postingComment}
+                cutColor={colors.bg}
+              />
+            </View>
+
+            {comments.length === 0 ? (
+              <Text style={styles.noComments}>Aucun commentaire pour l'instant.</Text>
+            ) : (
+              comments.map((c) => (
+                <View key={c.id} style={styles.commentBox}>
+                  <View style={styles.commentAccent} pointerEvents="none" />
+                  <View style={styles.commentHeader}>
+                    <Text style={styles.commentAuthor}>{c.user?.username || 'Anonyme'}</Text>
+                    <Text style={styles.commentDate}>
+                      {new Date(c.created_at).toLocaleDateString('fr-FR')}
+                    </Text>
+                  </View>
+                  <Text style={styles.commentText}>{c.content}</Text>
+                  {(user?.id === c.user_id || isOwner) && (
+                    <TouchableOpacity onPress={() => handleDeleteComment(c)}>
+                      <Text style={styles.commentDelete}>Supprimer</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
-const Badge = ({ label, color }: { label: string; color: string }) => {
+const Badge = ({ label }: { label: string }) => {
   const styles = useThemedStyles(makeStyles);
   return (
-  <View style={[styles.badge, { backgroundColor: color }]}>
+  <View style={styles.badge}>
     <Text style={styles.badgeText}>{label}</Text>
   </View>
   );
@@ -325,115 +336,177 @@ const StatCell = ({ label, value }: { label: string; value: number }) => {
   const styles = useThemedStyles(makeStyles);
   return (
   <View style={styles.statCell}>
-    <Text style={styles.statValue}>{value}</Text>
+    <View style={styles.statAccent} pointerEvents="none" />
     <Text style={styles.statLabel}>{label}</Text>
+    <Text style={styles.statValue}>{value}</Text>
   </View>
+  );
+};
+
+const SectionTitle = ({ label, count }: { label: string; count: number }) => {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.sectionRow}>
+      <Text style={styles.sectionTitle}>{label}</Text>
+      <Text style={styles.sectionCount}>{count}</Text>
+      <View style={styles.sectionSep} />
+    </View>
   );
 };
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: t.colors.panel,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
+  headerCrumb: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.gold,
+    textAlign: 'center',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 24, color: t.colors.text },
-  body: { padding: 12, gap: 12, paddingBottom: 40 },
-  metaBar: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaAuthor: { fontSize: 13, color: t.colors.textMuted, fontWeight: '600' },
-  metaBadges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  badgeText: { fontSize: 10, fontWeight: '700', color: t.colors.text },
-  statsGrid: { flexDirection: 'row', gap: 6 },
+  iconBtnText: { fontSize: 22, color: t.colors.text },
+  body: { padding: spacing[3], gap: spacing[3], paddingBottom: spacing[7] },
+  metaBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  badge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.panel2,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: t.colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  statsGrid: { flexDirection: 'row', gap: spacing[2] },
   statCell: {
     flex: 1,
     backgroundColor: t.colors.panel,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[2],
     alignItems: 'center',
     borderWidth: 1,
     borderColor: t.colors.border,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  statValue: { fontSize: 20, fontWeight: '700', color: t.colors.text },
-  statLabel: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
-  reactionsRow: { flexDirection: 'row', gap: 8 },
-  reactBtn: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: t.colors.panel,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  reactBtnLikeActive: { backgroundColor: t.colors.success, borderColor: t.colors.success },
-  reactBtnDislikeActive: { backgroundColor: t.colors.danger, borderColor: t.colors.danger },
-  reactBtnText: { fontSize: 13, fontWeight: '600', color: t.colors.text },
-  reactBtnTextActive: { color: t.colors.onGold },
-  editBtn: {
-    backgroundColor: t.colors.gold,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  editBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: t.colors.text, marginTop: 8 },
-  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  cardBox: { width: '23.5%', aspectRatio: 0.686, position: 'relative' },
-  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: t.colors.panel2 },
-  qtyOverlay: {
+  statAccent: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 3,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: t.colors.gold,
+    opacity: 0.6,
   },
-  qtyOverlayText: { color: t.colors.onGold, fontSize: 10, fontWeight: '700' },
-  emptyDeck: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic' },
-  commentInputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  statValue: { fontSize: 18, fontWeight: '700', color: t.colors.text, marginTop: 2 },
+  statLabel: {
+    fontSize: 9,
+    color: t.colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  reactionsRow: { flexDirection: 'row', gap: spacing[2] },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[3],
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.gold,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  sectionCount: {
+    fontSize: 11,
+    color: t.colors.textMuted,
+    fontWeight: '700',
+  },
+  sectionSep: {
+    flex: 1,
+    height: 1,
+    backgroundColor: t.colors.border,
+  },
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  cardCell: { width: '31%' },
+  emptyDeck: {
+    fontSize: 13,
+    color: t.colors.textMuted,
+    fontStyle: 'italic',
+    padding: spacing[3],
+  },
+  commentInputRow: { flexDirection: 'row', gap: spacing[2], alignItems: 'flex-end' },
   commentInput: {
     flex: 1,
     backgroundColor: t.colors.panel,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
     fontSize: 14,
     borderWidth: 1,
     borderColor: t.colors.border,
+    borderLeftWidth: 2,
+    borderLeftColor: t.colors.gold,
     color: t.colors.text,
     minHeight: 40,
     maxHeight: 100,
   },
-  commentPostBtn: {
-    backgroundColor: t.colors.gold,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+  noComments: {
+    fontSize: 13,
+    color: t.colors.textMuted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: spacing[3],
   },
-  commentPostBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '600' },
-  noComments: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic', textAlign: 'center', padding: 12 },
   commentBox: {
     backgroundColor: t.colors.panel,
-    padding: 12,
-    borderRadius: 10,
+    padding: spacing[3],
     borderWidth: 1,
     borderColor: t.colors.border,
-    gap: 4,
+    gap: spacing[1],
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  commentAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: t.colors.violet,
+    opacity: 0.6,
   },
   commentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   commentAuthor: { fontSize: 13, fontWeight: '700', color: t.colors.text },
-  commentDate: { fontSize: 11, color: t.colors.textMuted },
+  commentDate: { fontSize: 11, color: t.colors.textMuted, fontStyle: 'italic' },
   commentText: { fontSize: 14, color: t.colors.text },
-  commentDelete: { fontSize: 11, color: t.colors.danger, marginTop: 4, fontWeight: '600' },
+  commentDelete: { fontSize: 11, color: t.colors.danger, marginTop: spacing[1], fontWeight: '600' },
 });

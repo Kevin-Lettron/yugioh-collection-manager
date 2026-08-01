@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -22,6 +21,11 @@ import AIBuilderModal from '@/components/AIBuilderModal';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { CardTile } from '@/components/decor/CardTile';
+import { spacing } from '@/theme/palette';
 
 export default function DeckEditorScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -201,8 +205,11 @@ export default function DeckEditorScreen() {
 
   if (loading || !deck) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.gold} />
+      <View style={styles.root}>
+        <AppBackground />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.gold} />
+        </View>
       </View>
     );
   }
@@ -213,315 +220,369 @@ export default function DeckEditorScreen() {
   const extraOk = extraCount <= 15;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-          <Text style={styles.iconBtnText}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Éditer</Text>
-        <TouchableOpacity onPress={handleShare} style={styles.iconBtn}>
-          <Text style={styles.iconBtnText}>↗</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.body}>
-        {/* Name */}
-        <Text style={styles.label}>Nom du deck</Text>
-        <TextInput
-          style={styles.nameInput}
-          value={nameInput}
-          onChangeText={setNameInput}
-          onBlur={saveName}
-          placeholder="Nom du deck"
-          placeholderTextColor={colors.textMuted}
-          returnKeyType="done"
-          onSubmitEditing={saveName}
-        />
-
-        {/* Toggles */}
-        <View style={styles.toggleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.toggleTitle}>Deck public</Text>
-            <Text style={styles.toggleHint}>Visible dans le feed</Text>
-          </View>
-          <Switch
-            value={deck.is_public}
-            onValueChange={(v) => toggleSetting('is_public', v)}
-            trackColor={{ true: colors.gold }}
-          />
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+            <Text style={styles.iconBtnText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerCrumb}>Atelier</Text>
+          <TouchableOpacity onPress={handleShare} style={styles.iconBtn}>
+            <Text style={styles.iconBtnText}>↗</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.toggleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.toggleTitle}>Respecter la banlist</Text>
-            <Text style={styles.toggleHint}>Vérifie la conformité TCG</Text>
-          </View>
-          <Switch
-            value={deck.respect_banlist}
-            onValueChange={(v) => toggleSetting('respect_banlist', v)}
-            trackColor={{ true: colors.gold }}
+        <ScrollView contentContainerStyle={styles.body}>
+          <HeroTitle
+            kicker="— Atelier —"
+            title={deck.name || 'Deck sans nom'}
+            sub={`Main ${mainCount}/40 · Extra ${extraCount}/15`}
           />
-        </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statBadge, !mainOk && mainCount > 0 && styles.statBadgeBad]}>
-            <Text style={styles.statLabel}>Main</Text>
-            <Text style={[styles.statValue, !mainOk && mainCount > 0 && styles.statValueBad]}>
-              {mainCount}
-            </Text>
-            <Text style={styles.statHint}>40–60</Text>
-          </View>
-          <View style={[styles.statBadge, !extraOk && styles.statBadgeBad]}>
-            <Text style={styles.statLabel}>Extra</Text>
-            <Text style={[styles.statValue, !extraOk && styles.statValueBad]}>{extraCount}</Text>
-            <Text style={styles.statHint}>≤15</Text>
-          </View>
-        </View>
-
-        {/* Validation errors */}
-        {validating && (
-          <View style={styles.errorBox}>
-            <ActivityIndicator color={colors.gold} size="small" />
-            <Text style={styles.errorText}>Validation…</Text>
-          </View>
-        )}
-        {errors.length > 0 && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>Erreurs de validation</Text>
-            {errors.map((e, i) => (
-              <Text key={i} style={styles.errorText}>
-                • {e}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actionsGrid}>
-          <CyberButton
-            label="+ Main"
-            variant="primary"
-            size="sm"
-            onPress={() => setPickerOpen('main')}
-            block
-            style={{ flex: 1 }}
+          {/* Name */}
+          <Text style={styles.label}>Nom du deck</Text>
+          <TextInput
+            style={styles.nameInput}
+            value={nameInput}
+            onChangeText={setNameInput}
+            onBlur={saveName}
+            placeholder="Nom du deck"
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="done"
+            onSubmitEditing={saveName}
           />
-          <CyberButton
-            label="+ Extra"
-            variant="primary"
-            size="sm"
-            onPress={() => setPickerOpen('extra')}
-            block
-            style={{ flex: 1 }}
-          />
-          <CyberButton
-            label="AI"
-            variant="secondary"
-            size="sm"
-            onPress={() => setAiOpen(true)}
-            block
-            style={{ flex: 1 }}
-            tag="BOT"
-          />
-        </View>
 
-        {/* Main deck */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Deck principal ({mainCount})</Text>
-          {mainCount > 0 && (
-            <CyberButton
-              label="Vider"
-              variant="danger"
-              size="sm"
-              onPress={handleClear}
+          {/* Toggles */}
+          <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleTitle}>Deck public</Text>
+              <Text style={styles.toggleHint}>Visible dans la vitrine sociale</Text>
+            </View>
+            <Switch
+              value={deck.is_public}
+              onValueChange={(v) => toggleSetting('is_public', v)}
+              trackColor={{ true: colors.gold, false: colors.border }}
+              thumbColor={deck.is_public ? colors.onGold : colors.textMuted}
             />
+          </View>
+
+          <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleTitle}>Respecter la banlist</Text>
+              <Text style={styles.toggleHint}>Vérifie la conformité TCG</Text>
+            </View>
+            <Switch
+              value={deck.respect_banlist}
+              onValueChange={(v) => toggleSetting('respect_banlist', v)}
+              trackColor={{ true: colors.gold, false: colors.border }}
+              thumbColor={deck.respect_banlist ? colors.onGold : colors.textMuted}
+            />
+          </View>
+
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statBadge, mainOk ? styles.statBadgeOk : mainCount > 0 && styles.statBadgeBad]}>
+              <View style={[styles.statAccent, { backgroundColor: mainOk ? colors.gold : colors.danger }]} pointerEvents="none" />
+              <Text style={styles.statLabel}>Main</Text>
+              <Text style={[styles.statValue, !mainOk && mainCount > 0 && styles.statValueBad]}>
+                {mainCount}/40
+              </Text>
+              <Text style={styles.statHint}>40–60</Text>
+            </View>
+            <View style={[styles.statBadge, extraOk ? styles.statBadgeOk : styles.statBadgeBad]}>
+              <View style={[styles.statAccent, { backgroundColor: extraOk ? colors.violet : colors.danger }]} pointerEvents="none" />
+              <Text style={styles.statLabel}>Extra</Text>
+              <Text style={[styles.statValue, !extraOk && styles.statValueBad]}>{extraCount}/15</Text>
+              <Text style={styles.statHint}>≤15</Text>
+            </View>
+          </View>
+
+          {/* Validation errors */}
+          {validating && (
+            <View style={styles.errorBox}>
+              <ActivityIndicator color={colors.gold} size="small" />
+              <Text style={styles.errorText}>Validation…</Text>
+            </View>
           )}
-        </View>
-        <View style={styles.cardGrid}>
-          {(deck.main_deck || []).map((dc) => (
-            <TouchableOpacity
-              key={dc.id}
-              style={styles.cardBox}
-              onPress={() => showCardMenu(dc)}>
-              <Image
-                source={{ uri: dc.card?.card_images?.[0]?.image_url_small }}
-                style={styles.cardImage}
-                resizeMode="cover"
+          {errors.length > 0 && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorTitle}>Erreurs de validation</Text>
+              {errors.map((e, i) => (
+                <Text key={i} style={styles.errorText}>
+                  • {e}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={styles.actionsGrid}>
+            <CyberButton
+              label="+ Main"
+              variant="primary"
+              size="sm"
+              onPress={() => setPickerOpen('main')}
+              block
+              style={{ flex: 1 }}
+              cutColor={colors.bg}
+            />
+            <CyberButton
+              label="+ Extra"
+              variant="primary"
+              size="sm"
+              onPress={() => setPickerOpen('extra')}
+              block
+              style={{ flex: 1 }}
+              cutColor={colors.bg}
+            />
+            <CyberButton
+              label="AI"
+              variant="secondary"
+              size="sm"
+              onPress={() => setAiOpen(true)}
+              block
+              style={{ flex: 1 }}
+              tag="BOT"
+              cutColor={colors.bg}
+            />
+          </View>
+
+          {/* Main deck */}
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>Deck principal</Text>
+            <Text style={styles.sectionCount}>{mainCount}</Text>
+            <View style={styles.sectionSep} />
+            {mainCount > 0 && (
+              <CyberButton
+                label="Vider"
+                variant="danger"
+                size="sm"
+                onPress={handleClear}
+                cutColor={colors.bg}
               />
-              {dc.quantity > 1 && (
-                <View style={styles.qtyOverlay}>
-                  <Text style={styles.qtyOverlayText}>x{dc.quantity}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-          {mainCount === 0 && (
-            <Text style={styles.emptyDeck}>Ajoute des cartes depuis ta collection.</Text>
-          )}
-        </View>
+            )}
+          </View>
+          <View style={styles.cardGrid}>
+            {(deck.main_deck || []).map((dc) => (
+              <View key={dc.id} style={styles.cardCell}>
+                <CardTile
+                  uri={dc.card?.card_images?.[0]?.image_url_small}
+                  name={dc.card?.name}
+                  quantity={dc.quantity}
+                  onPress={() => showCardMenu(dc)}
+                />
+              </View>
+            ))}
+            {mainCount === 0 && (
+              <Text style={styles.emptyDeck}>Ajoute des cartes depuis ta collection.</Text>
+            )}
+          </View>
 
-        {/* Extra deck */}
-        <Text style={styles.sectionTitle}>Extra deck ({extraCount})</Text>
-        <View style={styles.cardGrid}>
-          {(deck.extra_deck || []).map((dc) => (
-            <TouchableOpacity
-              key={dc.id}
-              style={styles.cardBox}
-              onPress={() => showCardMenu(dc)}>
-              <Image
-                source={{ uri: dc.card?.card_images?.[0]?.image_url_small }}
-                style={styles.cardImage}
-                resizeMode="cover"
-              />
-              {dc.quantity > 1 && (
-                <View style={styles.qtyOverlay}>
-                  <Text style={styles.qtyOverlayText}>x{dc.quantity}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-          {extraCount === 0 && (
-            <Text style={styles.emptyDeck}>Fusion / Synchro / XYZ / Link ici.</Text>
-          )}
-        </View>
+          {/* Extra deck */}
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>Extra deck</Text>
+            <Text style={styles.sectionCount}>{extraCount}</Text>
+            <View style={styles.sectionSep} />
+          </View>
+          <View style={styles.cardGrid}>
+            {(deck.extra_deck || []).map((dc) => (
+              <View key={dc.id} style={styles.cardCell}>
+                <CardTile
+                  uri={dc.card?.card_images?.[0]?.image_url_small}
+                  name={dc.card?.name}
+                  quantity={dc.quantity}
+                  onPress={() => showCardMenu(dc)}
+                />
+              </View>
+            ))}
+            {extraCount === 0 && (
+              <Text style={styles.emptyDeck}>Fusion / Synchro / XYZ / Link ici.</Text>
+            )}
+          </View>
 
-        {/* Delete */}
-        <CyberButton
-          label="Supprimer ce deck"
-          variant="danger"
-          onPress={handleDelete}
-          block
-          style={{ marginTop: 16 }}
-        />
-      </ScrollView>
+          {/* Delete */}
+          <CyberButton
+            label="Supprimer ce deck"
+            variant="danger"
+            onPress={handleDelete}
+            block
+            style={{ marginTop: spacing[4] }}
+            cutColor={colors.bg}
+          />
+        </ScrollView>
 
-      {pickerOpen && (
-        <AddCardsFromCollectionModal
-          visible={!!pickerOpen}
-          target={pickerOpen}
-          onClose={() => setPickerOpen(null)}
-          onPick={addCardToDeck}
-        />
-      )}
+        {pickerOpen && (
+          <AddCardsFromCollectionModal
+            visible={!!pickerOpen}
+            target={pickerOpen}
+            onClose={() => setPickerOpen(null)}
+            onPick={addCardToDeck}
+          />
+        )}
 
-      {aiOpen && (
-        <AIBuilderModal
-          visible={aiOpen}
-          deckId={deckId}
-          onClose={() => setAiOpen(false)}
-          onBuilt={() => {
-            setAiOpen(false);
-            refresh();
-            validate();
-          }}
-        />
-      )}
-    </SafeAreaView>
+        {aiOpen && (
+          <AIBuilderModal
+            visible={aiOpen}
+            deckId={deckId}
+            onClose={() => setAiOpen(false)}
+            onBuilt={() => {
+              setAiOpen(false);
+              refresh();
+              validate();
+            }}
+          />
+        )}
+      </SafeAreaView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: t.colors.panel,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
+  headerCrumb: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.gold,
+    textAlign: 'center',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 24, color: t.colors.text },
-  body: { padding: 12, gap: 12, paddingBottom: 40 },
-  label: { fontSize: 13, fontWeight: '600', color: t.colors.text },
+  iconBtnText: { fontSize: 22, color: t.colors.text },
+  body: { padding: spacing[3], gap: spacing[3], paddingBottom: spacing[7] },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: t.colors.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: spacing[2],
+  },
   nameInput: {
     backgroundColor: t.colors.panel,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     fontSize: 15,
     borderWidth: 1,
     borderColor: t.colors.border,
+    borderLeftWidth: 2,
+    borderLeftColor: t.colors.gold,
     color: t.colors.text,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing[3],
     backgroundColor: t.colors.panel,
-    borderRadius: 10,
     borderWidth: 1,
     borderColor: t.colors.border,
-    gap: 8,
+    gap: spacing[2],
   },
   toggleTitle: { fontSize: 13, fontWeight: '600', color: t.colors.text },
   toggleHint: { fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
-  statsRow: { flexDirection: 'row', gap: 8 },
+  statsRow: { flexDirection: 'row', gap: spacing[2] },
   statBadge: {
     flex: 1,
     backgroundColor: t.colors.panel,
-    padding: 10,
-    borderRadius: 10,
+    padding: spacing[3],
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: t.colors.success,
+    borderColor: t.colors.border,
+    position: 'relative',
+    overflow: 'hidden',
   },
+  statBadgeOk: { borderColor: t.colors.gold },
   statBadgeBad: { borderColor: t.colors.danger },
-  statLabel: { fontSize: 10, color: t.colors.textMuted, fontWeight: '700', textTransform: 'uppercase' },
-  statValue: { fontSize: 22, fontWeight: '700', color: t.colors.success, marginVertical: 2 },
+  statAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    opacity: 0.7,
+  },
+  statLabel: {
+    fontSize: 9,
+    color: t.colors.textMuted,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: t.colors.gold,
+    marginVertical: 2,
+  },
   statValueBad: { color: t.colors.danger },
   statHint: { fontSize: 10, color: t.colors.textMuted },
   errorBox: {
     backgroundColor: t.colors.panel2,
     borderWidth: 1,
     borderColor: t.colors.danger,
-    padding: 10,
-    borderRadius: 8,
-    gap: 4,
-  },
-  errorTitle: { fontSize: 12, fontWeight: '700', color: t.colors.danger },
-  errorText: { fontSize: 12, color: t.colors.danger },
-  actionsGrid: { flexDirection: 'row', gap: 6 },
-  actionBtn: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  actionBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '700' },
-  sectionHeader: {
+    padding: spacing[3],
+    gap: spacing[1],
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 8,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: t.colors.text, marginTop: 8 },
-  sectionAction: { fontSize: 12, color: t.colors.danger, fontWeight: '600' },
-  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  cardBox: { width: '23.5%', aspectRatio: 0.686, position: 'relative' },
-  cardImage: { width: '100%', height: '100%', borderRadius: 4, backgroundColor: t.colors.panel2 },
-  qtyOverlay: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 3,
+  errorTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.danger,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    width: '100%',
   },
-  qtyOverlayText: { color: t.colors.onGold, fontSize: 10, fontWeight: '700' },
-  emptyDeck: { fontSize: 13, color: t.colors.textMuted, fontStyle: 'italic', padding: 12 },
-  deleteBtn: {
-    backgroundColor: t.colors.danger,
-    padding: 14,
-    borderRadius: 10,
+  errorText: { fontSize: 12, color: t.colors.danger, width: '100%' },
+  actionsGrid: { flexDirection: 'row', gap: spacing[2] },
+  sectionRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    gap: spacing[2],
+    marginTop: spacing[3],
   },
-  deleteBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: t.colors.gold,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  sectionCount: {
+    fontSize: 11,
+    color: t.colors.textMuted,
+    fontWeight: '700',
+  },
+  sectionSep: {
+    flex: 1,
+    height: 1,
+    backgroundColor: t.colors.border,
+  },
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  cardCell: { width: '31%' },
+  emptyDeck: {
+    fontSize: 13,
+    color: t.colors.textMuted,
+    fontStyle: 'italic',
+    padding: spacing[3],
+  },
 });

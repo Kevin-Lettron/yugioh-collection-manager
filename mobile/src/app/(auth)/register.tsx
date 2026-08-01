@@ -14,6 +14,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { spacing } from '@/theme/palette';
 
 export default function RegisterScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -45,124 +49,129 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>Créer un compte</Text>
-          <Text style={styles.subtitle}>Rejoins la communauté YuGiOh</Text>
-
-          <Text style={styles.label}>Nom d'utilisateur</Text>
-          <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="3 caractères minimum"
-            editable={!submitting}
-          />
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            placeholder="ton@email.com"
-            editable={!submitting}
-          />
-
-          <Text style={styles.label}>Mot de passe</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            editable={!submitting}
-            onSubmitEditing={handleSubmit}
-          />
-          <Text style={styles.hint}>
-            10 caractères min, doit combiner au moins 3 des 4 types :
-            minuscule, majuscule, chiffre, spécial.
-          </Text>
-
-          <CyberButton
-            label={submitting ? 'CRÉATION…' : 'Créer mon compte'}
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            loading={submitting}
-            block
-            cutColor={colors.panel}
-          />
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Déjà un compte ?</Text>
-            <Link href="/(auth)/login" style={styles.footerLink}>
-              Se connecter
-            </Link>
+    <View style={styles.root}>
+      <AppBackground />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.heroWrap}>
+            <HeroTitle
+              kicker="— Nouveau Gardien —"
+              title={'Ouvrir\nson temple'}
+              sub="Sceller ton compte et bâtir ta vitrine."
+            />
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.card}>
+            <Text style={styles.label}>Pseudo de duelliste</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="kaiba_pa"
+              placeholderTextColor={colors.textMuted}
+              editable={!submitting}
+            />
+
+            <Text style={styles.label}>Courriel</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              placeholder="toi@exemple.fr"
+              placeholderTextColor={colors.textMuted}
+              editable={!submitting}
+            />
+
+            <Text style={styles.label}>Sceau (mot de passe)</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="••••••••"
+              placeholderTextColor={colors.textMuted}
+              editable={!submitting}
+              onSubmitEditing={handleSubmit}
+            />
+            <Text style={styles.hint}>
+              10 caractères min, combine au moins 3 des 4 types :
+              minuscule, majuscule, chiffre, spécial.
+            </Text>
+
+            <CyberButton
+              label={submitting ? 'Invocation…' : 'Sceller mon compte'}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              loading={submitting}
+              block
+              cutColor={colors.panel}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Déjà un sanctuaire ?</Text>
+              <Link href="/(auth)/login" style={styles.footerLink}>
+                Entrer
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing[5] },
+  heroWrap: {
+    alignItems: 'center',
+    marginBottom: spacing[5],
+  },
   card: {
     backgroundColor: t.colors.panel,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: t.colors.camera,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    padding: spacing[5],
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    gap: spacing[3],
   },
-  title: { fontSize: 28, fontWeight: '700', color: t.colors.text, textAlign: 'center' },
-  subtitle: {
-    fontSize: 14,
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
     color: t.colors.textMuted,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 24,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: spacing[2],
   },
-  label: { fontSize: 14, fontWeight: '500', color: t.colors.text, marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 8,
-    backgroundColor: t.colors.panel,
+    borderLeftWidth: 2,
+    borderLeftColor: t.colors.gold,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    fontSize: 15,
+    backgroundColor: t.colors.bgElev,
     color: t.colors.text,
   },
-  hint: { fontSize: 12, color: t.colors.textMuted, marginBottom: 16 },
-  button: {
-    backgroundColor: t.colors.gold,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: t.colors.onGold, fontSize: 16, fontWeight: '600' },
+  hint: { fontSize: 12, color: t.colors.textMuted },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: 20,
+    gap: spacing[2],
+    marginTop: spacing[4],
   },
   footerText: { color: t.colors.textMuted, fontSize: 14 },
   footerLink: { color: t.colors.gold, fontSize: 14, fontWeight: '600' },

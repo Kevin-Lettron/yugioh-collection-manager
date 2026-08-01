@@ -16,6 +16,10 @@ import type { Deck } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { spacing } from '@/theme/palette';
 
 export default function DecksScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -78,6 +82,8 @@ export default function DecksScreen() {
         style={styles.deckCard}
         onPress={() => router.push(`/deck/${item.id}`)}
         activeOpacity={0.7}>
+        {/* Liseré or gauche */}
+        <View style={styles.deckAccent} pointerEvents="none" />
         <View style={styles.deckHeader}>
           <View style={{ flex: 1 }}>
             <Text style={styles.deckName} numberOfLines={1}>
@@ -106,8 +112,9 @@ export default function DecksScreen() {
               e.stopPropagation();
               handleDelete(item);
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.deleteIcon}>🗑️</Text>
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.deleteBtn}>
+            <Text style={styles.deleteIcon}>×</Text>
           </TouchableOpacity>
         </View>
 
@@ -120,52 +127,65 @@ export default function DecksScreen() {
           />
           <StatBadge label="Extra" value={extraCount} hint="≤15" ok={extraOk} />
           <View style={styles.spacer} />
-          <Text style={styles.deckMeta}>❤️ {item.likes_count ?? 0}</Text>
-          <Text style={styles.deckMeta}>💬 {item.comments_count ?? 0}</Text>
+          <Text style={styles.deckMeta}>♥ {item.likes_count ?? 0}</Text>
+          <Text style={styles.deckMeta}>◦ {item.comments_count ?? 0}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Mes Decks</Text>
-          <Text style={styles.subtitle}>
-            {decks.length} deck{decks.length > 1 ? 's' : ''}
-          </Text>
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <HeroTitle
+              kicker="— Grimoires du Sanctuaire —"
+              title="Mes Decks"
+              sub={`${decks.length} deck${decks.length > 1 ? 's' : ''} dressé${decks.length > 1 ? 's' : ''}`}
+            />
+          </View>
+          <CyberButton
+            label="+ Nouveau"
+            size="sm"
+            onPress={() => router.push('/deck/new')}
+          />
         </View>
-        <CyberButton
-          label="+ Nouveau"
-          size="sm"
-          onPress={() => router.push('/deck/new')}
-        />
-      </View>
 
-      {loading && decks.length === 0 ? (
-        <View style={styles.empty}>
-          <ActivityIndicator size="large" color={colors.gold} />
-        </View>
-      ) : decks.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>Aucun deck créé.</Text>
-          <TouchableOpacity onPress={() => router.push('/deck/new')}>
-            <Text style={styles.emptyLink}>Créer ton premier deck</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={decks}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderDeck}
-          contentContainerStyle={{ padding: 12, gap: 10, paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => fetchDecks(true)} />
-          }
-        />
-      )}
-    </SafeAreaView>
+        {loading && decks.length === 0 ? (
+          <View style={styles.empty}>
+            <ActivityIndicator size="large" color={colors.gold} />
+          </View>
+        ) : decks.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>Commence ton grimoire.</Text>
+            <TouchableOpacity onPress={() => router.push('/deck/new')}>
+              <Text style={styles.emptyLink}>Fonder ton premier deck</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={decks}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderDeck}
+            contentContainerStyle={{
+              padding: spacing[3],
+              gap: spacing[3],
+              paddingBottom: spacing[7],
+            }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => fetchDecks(true)}
+                tintColor={colors.gold}
+              />
+            }
+          />
+        )}
+      </SafeAreaView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
@@ -194,63 +214,93 @@ const StatBadge = ({
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[3],
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: spacing[2],
   },
-  title: { fontSize: 22, fontWeight: '700', color: t.colors.text },
-  subtitle: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
-  newBtn: {
-    backgroundColor: t.colors.gold,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  newBtnText: { color: t.colors.onGold, fontSize: 13, fontWeight: '600' },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    gap: 12,
+    padding: spacing[7],
+    gap: spacing[3],
   },
   emptyText: { fontSize: 15, color: t.colors.textMuted },
   emptyLink: { fontSize: 14, color: t.colors.gold, fontWeight: '600' },
   deckCard: {
     backgroundColor: t.colors.panel,
-    padding: 14,
-    borderRadius: 12,
+    padding: spacing[4],
     borderWidth: 1,
     borderColor: t.colors.border,
-    gap: 10,
+    gap: spacing[3],
+    position: 'relative',
+    overflow: 'hidden',
   },
-  deckHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  deckName: { fontSize: 16, fontWeight: '700', color: t.colors.text },
-  deckBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  deckAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: t.colors.gold,
+    opacity: 0.7,
+  },
+  deckHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing[3] },
+  deckName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: t.colors.text,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  deckBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[1], marginTop: spacing[1] },
   badge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing[2],
     paddingVertical: 2,
-    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: t.colors.border,
   },
   badgePublic: { backgroundColor: t.colors.panel2 },
   badgeShared: { backgroundColor: t.colors.panel2 },
   badgeBanlist: { backgroundColor: t.colors.panel2 },
-  badgeText: { fontSize: 10, fontWeight: '600', color: t.colors.text },
-  deleteIcon: { fontSize: 20 },
-  deckStats: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: t.colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  deleteBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: t.colors.border,
+  },
+  deleteIcon: { fontSize: 16, color: t.colors.textMuted, lineHeight: 18 },
+  deckStats: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   statBadge: {
     backgroundColor: t.colors.bg,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: t.colors.border,
   },
-  statBadgeLabel: { fontSize: 9, color: t.colors.textMuted, fontWeight: '600', textTransform: 'uppercase' },
+  statBadgeLabel: {
+    fontSize: 9,
+    color: t.colors.textMuted,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   statBadgeValue: { fontSize: 16, fontWeight: '700', color: t.colors.success },
   statBadgeValueBad: { color: t.colors.danger },
   statBadgeHint: { fontSize: 9, color: t.colors.textMuted },

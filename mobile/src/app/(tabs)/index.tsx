@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Image,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,12 +21,15 @@ import CardDetailModal from '@/components/CardDetailModal';
 import FiltersModal, { type CollectionFilterValues } from '@/components/FiltersModal';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, useTheme, type Theme } from '@/theme/ThemeContext';
-import { MillenniumMark } from '@/components/CyberSurfaces';
 import CyberButton from '@/components/CyberButton';
+import { AppBackground } from '@/components/decor/AppBackground';
+import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
+import { HeroTitle } from '@/components/decor/HeroTitle';
+import { CardTile } from '@/components/decor/CardTile';
+import { spacing } from '@/theme/palette';
 
 const PAGE_SIZE = 30;
 const NUM_COLUMNS = 2;
-const CARD_MARGIN = 8;
 const EMPTY_FILTERS: CollectionFilterValues = { type: '', attribute: '', rarity: '' };
 
 export default function CollectionScreen() {
@@ -109,246 +110,184 @@ export default function CollectionScreen() {
     fetchPage(1, true);
   }, [fetchPage]);
 
-  const updateQty = useCallback(async (card: UserCard, delta: number) => {
-    const next = card.quantity + delta;
-    if (next < 1) {
-      Alert.alert('Retirer ?', `${card.card?.name || 'Carte'} sera retirée.`, [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Retirer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await collectionApi.remove(card.id);
-              setCards((prev) => prev.filter((c) => c.id !== card.id));
-              setTotal((t) => Math.max(0, t - 1));
-            } catch (err: any) {
-              Alert.alert('Erreur', err?.response?.data?.error || 'Suppression échouée');
-            }
-          },
-        },
-      ]);
-      return;
-    }
-    // Optimistic update
-    setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, quantity: next } : c)));
-    try {
-      await collectionApi.setQuantity(card.id, next);
-    } catch (err: any) {
-      // Rollback
-      setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, quantity: card.quantity } : c)));
-      Alert.alert('Erreur', err?.response?.data?.error || 'Mise à jour échouée');
-    }
-  }, []);
-
-  const cardWidth = useMemo(() => {
-    const screen = Dimensions.get('window').width;
-    const totalMargin = CARD_MARGIN * (NUM_COLUMNS + 1);
-    return (screen - totalMargin) / NUM_COLUMNS;
-  }, []);
-
   const renderCard = ({ item }: { item: UserCard }) => (
-    <TouchableOpacity
-      style={[styles.cardBox, { width: cardWidth }]}
-      activeOpacity={0.8}
-      onPress={() => setSelectedCard(item)}>
-      <Image
-        source={{
-          uri:
-            item.card?.card_images?.[0]?.image_url_small ||
-            item.card?.card_images?.[0]?.image_url,
-        }}
-        style={[styles.cardImage, { width: cardWidth, height: cardWidth * 1.46 }]}
-        resizeMode="cover"
+    <View style={styles.cardCell}>
+      <CardTile
+        uri={
+          item.card?.card_images?.[0]?.image_url_small ||
+          item.card?.card_images?.[0]?.image_url
+        }
+        name={item.card?.name || `Carte #${item.card_id}`}
+        rarity={item.rarity}
+        quantity={item.quantity}
+        language={item.language}
+        onPress={() => setSelectedCard(item)}
       />
-      <View style={styles.cardMeta}>
-        <Text style={styles.cardName} numberOfLines={1}>
-          {item.card?.name || `Carte #${item.card_id}`}
-        </Text>
-        <Text style={styles.cardMetaText} numberOfLines={1}>
-          {item.rarity} · {item.language}
-        </Text>
-        <View style={styles.qtyRow}>
-          <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              updateQty(item, -1);
-            }}>
-            <Text style={styles.qtyBtnText}>−</Text>
-          </TouchableOpacity>
-          <Text style={styles.qtyValue}>{item.quantity}</Text>
-          <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              updateQty(item, 1);
-            }}>
-            <Text style={styles.qtyBtnText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <MillenniumMark size={30} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Ma Collection</Text>
-          <Text style={styles.subtitle}>
-            {total} carte{total > 1 ? 's' : ''} · {user?.username}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={toggleTheme}
-          style={styles.logoutBtn}
-          accessibilityRole="button"
-          accessibilityLabel={
-            theme.name === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'
-          }>
-          <Text style={styles.logoutText}>{theme.name === 'dark' ? '☀' : '☾'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Déco</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.actions}>
-        <CyberButton
-          label="Scanner"
-          variant="primary"
-          onPress={() => router.push('/scan')}
-          block
-          style={{ flex: 1 }}
-        />
-        <CyberButton
-          label="+ Ajouter"
-          variant="secondary"
-          onPress={() => setShowAdd(true)}
-          block
-          style={{ flex: 1 }}
-        />
-      </View>
-
-      <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Rechercher une carte…"
-          placeholderTextColor={colors.textMuted}
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-        />
-        <TouchableOpacity
-          style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
-          onPress={() => setShowFilters(true)}>
-          <Text style={[styles.filtersBtnText, activeFilterCount > 0 && styles.filtersBtnTextActive]}>
-            Filtres {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {activeFilterCount > 0 && (
-        <View style={styles.activeFiltersRow}>
-          {filters.type ? (
-            <ActiveFilterChip
-              label={filters.type}
-              onClear={() => setFilters((f) => ({ ...f, type: '' }))}
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <HeroTitle
+              kicker="— Vitrine du Millénium —"
+              title="Ma Collection"
+              sub={`${total} carte${total > 1 ? 's' : ''} rassemblée${total > 1 ? 's' : ''} · ${user?.username ?? ''}`}
             />
-          ) : null}
-          {filters.attribute ? (
-            <ActiveFilterChip
-              label={filters.attribute}
-              onClear={() => setFilters((f) => ({ ...f, attribute: '' }))}
-            />
-          ) : null}
-          {filters.rarity ? (
-            <ActiveFilterChip
-              label={filters.rarity}
-              onClear={() => setFilters((f) => ({ ...f, rarity: '' }))}
-            />
-          ) : null}
-          <TouchableOpacity onPress={() => setFilters(EMPTY_FILTERS)}>
-            <Text style={styles.resetLink}>Reset</Text>
+          </View>
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel={
+              theme.name === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'
+            }>
+            <Text style={styles.iconBtnText}>{theme.name === 'dark' ? '☀' : '☾'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={logout} style={styles.iconBtn}>
+            <Text style={styles.iconBtnText}>Déco</Text>
           </TouchableOpacity>
         </View>
-      )}
 
-      {loading && cards.length === 0 ? (
-        <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color={colors.gold} />
+        <View style={styles.actions}>
+          <CyberButton
+            label="Scanner"
+            variant="primary"
+            onPress={() => router.push('/scan')}
+            block
+            style={{ flex: 1 }}
+          />
+          <CyberButton
+            label="+ Ajouter"
+            variant="secondary"
+            onPress={() => setShowAdd(true)}
+            block
+            style={{ flex: 1 }}
+          />
         </View>
-      ) : cards.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>
-            {debouncedSearch || activeFilterCount > 0
-              ? 'Aucune carte ne correspond aux critères.'
-              : 'Aucune carte dans ta collection.'}
-          </Text>
-          <TouchableOpacity onPress={() => setShowAdd(true)}>
-            <Text style={styles.emptyLink}>Ajouter ta première carte</Text>
+
+        <View style={styles.searchWrap}>
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Cherche une carte…"
+            placeholderTextColor={colors.textMuted}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
+            onPress={() => setShowFilters(true)}>
+            <Text style={[styles.filtersBtnText, activeFilterCount > 0 && styles.filtersBtnTextActive]}>
+              Filtres {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+            </Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={cards}
-          keyExtractor={(item) => String(item.id)}
-          numColumns={NUM_COLUMNS}
-          renderItem={renderCard}
-          contentContainerStyle={{ padding: CARD_MARGIN / 2, paddingBottom: 40 }}
-          columnWrapperStyle={{ gap: CARD_MARGIN }}
-          ItemSeparatorComponent={() => <View style={{ height: CARD_MARGIN }} />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={
-            loadingMore ? (
-              <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator color={colors.gold} />
-              </View>
-            ) : null
-          }
-        />
-      )}
 
-      {showAdd && (
-        <AddCardModal
-          visible={showAdd}
-          onClose={() => setShowAdd(false)}
-          onAdded={handleAdded}
-        />
-      )}
+        {activeFilterCount > 0 && (
+          <View style={styles.activeFiltersRow}>
+            {filters.type ? (
+              <ActiveFilterChip
+                label={filters.type}
+                onClear={() => setFilters((f) => ({ ...f, type: '' }))}
+              />
+            ) : null}
+            {filters.attribute ? (
+              <ActiveFilterChip
+                label={filters.attribute}
+                onClear={() => setFilters((f) => ({ ...f, attribute: '' }))}
+              />
+            ) : null}
+            {filters.rarity ? (
+              <ActiveFilterChip
+                label={filters.rarity}
+                onClear={() => setFilters((f) => ({ ...f, rarity: '' }))}
+              />
+            ) : null}
+            <TouchableOpacity onPress={() => setFilters(EMPTY_FILTERS)}>
+              <Text style={styles.resetLink}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {selectedCard && (
-        <CardDetailModal
-          visible={!!selectedCard}
-          userCard={selectedCard}
-          onClose={() => setSelectedCard(null)}
-          onDeleted={() => {
-            setSelectedCard(null);
-            fetchPage(1, true);
-          }}
-        />
-      )}
+        {loading && cards.length === 0 ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.gold} />
+          </View>
+        ) : cards.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              {debouncedSearch || activeFilterCount > 0
+                ? 'Aucune carte ne correspond aux critères.'
+                : 'Ta vitrine attend sa première pièce.'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowAdd(true)}>
+              <Text style={styles.emptyLink}>Ajouter ta première carte</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={cards}
+            keyExtractor={(item) => String(item.id)}
+            numColumns={NUM_COLUMNS}
+            renderItem={renderCard}
+            contentContainerStyle={{ paddingHorizontal: spacing[3], paddingBottom: spacing[7] }}
+            columnWrapperStyle={{ gap: spacing[3] }}
+            ItemSeparatorComponent={() => <View style={{ height: spacing[3] }} />}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold} />
+            }
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={{ paddingVertical: spacing[5] }}>
+                  <ActivityIndicator color={colors.gold} />
+                </View>
+              ) : null
+            }
+          />
+        )}
 
-      {showFilters && (
-        <FiltersModal
-          visible={showFilters}
-          initial={filters}
-          onClose={() => setShowFilters(false)}
-          onApply={(v) => {
-            setFilters(v);
-            setShowFilters(false);
-          }}
-        />
-      )}
-    </SafeAreaView>
+        {showAdd && (
+          <AddCardModal
+            visible={showAdd}
+            onClose={() => setShowAdd(false)}
+            onAdded={handleAdded}
+          />
+        )}
+
+        {selectedCard && (
+          <CardDetailModal
+            visible={!!selectedCard}
+            userCard={selectedCard}
+            onClose={() => setSelectedCard(null)}
+            onDeleted={() => {
+              setSelectedCard(null);
+              fetchPage(1, true);
+            }}
+          />
+        )}
+
+        {showFilters && (
+          <FiltersModal
+            visible={showFilters}
+            initial={filters}
+            onClose={() => setShowFilters(false)}
+            onApply={(v) => {
+              setFilters(v);
+              setShowFilters(false);
+            }}
+          />
+        )}
+      </SafeAreaView>
+      <CornerOrnaments />
+    </View>
   );
 }
 
@@ -368,60 +307,51 @@ const ActiveFilterChip = ({ label, onClear }: { label: string; onClear: () => vo
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg },
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: spacing[2],
   },
-  title: { fontSize: 22, fontWeight: '700', color: t.colors.text },
-  subtitle: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
-  logoutBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  iconBtn: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
     backgroundColor: t.colors.panel2,
+    borderWidth: 1,
+    borderColor: t.colors.border,
   },
-  logoutText: { color: t.colors.textMuted, fontSize: 12, fontWeight: '600' },
+  iconBtnText: { color: t.colors.textMuted, fontSize: 12, fontWeight: '600' },
   actions: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[2],
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing[2],
   },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  scanBtn: { backgroundColor: t.colors.gold },
-  addBtn: { backgroundColor: t.colors.cyan },
-  actionBtnText: { color: t.colors.onGold, fontSize: 14, fontWeight: '600' },
   searchWrap: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing[2],
   },
   searchInput: {
     flex: 1,
     backgroundColor: t.colors.panel,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     fontSize: 15,
     borderWidth: 1,
     borderColor: t.colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: t.colors.gold,
     color: t.colors.text,
   },
   filtersBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     backgroundColor: t.colors.panel,
     borderWidth: 1,
     borderColor: t.colors.border,
@@ -431,74 +361,45 @@ const makeStyles = (t: Theme) =>
   filtersBtnText: { color: t.colors.text, fontSize: 13, fontWeight: '600' },
   filtersBtnTextActive: { color: t.colors.onGold },
   activeFiltersRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 6,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[2],
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: spacing[2],
     alignItems: 'center',
   },
   activeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: t.colors.panel2,
-    paddingLeft: 10,
-    paddingRight: 4,
-    paddingVertical: 4,
-    borderRadius: 999,
-    gap: 4,
+    paddingLeft: spacing[3],
+    paddingRight: spacing[1],
+    paddingVertical: spacing[1],
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    gap: spacing[1],
     maxWidth: 200,
   },
   activeChipText: { color: t.colors.gold, fontSize: 11, fontWeight: '600' },
   activeChipClose: {
     width: 18,
     height: 18,
-    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: t.colors.gold,
+    backgroundColor: t.colors.bg,
+    borderWidth: 1,
+    borderColor: t.colors.gold,
   },
   activeChipCloseText: { color: t.colors.gold, fontSize: 10, fontWeight: '700' },
-  resetLink: { color: t.colors.danger, fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  resetLink: { color: t.colors.danger, fontSize: 12, fontWeight: '600', marginLeft: spacing[1] },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    gap: 12,
+    padding: spacing[7],
+    gap: spacing[3],
   },
   emptyText: { fontSize: 15, color: t.colors.textMuted, textAlign: 'center' },
   emptyLink: { fontSize: 14, color: t.colors.gold, fontWeight: '600' },
-  cardBox: {
-    backgroundColor: t.colors.panel,
-    borderRadius: 10,
-    overflow: 'hidden',
-    shadowColor: t.colors.camera,
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  cardImage: { backgroundColor: t.colors.panel2 },
-  cardMeta: { padding: 6, gap: 4 },
-  cardName: { fontSize: 12, fontWeight: '600', color: t.colors.text },
-  cardMetaText: { fontSize: 10, color: t.colors.textMuted },
-  qtyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  qtyBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: t.colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  qtyBtnText: { fontSize: 16, color: t.colors.text, fontWeight: '700' },
-  qtyValue: { fontSize: 13, fontWeight: '700', color: t.colors.text },
+  cardCell: { flex: 1 },
 });
