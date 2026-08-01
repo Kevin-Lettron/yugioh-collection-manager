@@ -457,3 +457,210 @@ body {
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REFONTE V2 — SANCTUAIRE DU MILLÉNIUM
+   Ces animations et styles sont consommés par les composants React de
+   client/src/components/decor/ (AppBackground, CornerOrnaments, CardTile).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes san-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50%      { transform: translateY(-24px) rotate(6deg); }
+}
+
+@keyframes san-corner {
+  0%, 100% { opacity: 0.35; filter: drop-shadow(0 0 0 rgba(245, 197, 24, 0.4)); }
+  50%      { opacity: 0.55; filter: drop-shadow(0 0 10px rgba(245, 197, 24, 0.55)); }
+}
+
+@keyframes san-breath {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(245, 197, 24, 0.3)); }
+  50%      { filter: drop-shadow(0 0 26px rgba(245, 197, 24, 0.55)); }
+}
+
+@keyframes san-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes san-holo {
+  0%, 100% { transform: translateX(-32%); }
+  50%      { transform: translateX(32%); }
+}
+
+@keyframes san-shimmer {
+  0%   { background-position: 180% 0; }
+  100% { background-position: -80% 0; }
+}
+
+@keyframes san-ring {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* ─── Card tile ─────────────────────────────────────────────────────────── */
+
+.card-tile {
+  position: relative;
+  aspect-ratio: 59 / 100;
+  perspective: 1000px;
+  animation: san-card-in 500ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.card-tile__inner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(.2, .8, .2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-tile:hover .card-tile__inner {
+  transform: rotateY(-6deg) rotateX(3deg) scale(1.04);
+}
+
+.card-art {
+  position: relative;
+  flex: 0 0 auto;
+  aspect-ratio: 59 / 86;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-elev));
+  border: 1px solid var(--border);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.card-art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-art__placeholder {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 10px, rgba(168, 85, 247, 0.08) 10px 11px),
+    linear-gradient(150deg, var(--panel-2), var(--bg-elev));
+}
+
+/* Halos par rareté */
+.card-tile--common .card-art {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.card-tile--rare .card-art {
+  box-shadow:
+    inset 0 0 0 1px rgba(59, 130, 246, 0.4),
+    0 0 20px rgba(59, 130, 246, 0.18),
+    0 8px 14px rgba(0, 0, 0, 0.4);
+}
+.card-tile--super .card-art {
+  box-shadow:
+    inset 0 0 0 1px rgba(168, 85, 247, 0.5),
+    0 0 25px rgba(168, 85, 247, 0.28),
+    0 10px 16px rgba(0, 0, 0, 0.4);
+}
+.card-tile--ultra .card-art {
+  box-shadow:
+    inset 0 0 0 1px var(--gold),
+    0 0 30px rgba(245, 197, 24, 0.4),
+    0 10px 20px rgba(0, 0, 0, 0.4);
+  animation: san-breath 3s ease-in-out infinite;
+}
+.card-tile--secret .card-art {
+  box-shadow:
+    inset 0 0 0 1px #FF2E88,
+    0 0 12px rgba(255, 46, 136, 0.45),
+    0 0 30px rgba(34, 211, 238, 0.35);
+}
+
+/* Nappe holo pour Secret Rare */
+.card-tile__holo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+    transparent 20%, rgba(255, 46, 136, 0.18) 30%,
+    rgba(245, 197, 24, 0.18) 45%, rgba(34, 211, 238, 0.18) 60%,
+    transparent 70%);
+  mix-blend-mode: overlay;
+  animation: san-holo 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Glow qui suit la souris */
+.card-tile__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.15), transparent 40%);
+  opacity: 0;
+  transition: opacity 260ms cubic-bezier(.2, .8, .2, 1);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.card-tile:hover .card-tile__glow { opacity: 1; }
+
+/* Badges sur la carte */
+.card-qty {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 3px 8px;
+  background: linear-gradient(135deg, var(--bg), var(--panel));
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  z-index: 3;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  box-shadow: 0 0 8px rgba(245, 197, 24, 0.35);
+}
+
+.card-lang {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 22px;
+  padding: 3px 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 3;
+}
+
+/* Info sous la carte */
+.card-info { padding: 8px 4px 0; display: flex; flex-direction: column; gap: 3px; }
+.card-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.card-rarity { color: var(--gold-dim); text-transform: uppercase; font-weight: 600; letter-spacing: 0.1em; }
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  .card-tile,
+  .card-tile--ultra .card-art,
+  .card-tile__holo { animation: none !important; }
+  .card-tile:hover .card-tile__inner { transform: none; }
+}
+
