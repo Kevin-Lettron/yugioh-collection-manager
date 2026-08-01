@@ -53,6 +53,57 @@ export function resetScanCallCount(): void {
   scanCallCount = 0;
 }
 
+/**
+ * Test l'infra scan sans consommer un vrai scan : verifie la cle API et
+ * fait un ping minimal sur le modele configure. Utile pour debug prod.
+ */
+export async function diagnose(): Promise<{
+  ok: boolean;
+  model: string;
+  apiKeyPresent: boolean;
+  apiKeyLength: number;
+  rawEnvModel: string | undefined;
+  scanCallCount: number;
+  maxScanCalls: number;
+  testResponse?: string;
+  error?: string;
+  errorType?: string;
+}> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  const info = {
+    model: SCAN_MODEL,
+    rawEnvModel: process.env.CLAUDE_SCAN_MODEL,
+    apiKeyPresent: !!(apiKey && apiKey.trim()),
+    apiKeyLength: apiKey ? apiKey.trim().length : 0,
+    scanCallCount,
+    maxScanCalls,
+  };
+  if (!info.apiKeyPresent) {
+    return { ...info, ok: false, error: 'CLAUDE_API_KEY manquante ou vide dans .env' };
+  }
+  try {
+    const client = getAnthropicClient();
+    const response = await client.messages.create({
+      model: SCAN_MODEL,
+      max_tokens: 20,
+      messages: [{ role: 'user', content: 'Reply with just "OK" and nothing else.' }],
+    });
+    const text =
+      response.content.find((b) => b.type === 'text')?.type === 'text'
+        ? (response.content.find((b) => b.type === 'text') as { type: 'text'; text: string }).text
+        : '(no text block)';
+    return { ...info, ok: true, testResponse: text.slice(0, 100) };
+  } catch (e) {
+    const err = e as Error;
+    return {
+      ...info,
+      ok: false,
+      error: err.message || String(err),
+      errorType: err.name || err.constructor?.name || 'unknown',
+    };
+  }
+}
+
 type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 
 /**

@@ -283,6 +283,30 @@ export class CollectionController {
         remainingScans: getRemainingScanCalls(),
       });
     } catch (error) {
+      // On NE remonte PAS via next(error) : cela fait passer l'erreur par
+      // errorHandler qui masque le message reel en prod ("Une erreur interne
+      // est survenue"). On renvoie 200 avec success:false + le vrai message
+      // pour que le client puisse l'afficher a l'user.
+      const err = error as Error;
+      loggers.external.error('Claude Vision', err, '/scan');
+      res.json({
+        success: false,
+        error: `Scan echoue : ${err.name || 'Error'} — ${err.message || 'erreur inconnue'}`,
+        remainingScans: getRemainingScanCalls(),
+      });
+    }
+  }
+
+  /**
+   * Diagnose scan setup : test API key + model with a minimal Claude call.
+   * Used to debug the "erreur interne" without needing SSH access.
+   */
+  static async diagnoseScan(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { diagnose } = await import('../services/cardScanService');
+      const result = await diagnose();
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   }

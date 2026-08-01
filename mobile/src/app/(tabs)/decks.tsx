@@ -150,6 +150,7 @@ export default function DecksScreen() {
             label="+ Nouveau"
             size="sm"
             onPress={() => router.push('/deck/new')}
+            glitch
           />
         </View>
 

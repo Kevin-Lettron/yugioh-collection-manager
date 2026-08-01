@@ -21,6 +21,7 @@ router.post(
   CollectionController.scanCard
 );
 router.get('/scan/status', CollectionController.getScanStatus);
+router.get('/scan/diagnose', CollectionController.diagnoseScan);
 
 // Collection routes
 router.post('/cards/add', CollectionController.addCardByCode);

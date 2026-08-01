@@ -311,7 +311,7 @@ export default function ScanScreen() {
 
             <View style={styles.rowBtns}>
               <CyberButton label="Reprendre" variant="ghost" onPress={retake} style={{ flex: 1 }} block cutColor={colors.bg} />
-              <CyberButton label="Consulter l'oracle" variant="primary" onPress={analyze} style={{ flex: 1 }} block cutColor={colors.bg} />
+              <CyberButton label="Consulter l'oracle" variant="primary" onPress={analyze} style={{ flex: 1 }} block cutColor={colors.bg} glitch />
             </View>
           </ScrollView>
         </SafeAreaView>

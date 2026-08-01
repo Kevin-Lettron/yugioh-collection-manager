@@ -118,6 +118,7 @@ export default function NewDeckScreen() {
                 loading={creating}
                 block
                 cutColor={colors.panel}
+                glitch
               />
             </View>
           </ScrollView>

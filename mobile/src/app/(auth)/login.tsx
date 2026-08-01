@@ -94,6 +94,7 @@ export default function LoginScreen() {
               loading={submitting}
               block
               cutColor={colors.panel}
+              glitch
             />
 
             <View style={styles.footer}>

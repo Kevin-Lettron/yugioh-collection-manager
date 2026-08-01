@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,6 +8,16 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withTiming,
+  withDelay,
+  withRepeat,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { useAppTheme } from '@/theme/ThemeContext';
 
 export type CyberButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -30,6 +40,14 @@ interface CyberButtonProps {
   style?: StyleProp<ViewStyle>;
   /** Étiquette d'angle décorative (ex. « R25 ») */
   tag?: string;
+  /**
+   * Active l'effet glitch — anime la couche d'ombre à intervalle régulier
+   * (le hover n'existant pas sur mobile, on le rejoue en boucle discrète).
+   * Réservé au CTA principal d'un écran. Défaut : `false`.
+   */
+  glitch?: boolean;
+  /** Intervalle entre 2 glitches en ms. Défaut : 5000 (5 s). */
+  glitchIntervalMs?: number;
 }
 
 /**
@@ -39,6 +57,10 @@ interface CyberButtonProps {
  * donc simulé : un carré pivoté à 45°, de la couleur du fond, posé à cheval sur
  * le coin bas-gauche. Une seconde couche décalée de 5 px joue l'ombre colorée.
  * Aucune dépendance ajoutée (pas de react-native-svg).
+ *
+ * Mode glitch : sur mobile, pas de hover — donc on rejoue l'animation glitch
+ * automatiquement toutes les 5 s. La couche d'ombre se déplace de +/- 2 px en
+ * X pendant ~400 ms, puis revient à sa position d'origine.
  */
 function CyberButtonBase({
   label,
@@ -51,6 +73,8 @@ function CyberButtonBase({
   block = false,
   style,
   tag,
+  glitch = false,
+  glitchIntervalMs = 5000,
 }: CyberButtonProps) {
   const theme = useAppTheme();
   const { colors, shape, type } = theme;
@@ -67,6 +91,38 @@ function CyberButtonBase({
   const inactive = disabled || loading;
   const bevel = size === 'sm' ? 12 : 16;
   const behind = cutColor ?? colors.bg;
+
+  // Auto-glitch : anime le décalage de la couche d'ombre en boucle.
+  // Sequence : 0 -> +3 -> -2 -> +1 -> 0, chaque étape 90 ms, puis pause de
+  // (glitchIntervalMs - 360) ms avant la répétition suivante.
+  const glitchX = useSharedValue<number>(shape.buttonOffset);
+  useEffect(() => {
+    if (!glitch || inactive || isGhost) return;
+    const base = shape.buttonOffset;
+    const stepMs = 90;
+    const pauseMs = Math.max(400, glitchIntervalMs - stepMs * 4);
+    glitchX.value = withRepeat(
+      withSequence(
+        withDelay(
+          pauseMs,
+          withTiming(base + 3, { duration: stepMs, easing: Easing.linear })
+        ),
+        withTiming(base - 2, { duration: stepMs, easing: Easing.linear }),
+        withTiming(base + 1, { duration: stepMs, easing: Easing.linear }),
+        withTiming(base, { duration: stepMs, easing: Easing.linear })
+      ),
+      -1,
+      false
+    );
+    return () => {
+      cancelAnimation(glitchX);
+      glitchX.value = base;
+    };
+  }, [glitch, inactive, isGhost, glitchIntervalMs, shape.buttonOffset, glitchX]);
+
+  const shadowAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: glitchX.value }],
+  }));
 
   return (
     <Pressable
@@ -87,12 +143,13 @@ function CyberButtonBase({
         style,
       ]}
     >
-      {/* Couche d'ombre, décalée */}
+      {/* Couche d'ombre, décalée (animée si glitch actif) */}
       {!isGhost && (
-        <View
+        <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: shadow, transform: [{ translateX: shape.buttonOffset }] },
+            { backgroundColor: shadow },
+            glitch && !inactive ? shadowAnimatedStyle : { transform: [{ translateX: shape.buttonOffset }] },
           ]}
         />
       )}

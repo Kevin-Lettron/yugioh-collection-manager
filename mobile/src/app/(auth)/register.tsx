@@ -115,6 +115,7 @@ export default function RegisterScreen() {
               loading={submitting}
               block
               cutColor={colors.panel}
+              glitch
             />
 
             <View style={styles.footer}>

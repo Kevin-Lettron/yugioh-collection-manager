@@ -159,6 +159,7 @@ export default function CollectionScreen() {
             onPress={() => router.push('/scan')}
             block
             style={{ flex: 1 }}
+            glitch
           />
           <CyberButton
             label="+ Ajouter"
