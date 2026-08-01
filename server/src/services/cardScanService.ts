@@ -20,7 +20,19 @@ function getAnthropicClient(): Anthropic {
 
 // Vision model used for card reading. Opus reads the tiny set code far more
 // reliably than Haiku; override with CLAUDE_SCAN_MODEL if cost matters more.
-const SCAN_MODEL = process.env.CLAUDE_SCAN_MODEL || 'claude-haiku-4-5-20251001';
+// Certains noms de modele publies dans .env.example etaient invalides
+// (`claude-opus-5` n'existe pas — le plus recent est opus-4-8). On les ignore
+// pour eviter qu'un .env prod pourri fasse crasher tous les scans.
+const INVALID_SCAN_MODELS = new Set([
+  'claude-opus-5',
+  'claude-sonnet-5',
+  'claude-haiku-5',
+]);
+const RAW_SCAN_MODEL = process.env.CLAUDE_SCAN_MODEL;
+const SCAN_MODEL =
+  RAW_SCAN_MODEL && !INVALID_SCAN_MODELS.has(RAW_SCAN_MODEL)
+    ? RAW_SCAN_MODEL
+    : 'claude-haiku-4-5-20251001';
 
 let scanCallCount = 0;
 const maxScanCalls = parseInt(process.env.CLAUDE_SCAN_MAX_CALLS || '30', 10);
