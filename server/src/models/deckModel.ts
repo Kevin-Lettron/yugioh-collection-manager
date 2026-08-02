@@ -46,7 +46,7 @@ export class DeckModel {
     // Get main deck and extra deck cards
     const cardsResult = await query(
       `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -171,7 +171,7 @@ export class DeckModel {
       // Get main deck and extra deck cards
       const cardsResult = await query(
         `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-                c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+                c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
                 c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
                 c.card_sets, c.card_images, c.card_prices, c.banlist_info,
                 c.linkval, c.linkmarkers, c.scale
@@ -459,7 +459,7 @@ export class DeckModel {
     // Get main deck and extra deck cards
     const cardsResult = await query(
       `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -792,10 +792,14 @@ export class DeckModel {
       card: {
         id: row.card_db_id, // cards.id (number) - the database ID
         card_id: row.card_api_id, // cards.card_id (string) - the YGOProDeck API ID
-        name: row.name,
+        name: row.name_fr || row.name,
+        name_fr: row.name_fr,
+        name_en: row.name,
         type: row.type,
         frame_type: row.frame_type,
-        description: row.description,
+        description: row.description_fr || row.description,
+        description_fr: row.description_fr,
+        description_en: row.description,
         atk: row.atk,
         def: row.def,
         level: row.level,

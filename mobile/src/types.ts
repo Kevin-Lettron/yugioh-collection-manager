@@ -58,9 +58,17 @@ export interface Card {
   id: number;
   card_id: string;
   name: string;
+  /** Nom officiel Konami TCG francais (API YGOProDeck ?language=fr). Fallback = name. */
+  name_fr?: string | null;
+  /** Nom anglais canonique. */
+  name_en?: string | null;
   type: string;
   frame_type?: string;
   description?: string;
+  /** Description officielle Konami TCG francais. Fallback = description. */
+  description_fr?: string | null;
+  /** Description anglaise canonique. */
+  description_en?: string | null;
   atk?: number;
   def?: number;
   level?: number;

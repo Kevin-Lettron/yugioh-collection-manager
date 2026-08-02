@@ -33,6 +33,24 @@ let cardSetsCache: { set_name: string; set_code: string }[] | null = null;
 let cardSetsCacheTime: number = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+/**
+ * Fetch la version FR d'une carte via ?language=fr et retourne juste
+ * { name_fr, description_fr }. Retourne null si l'API n'a pas la carte
+ * en FR (peu probable pour les cartes TCG officielles).
+ */
+async function fetchFrenchTranslation(cardId: number | string): Promise<{ name_fr: string; description_fr: string } | null> {
+  try {
+    const res = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
+      params: { id: cardId, language: 'fr' },
+    });
+    const data = res.data?.data?.[0];
+    if (!data?.name || !data?.desc) return null;
+    return { name_fr: data.name, description_fr: data.desc };
+  } catch {
+    return null;
+  }
+}
+
 export class YGOProDeckService {
   /**
    * Get all card sets from API (cached)
@@ -186,7 +204,8 @@ export class YGOProDeckService {
         });
 
         if (card) {
-          return { card: this.transformCard(card) };
+          const fr = await fetchFrenchTranslation(card.id);
+          return { card: this.transformCard(card, fr) };
         }
 
         // Card not found with this exact set code in this set
@@ -294,7 +313,10 @@ export class YGOProDeckService {
       });
 
       if (response.data && response.data.data && response.data.data.length > 0) {
-        return this.transformCard(response.data.data[0]);
+        const apiCard = response.data.data[0];
+        // Fetch la trad FR en parallele (best-effort, non bloquant en cas d'echec)
+        const fr = await fetchFrenchTranslation(apiCard.id);
+        return this.transformCard(apiCard, fr);
       }
 
       return null;
@@ -317,7 +339,9 @@ export class YGOProDeckService {
       });
 
       if (response.data && response.data.data && response.data.data.length > 0) {
-        return this.transformCard(response.data.data[0]);
+        const apiCard = response.data.data[0];
+        const fr = await fetchFrenchTranslation(apiCard.id);
+        return this.transformCard(apiCard, fr);
       }
 
       return null;
@@ -368,14 +392,19 @@ export class YGOProDeckService {
   /**
    * Transform YGOProDeck API response to our Card type
    */
-  private static transformCard(apiCard: YGOProDeckCard): Card {
+  private static transformCard(
+    apiCard: YGOProDeckCard,
+    fr?: { name_fr: string; description_fr: string } | null
+  ): Card {
     return {
       id: 0, // Will be set by database
       card_id: apiCard.id.toString(),
       name: apiCard.name,
+      name_fr: fr?.name_fr ?? null,
       type: apiCard.type,
       frame_type: apiCard.frameType,
       description: apiCard.desc,
+      description_fr: fr?.description_fr ?? null,
       atk: apiCard.atk,
       def: apiCard.def,
       level: apiCard.level,

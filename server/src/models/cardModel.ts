@@ -6,18 +6,23 @@ export class CardModel {
    * Create or update a card (upsert based on card_id from API)
    */
   static async upsert(card: Omit<Card, 'id' | 'created_at' | 'updated_at'>): Promise<Card> {
+    // Sur ON CONFLICT, on ne veut PAS ecraser name_fr/description_fr par NULL
+    // si la nouvelle insert n'a pas les trads (ex: fetch qui a echoue sur FR).
+    // COALESCE garde l'ancienne valeur si la nouvelle est NULL.
     const result = await query(
       `INSERT INTO cards (
-        card_id, name, type, frame_type, description, atk, def, level, race,
-        attribute, archetype, card_sets, card_images, card_prices, banlist_info,
-        linkval, linkmarkers, scale
+        card_id, name, name_fr, type, frame_type, description, description_fr,
+        atk, def, level, race, attribute, archetype, card_sets, card_images,
+        card_prices, banlist_info, linkval, linkmarkers, scale
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       ON CONFLICT (card_id) DO UPDATE SET
         name = EXCLUDED.name,
+        name_fr = COALESCE(EXCLUDED.name_fr, cards.name_fr),
         type = EXCLUDED.type,
         frame_type = EXCLUDED.frame_type,
         description = EXCLUDED.description,
+        description_fr = COALESCE(EXCLUDED.description_fr, cards.description_fr),
         atk = EXCLUDED.atk,
         def = EXCLUDED.def,
         level = EXCLUDED.level,
@@ -36,9 +41,11 @@ export class CardModel {
       [
         card.card_id,
         card.name,
+        card.name_fr ?? null,
         card.type,
         card.frame_type,
         card.description,
+        card.description_fr ?? null,
         card.atk,
         card.def,
         card.level,
@@ -192,8 +199,16 @@ export class CardModel {
    * Parse card from database row (convert JSONB to objects)
    */
   private static parseCard(row: any): Card {
+    // On expose la version FR officielle Konami TCG en tant que `name` /
+    // `description` si dispo (les clients recoivent du FR par defaut sans
+    // devoir toucher a leurs 50 usages `.card?.name`). L'EN reste accessible
+    // via `name_en` / `description_en` pour toute logique qui en aurait besoin.
     return {
       ...row,
+      name: row.name_fr || row.name,
+      description: row.description_fr || row.description,
+      name_en: row.name,
+      description_en: row.description,
       card_sets: row.card_sets || [],
       card_images: row.card_images || [],
       card_prices: row.card_prices || {},
