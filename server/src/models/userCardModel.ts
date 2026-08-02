@@ -281,6 +281,7 @@ export class UserCardModel {
       by_type: { monster: 0, spell: 0, trap: 0, extra: 0 },
       recent_added_30d: 0,
       rarities: [],
+      rarity_counts: {},
     };
 
     const now = Date.now();
@@ -315,9 +316,9 @@ export class UserCardModel {
       }
     }
 
-    stats.rarities = Array.from(rarityCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([r]) => r);
+    const sortedRarities = Array.from(rarityCounts.entries()).sort((a, b) => b[1] - a[1]);
+    stats.rarities = sortedRarities.map(([r]) => r);
+    stats.rarity_counts = Object.fromEntries(sortedRarities);
 
     stats.total_value_eur = Math.round(stats.total_value_eur * 100) / 100;
     return stats;

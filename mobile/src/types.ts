@@ -36,6 +36,7 @@ export interface CollectionStats {
   by_type: { monster: number; spell: number; trap: number; extra: number };
   recent_added_30d: number;
   rarities: string[];
+  rarity_counts: Record<string, number>;
 }
 
 export interface DeckStats {

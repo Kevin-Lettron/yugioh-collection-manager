@@ -62,6 +62,7 @@ const Collection = () => {
     total_value_eur: number;
     recent_added_30d: number;
     rarities: string[];
+    rarity_counts: Record<string, number>;
   } | null>(null);
 
   const [search, setSearch] = useState('');
@@ -239,9 +240,13 @@ const Collection = () => {
       accent: '#F5EFE0',
     },
     {
-      label: 'Ultra rares +',
+      // Quand une rareté est filtrée, la stat suit le filtre (label + compte)
+      label: rarity ? `${rarity} +` : 'Ultra rares +',
       value: collectionStats
-        ? collectionStats.ultra_rares_count.toLocaleString('fr-FR')
+        ? (rarity
+            ? (collectionStats.rarity_counts?.[rarity] ?? 0)
+            : collectionStats.ultra_rares_count
+          ).toLocaleString('fr-FR')
         : '—',
       trend: '',
       accent: '#F5EFE0',

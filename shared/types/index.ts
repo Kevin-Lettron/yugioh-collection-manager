@@ -82,6 +82,8 @@ export interface CollectionStats {
   recent_added_30d: number;
   /** Liste des raretés distinctes présentes dans la collection, triées par fréquence desc. */
   rarities: string[];
+  /** Nombre de cartes (quantité cumulée) par rareté — sert à afficher la stat filtrée. */
+  rarity_counts: Record<string, number>;
 }
 
 /** Stats agrégées d'un deck. */
