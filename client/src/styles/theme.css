@@ -379,6 +379,49 @@ body {
   31%, 61%, 100% { clip-path: var(--clip-4); }
 }
 
+/* ───────────────────────────────────────────────────────────────────────
+   Glitch universel — applique EXACTEMENT l'effet .cyber-btn--glitch sur
+   tous les boutons pixel-perfect (2 spans layered + isolation:isolate).
+   Réutilise l'animation `cyber-glitch` existante (l.368) en injectant les
+   vars --clip-N sur les boutons cibles + un layer glitch en ::after.
+   ─────────────────────────────────────────────────────────────────────── */
+button[style*="isolation"] {
+  position: relative;
+  --clip: polygon(0 0, 100% 0, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 70%);
+  --clip-1: polygon(0 2%, 100% 2%, 100% 95%, 95% 95%, 95% 90%, 85% 90%, 85% 95%, 8% 95%, 0 70%);
+  --clip-2: polygon(0 78%, 100% 78%, 100% 100%, 95% 100%, 95% 90%, 85% 90%, 85% 100%, 8% 100%, 0 78%);
+  --clip-3: polygon(0 44%, 100% 44%, 100% 54%, 95% 54%, 95% 54%, 85% 54%, 85% 54%, 8% 54%, 0 54%);
+  --clip-4: polygon(0 0, 100% 0, 100% 0, 95% 0, 95% 0, 85% 0, 85% 0, 8% 0, 0 0);
+  --clip-6: polygon(0 40%, 100% 40%, 100% 85%, 95% 85%, 95% 85%, 85% 85%, 85% 85%, 8% 85%, 0 70%);
+}
+/* Reproduction exacte de .cyber-btn__glitch d'origine :
+   - inset -5px (dépasse le bouton, comme --offset négatif)
+   - z-index: -2 pour rester DERRIÈRE le texte du bouton (dans l'isolate
+     context, ça équivaut à `-1` clampé, donc au niveau des spans layered).
+   - Le pseudo ::after joue le layer glitch shadow (violet) qui se découpe.
+   - Le pseudo ::before joue le sous-layer main (or) décalé de +5px.
+*/
+button[style*="isolation"]:not(:disabled):hover::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  background: #A855F7;
+  clip-path: var(--clip);
+  animation: cyber-glitch 2s infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+button[style*="isolation"]:not(:disabled):hover::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  background: #F5C518;
+  clip-path: var(--clip);
+  animation: cyber-glitch 2s infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+
 .cyber-btn--violet { --main: var(--violet); --shadow: var(--cyan); --fg: #fff; }
 .cyber-btn--danger { --main: var(--danger); --shadow: var(--magenta); --fg: #fff; }
 .cyber-btn--ghost { --main: transparent; --shadow: transparent; --fg: var(--text); }

@@ -5,8 +5,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   /**
-   * Anime le bouton en glitch au survol. Réservé à l'action principale de
-   * l'écran : sur une page qui compte dix boutons, l'effet devient du bruit.
+   * Anime le bouton en glitch au survol. Actif par défaut sauf sur `ghost` —
+   * passer `glitch={false}` explicitement pour désactiver.
    */
   glitch?: boolean;
   /** Petite étiquette d'angle décorative (ex. « R25 »). */
@@ -25,7 +25,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       isLoading = false,
-      glitch = false,
+      // Glitch actif par défaut sauf ghost (ces boutons transparents restent sobres).
+      glitch,
       tag,
       className = '',
       children,
@@ -51,9 +52,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'px-6 py-3 text-base min-h-[52px]',
     };
 
+    const effectiveGlitch = glitch !== undefined ? glitch : variant !== 'ghost';
     const classes = [
       'cyber-btn',
-      glitch ? 'cyber-btn--glitch' : '',
+      effectiveGlitch ? 'cyber-btn--glitch' : '',
       variantStyles[variant],
       sizeStyles[size],
       className,
@@ -70,7 +72,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading}
         {...props}
       >
-        {glitch && <span className="cyber-btn__glitch" aria-hidden="true" />}
+        {effectiveGlitch && <span className="cyber-btn__glitch" aria-hidden="true" />}
         {isLoading ? (
           <>
             <svg

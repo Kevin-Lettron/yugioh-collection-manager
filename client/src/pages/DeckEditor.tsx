@@ -64,6 +64,10 @@ const DeckEditor = () => {
   const debouncedSearch = useDebounce(searchQuery, 400);
 
   const [chipFilter, setChipFilter] = useState<string | null>(null);
+  // Filtre "Disponibles" : n'affiche que les cartes qui ont encore au moins
+  // 1 exemplaire ajoutable (available - deja_dans_ce_deck > 0). Actif par
+  // defaut pour eviter d'afficher les 300 cartes non-ajoutables.
+  const [onlyAvailable, setOnlyAvailable] = useState(true);
   const [poolCards, setPoolCards] = useState<UserCard[]>([]);
   const [poolLoading, setPoolLoading] = useState(false);
   const [poolPage, setPoolPage] = useState(1);
@@ -101,7 +105,7 @@ const DeckEditor = () => {
     setPoolCards([]);
     setPoolHasMore(true);
     fetchPool(1, true);
-  }, [chipFilter, debouncedSearch]);
+  }, [chipFilter, debouncedSearch, onlyAvailable]);
 
   useEffect(() => {
     if (poolPage > 1) fetchPool(poolPage, false);
@@ -180,9 +184,12 @@ const DeckEditor = () => {
   const fetchPool = async (page: number, reset: boolean) => {
     setPoolLoading(true);
     try {
+      // Quand "Disponibles" est actif, on tire large (200) pour eviter les
+      // pages presque vides une fois le filtre front applique. La collection
+      // typique fait quelques centaines de cartes uniques.
       const params: CollectionFilters = {
         page,
-        limit: 24,
+        limit: onlyAvailable ? 200 : 24,
         search: debouncedSearch || undefined,
       };
       if (chipFilter === 'Monstres') params.type = 'Effect Monster';
@@ -670,6 +677,28 @@ const DeckEditor = () => {
                   }}
                 />
               </div>
+              {/* Chip "Disponibles" — actif par defaut, filtre les cartes
+                  dont il ne reste plus d'exemplaires ajoutables au deck. */}
+              <button
+                onClick={() => setOnlyAvailable((v) => !v)}
+                title={onlyAvailable ? 'Cliquer pour voir toutes les cartes' : 'Cliquer pour cacher les cartes non-ajoutables'}
+                style={{
+                  height: 46,
+                  padding: '0 16px',
+                  border: `1px solid ${onlyAvailable ? '#F5C518' : '#3A2E1C'}`,
+                  background: onlyAvailable ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
+                  color: onlyAvailable ? '#0B0906' : '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  fontWeight: onlyAvailable ? 700 : 500,
+                  boxShadow: onlyAvailable ? '0 0 12px rgba(245,197,24,.35)' : 'none',
+                }}>
+                {onlyAvailable ? '✓ Disponibles' : 'Disponibles'}
+              </button>
+
               {chips.map((c) => {
                 const on = chipFilter === c;
                 return (
@@ -703,7 +732,12 @@ const DeckEditor = () => {
                 gap: 18,
               }}
               className="max-lg:!grid-cols-4 max-sm:!grid-cols-3">
-              {poolCards.map((uc) => {
+              {poolCards
+                .filter((uc) => {
+                  if (!onlyAvailable) return true;
+                  return uc.card?.id ? getRemaining(uc.card.id) > 0 : false;
+                })
+                .map((uc) => {
                 const cardDbId = uc.card?.id;
                 const avail = cardDbId ? availability[cardDbId] : undefined;
                 const rem = cardDbId ? getRemaining(cardDbId) : 0;
@@ -807,6 +841,43 @@ const DeckEditor = () => {
                 </div>
                 );
               })}
+
+              {/* Message si tout filtre : aucune carte ajoutable */}
+              {!poolLoading &&
+                onlyAvailable &&
+                poolCards.length > 0 &&
+                poolCards.filter((uc) => uc.card?.id && getRemaining(uc.card.id) > 0).length === 0 && (
+                  <div
+                    style={{
+                      gridColumn: '1 / -1',
+                      padding: '40px 20px',
+                      textAlign: 'center',
+                      background: 'linear-gradient(135deg,#1A1510,#14100A)',
+                      border: '1px dashed #3A2E1C',
+                      color: '#A99C86',
+                      fontSize: 13,
+                      fontFamily: "'Rajdhani', sans-serif",
+                    }}>
+                    Toutes tes cartes disponibles sont déjà dans ce deck ou dans d'autres.
+                    <br />
+                    <button
+                      onClick={() => setOnlyAvailable(false)}
+                      style={{
+                        marginTop: 12,
+                        padding: '8px 18px',
+                        border: '1px solid #F5C518',
+                        background: 'transparent',
+                        color: '#F5C518',
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: 10,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                      }}>
+                      Voir toutes les cartes
+                    </button>
+                  </div>
+                )}
             </div>
             {poolLoading && (
               <div className="text-center py-6">

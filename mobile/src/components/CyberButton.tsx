@@ -73,7 +73,9 @@ function CyberButtonBase({
   block = false,
   style,
   tag,
-  glitch = false,
+  // Glitch actif par defaut sauf sur ghost (les CTA colores doivent tous
+  // avoir le tic YGO). Passer glitch={false} explicitement pour desactiver.
+  glitch,
   glitchIntervalMs = 5000,
 }: CyberButtonProps) {
   const theme = useAppTheme();
@@ -89,6 +91,9 @@ function CyberButtonBase({
   const { main, shadow, fg } = palette[variant];
   const isGhost = variant === 'ghost';
   const inactive = disabled || loading;
+  // Glitch true par defaut sauf ghost. Si le caller a passe explicitement
+  // glitch (true/false), on respecte son choix.
+  const effectiveGlitch = glitch !== undefined ? glitch : !isGhost;
   const bevel = size === 'sm' ? 12 : 16;
   const behind = cutColor ?? colors.bg;
 
@@ -97,7 +102,7 @@ function CyberButtonBase({
   // (glitchIntervalMs - 360) ms avant la répétition suivante.
   const glitchX = useSharedValue<number>(shape.buttonOffset);
   useEffect(() => {
-    if (!glitch || inactive || isGhost) return;
+    if (!effectiveGlitch || inactive || isGhost) return;
     const base = shape.buttonOffset;
     const stepMs = 90;
     const pauseMs = Math.max(400, glitchIntervalMs - stepMs * 4);
@@ -118,7 +123,7 @@ function CyberButtonBase({
       cancelAnimation(glitchX);
       glitchX.value = base;
     };
-  }, [glitch, inactive, isGhost, glitchIntervalMs, shape.buttonOffset, glitchX]);
+  }, [effectiveGlitch, inactive, isGhost, glitchIntervalMs, shape.buttonOffset, glitchX]);
 
   const shadowAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: glitchX.value }],
