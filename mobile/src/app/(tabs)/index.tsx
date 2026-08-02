@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  Image,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { collectionApi } from '@/services/collectionApi';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -20,11 +22,10 @@ import AddCardModal from '@/components/AddCardModal';
 import CardDetailModal from '@/components/CardDetailModal';
 import FiltersModal, { type CollectionFilterValues } from '@/components/FiltersModal';
 import { useThemedStyles } from '@/theme/useThemedStyles';
-import { useAppTheme, useTheme, type Theme } from '@/theme/ThemeContext';
-import CyberButton from '@/components/CyberButton';
+import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { AppBackground } from '@/components/decor/AppBackground';
-import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
-import { HeroTitle } from '@/components/decor/HeroTitle';
+import { AppHeader } from '@/components/decor/AppHeader';
+import { ScanFAB } from '@/components/decor/ScanFAB';
 import { CardTile } from '@/components/decor/CardTile';
 import { spacing } from '@/theme/palette';
 
@@ -32,12 +33,20 @@ const PAGE_SIZE = 30;
 const NUM_COLUMNS = 2;
 const EMPTY_FILTERS: CollectionFilterValues = { type: '', attribute: '', rarity: '' };
 
+const SEARCH_ICON = require('@/assets/images/ui/i-search.png');
+const FILTER_ICON = require('@/assets/images/ui/i-filter.png');
+
+type QuickFilter = {
+  key: string;
+  label: string;
+  count: number | null; // null = "À venir" (pas d'endpoint stats encore)
+  filter: Partial<CollectionFilterValues>;
+};
+
 export default function CollectionScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
-  const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
-  const router = useRouter();
+  const { logout } = useAuth();
 
   const [cards, setCards] = useState<UserCard[]>([]);
   const [total, setTotal] = useState(0);
@@ -53,9 +62,24 @@ export default function CollectionScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
+  const [activeChip, setActiveChip] = useState<string>('all');
 
   const activeFilterCount =
     (filters.type ? 1 : 0) + (filters.attribute ? 1 : 0) + (filters.rarity ? 1 : 0);
+
+  // Chips en tête de grille. Les counts par type ne sont pas encore agrégés côté
+  // backend (à faire dans dev-features → endpoint /collection/stats). En attendant,
+  // seul le total « Toutes » est affiché avec un vrai chiffre.
+  const chips: QuickFilter[] = useMemo(
+    () => [
+      { key: 'all', label: 'Toutes', count: total, filter: {} },
+      { key: 'monsters', label: 'Monstres', count: null, filter: { type: 'Effect Monster' } },
+      { key: 'spells', label: 'Magies', count: null, filter: { type: 'Spell Card' } },
+      { key: 'traps', label: 'Pièges', count: null, filter: { type: 'Trap Card' } },
+      { key: 'extra', label: 'Extra Deck', count: null, filter: { type: 'Fusion Monster' } },
+    ],
+    [total]
+  );
 
   const fetchPage = useCallback(
     async (targetPage: number, replace: boolean) => {
@@ -85,9 +109,6 @@ export default function CollectionScreen() {
     [debouncedSearch, filters]
   );
 
-  // Rechargement à chaque fois que l'écran reprend le focus : sans ça, une carte
-  // ajoutée depuis le scanner n'apparaît qu'après un redémarrage de l'app.
-  // (Se déclenche aussi au montage, et à chaque changement de recherche/filtres.)
   useFocusEffect(
     useCallback(() => {
       fetchPage(1, true);
@@ -110,6 +131,22 @@ export default function CollectionScreen() {
     fetchPage(1, true);
   }, [fetchPage]);
 
+  const applyChip = (chip: QuickFilter) => {
+    setActiveChip(chip.key);
+    setFilters({
+      type: chip.filter.type || '',
+      attribute: chip.filter.attribute || '',
+      rarity: chip.filter.rarity || '',
+    });
+  };
+
+  const handleAvatarPress = () => {
+    Alert.alert('Compte', undefined, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Se déconnecter', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
+
   const renderCard = ({ item }: { item: UserCard }) => (
     <View style={styles.cardCell}>
       <CardTile
@@ -126,51 +163,39 @@ export default function CollectionScreen() {
     </View>
   );
 
-  return (
-    <View style={styles.root}>
-      <AppBackground />
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <HeroTitle
-              kicker="— Vitrine du Millénium —"
-              title="Ma Collection"
-              sub={`${total} carte${total > 1 ? 's' : ''} rassemblée${total > 1 ? 's' : ''} · ${user?.username ?? ''}`}
-            />
+  const listHeader = (
+    <View style={styles.contentPadding}>
+      {/* Bloc titre avec border-bottom */}
+      <View style={styles.headerBlock}>
+        <Text style={styles.kicker}>— Vitrine du Millénium —</Text>
+        <Text style={styles.title}>Ma Collection</Text>
+        <Text style={styles.sub}>
+          {total.toLocaleString('fr-FR')} carte{total > 1 ? 's' : ''} rassemblée{total > 1 ? 's' : ''}.
+        </Text>
+
+        {/* Stats bar biseautée 2 col */}
+        <View style={styles.statsBar}>
+          <View style={styles.statCell}>
+            <View style={styles.statAccent} />
+            <Text style={styles.statLabel}>Ultra rares +</Text>
+            <Text style={styles.statValueGold}>— À venir</Text>
           </View>
-          <TouchableOpacity
-            onPress={toggleTheme}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel={
-              theme.name === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'
-            }>
-            <Text style={styles.iconBtnText}>{theme.name === 'dark' ? '☀' : '☾'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={logout} style={styles.iconBtn}>
-            <Text style={styles.iconBtnText}>Déco</Text>
-          </TouchableOpacity>
+          <View style={styles.statCell}>
+            <View style={styles.statAccent} />
+            <Text style={styles.statLabel}>Valeur estimée</Text>
+            <Text style={styles.statValue}>— À venir</Text>
+          </View>
         </View>
+      </View>
 
-        <View style={styles.actions}>
-          <CyberButton
-            label="Scanner"
-            variant="primary"
-            onPress={() => router.push('/scan')}
-            block
-            style={{ flex: 1 }}
-            glitch
+      {/* Search + filter row */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrap}>
+          <Image
+            source={SEARCH_ICON}
+            style={{ width: 16, height: 16, tintColor: colors.gold, position: 'absolute', left: 12, top: 13 }}
+            resizeMode="contain"
           />
-          <CyberButton
-            label="+ Ajouter"
-            variant="secondary"
-            onPress={() => setShowAdd(true)}
-            block
-            style={{ flex: 1 }}
-          />
-        </View>
-
-        <View style={styles.searchWrap}>
           <TextInput
             style={styles.searchInput}
             value={search}
@@ -181,55 +206,69 @@ export default function CollectionScreen() {
             autoCapitalize="none"
             returnKeyType="search"
           />
-          <TouchableOpacity
-            style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
-            onPress={() => setShowFilters(true)}>
-            <Text style={[styles.filtersBtnText, activeFilterCount > 0 && styles.filtersBtnTextActive]}>
-              Filtres {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
-            </Text>
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.filterBtn,
+            activeFilterCount > 0 && { borderColor: colors.gold },
+          ]}
+          onPress={() => setShowFilters(true)}
+          accessibilityLabel="Ouvrir les filtres">
+          <Image
+            source={FILTER_ICON}
+            style={{ width: 18, height: 18, tintColor: colors.gold }}
+            resizeMode="contain"
+          />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterCount}>
+              <Text style={styles.filterCountText}>{activeFilterCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
 
-        {activeFilterCount > 0 && (
-          <View style={styles.activeFiltersRow}>
-            {filters.type ? (
-              <ActiveFilterChip
-                label={filters.type}
-                onClear={() => setFilters((f) => ({ ...f, type: '' }))}
-              />
-            ) : null}
-            {filters.attribute ? (
-              <ActiveFilterChip
-                label={filters.attribute}
-                onClear={() => setFilters((f) => ({ ...f, attribute: '' }))}
-              />
-            ) : null}
-            {filters.rarity ? (
-              <ActiveFilterChip
-                label={filters.rarity}
-                onClear={() => setFilters((f) => ({ ...f, rarity: '' }))}
-              />
-            ) : null}
-            <TouchableOpacity onPress={() => setFilters(EMPTY_FILTERS)}>
-              <Text style={styles.resetLink}>Reset</Text>
+      {/* Chips filter scrollable */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
+        {chips.map((chip) => {
+          const active = activeChip === chip.key;
+          return (
+            <TouchableOpacity
+              key={chip.key}
+              onPress={() => applyChip(chip)}
+              style={[
+                styles.chip,
+                active && { backgroundColor: colors.gold, borderColor: colors.gold },
+              ]}>
+              <Text style={[styles.chipLabel, active && { color: colors.onGold }]}>
+                {chip.label}
+              </Text>
+              <View style={[styles.chipBadge, active && { backgroundColor: 'rgba(11,9,6,0.2)' }]}>
+                <Text style={[styles.chipBadgeText, active && { color: colors.onGold }]}>
+                  {chip.count === null ? '—' : chip.count.toLocaleString('fr-FR')}
+                </Text>
+              </View>
             </TouchableOpacity>
-          </View>
-        )}
+          );
+        })}
+      </ScrollView>
+
+      <View style={{ height: 16 }} />
+    </View>
+  );
+
+  return (
+    <View style={styles.root}>
+      <AppBackground />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <AppHeader onPressAvatar={handleAvatarPress} />
 
         {loading && cards.length === 0 ? (
           <View style={styles.emptyState}>
             <ActivityIndicator size="large" color={colors.gold} />
-          </View>
-        ) : cards.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              {debouncedSearch || activeFilterCount > 0
-                ? 'Aucune carte ne correspond aux critères.'
-                : 'Ta vitrine attend sa première pièce.'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowAdd(true)}>
-              <Text style={styles.emptyLink}>Ajouter ta première carte</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
@@ -237,14 +276,29 @@ export default function CollectionScreen() {
             keyExtractor={(item) => String(item.id)}
             numColumns={NUM_COLUMNS}
             renderItem={renderCard}
-            contentContainerStyle={{ paddingHorizontal: spacing[3], paddingBottom: spacing[7] }}
-            columnWrapperStyle={{ gap: spacing[3] }}
-            ItemSeparatorComponent={() => <View style={{ height: spacing[3] }} />}
+            ListHeaderComponent={listHeader}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+            columnWrapperStyle={{ gap: 12 }}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold} />
             }
             onEndReached={handleEndReached}
             onEndReachedThreshold={0.4}
+            ListEmptyComponent={
+              !loading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>
+                    {debouncedSearch || activeFilterCount > 0
+                      ? 'Aucune carte ne correspond aux critères.'
+                      : 'Ta vitrine attend sa première pièce.'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setShowAdd(true)}>
+                    <Text style={styles.emptyLink}>Ajouter ta première carte</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null
+            }
             ListFooterComponent={
               loadingMore ? (
                 <View style={{ paddingVertical: spacing[5] }}>
@@ -254,153 +308,223 @@ export default function CollectionScreen() {
             }
           />
         )}
-
-        {showAdd && (
-          <AddCardModal
-            visible={showAdd}
-            onClose={() => setShowAdd(false)}
-            onAdded={handleAdded}
-          />
-        )}
-
-        {selectedCard && (
-          <CardDetailModal
-            visible={!!selectedCard}
-            userCard={selectedCard}
-            onClose={() => setSelectedCard(null)}
-            onDeleted={() => {
-              setSelectedCard(null);
-              fetchPage(1, true);
-            }}
-          />
-        )}
-
-        {showFilters && (
-          <FiltersModal
-            visible={showFilters}
-            initial={filters}
-            onClose={() => setShowFilters(false)}
-            onApply={(v) => {
-              setFilters(v);
-              setShowFilters(false);
-            }}
-          />
-        )}
       </SafeAreaView>
-      <CornerOrnaments />
+
+      {/* FAB scan flottant, au-dessus du tab bar */}
+      <ScanFAB />
+
+      {showAdd && (
+        <AddCardModal
+          visible={showAdd}
+          onClose={() => setShowAdd(false)}
+          onAdded={handleAdded}
+        />
+      )}
+
+      {selectedCard && (
+        <CardDetailModal
+          visible={!!selectedCard}
+          userCard={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onDeleted={() => {
+            setSelectedCard(null);
+            fetchPage(1, true);
+          }}
+        />
+      )}
+
+      {showFilters && (
+        <FiltersModal
+          visible={showFilters}
+          initial={filters}
+          onClose={() => setShowFilters(false)}
+          onApply={(v) => {
+            setFilters(v);
+            setActiveChip(''); // les chips ne matchent plus si filtre manuel
+            setShowFilters(false);
+          }}
+        />
+      )}
     </View>
   );
 }
 
-const ActiveFilterChip = ({ label, onClear }: { label: string; onClear: () => void }) => {
-  const styles = useThemedStyles(makeStyles);
-  return (
-  <View style={styles.activeChip}>
-    <Text style={styles.activeChipText} numberOfLines={1}>
-      {label}
-    </Text>
-    <TouchableOpacity onPress={onClear} style={styles.activeChipClose}>
-      <Text style={styles.activeChipCloseText}>✕</Text>
-    </TouchableOpacity>
-  </View>
-  );
-};
-
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  root: { flex: 1, backgroundColor: t.colors.bg },
-  container: { flex: 1, backgroundColor: 'transparent' },
-  header: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[2],
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[2],
-  },
-  iconBtn: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    backgroundColor: t.colors.panel2,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  iconBtnText: { color: t.colors.textMuted, fontSize: 12, fontWeight: '600' },
-  actions: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  searchWrap: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: t.colors.panel,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderLeftWidth: 3,
-    borderLeftColor: t.colors.gold,
-    color: t.colors.text,
-  },
-  filtersBtn: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    backgroundColor: t.colors.panel,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    justifyContent: 'center',
-  },
-  filtersBtnActive: { backgroundColor: t.colors.gold, borderColor: t.colors.gold },
-  filtersBtnText: { color: t.colors.text, fontSize: 13, fontWeight: '600' },
-  filtersBtnTextActive: { color: t.colors.onGold },
-  activeFiltersRow: {
-    paddingHorizontal: spacing[4],
-    paddingBottom: spacing[2],
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-    alignItems: 'center',
-  },
-  activeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: t.colors.panel2,
-    paddingLeft: spacing[3],
-    paddingRight: spacing[1],
-    paddingVertical: spacing[1],
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    gap: spacing[1],
-    maxWidth: 200,
-  },
-  activeChipText: { color: t.colors.gold, fontSize: 11, fontWeight: '600' },
-  activeChipClose: {
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: t.colors.bg,
-    borderWidth: 1,
-    borderColor: t.colors.gold,
-  },
-  activeChipCloseText: { color: t.colors.gold, fontSize: 10, fontWeight: '700' },
-  resetLink: { color: t.colors.danger, fontSize: 12, fontWeight: '600', marginLeft: spacing[1] },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing[7],
-    gap: spacing[3],
-  },
-  emptyText: { fontSize: 15, color: t.colors.textMuted, textAlign: 'center' },
-  emptyLink: { fontSize: 14, color: t.colors.gold, fontWeight: '600' },
-  cardCell: { flex: 1 },
-});
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    container: { flex: 1, backgroundColor: 'transparent' },
+    contentPadding: { paddingTop: 18 },
+
+    // ─── Header block ─────────────────────────────────
+    headerBlock: {
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    kicker: {
+      fontFamily: 'serif',
+      fontStyle: 'italic',
+      fontSize: 10,
+      letterSpacing: 3,
+      color: t.colors.gold,
+      textTransform: 'uppercase',
+      marginBottom: 4,
+    },
+    title: {
+      fontFamily: 'sans-serif',
+      fontSize: 32,
+      fontWeight: '900',
+      letterSpacing: 1,
+      lineHeight: 32,
+      textTransform: 'uppercase',
+      color: t.colors.text,
+    },
+    sub: {
+      marginTop: 6,
+      fontSize: 13,
+      color: t.colors.textMuted,
+      letterSpacing: 0.5,
+    },
+
+    // ─── Stats bar biseautée ──────────────────────────
+    statsBar: {
+      marginTop: 16,
+      flexDirection: 'row',
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.border,
+      gap: 1,
+    },
+    statCell: {
+      flex: 1,
+      padding: 12,
+      backgroundColor: t.colors.panel,
+      position: 'relative',
+      overflow: 'hidden',
+      gap: 4,
+    },
+    statAccent: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 3,
+      height: '100%',
+      backgroundColor: t.colors.gold,
+      opacity: 0.6,
+    },
+    statLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 9,
+      color: t.colors.textMuted,
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+    },
+    statValue: {
+      fontFamily: 'sans-serif',
+      fontSize: 18,
+      fontWeight: '700',
+      color: t.colors.text,
+      lineHeight: 20,
+    },
+    statValueGold: {
+      fontFamily: 'sans-serif',
+      fontSize: 18,
+      fontWeight: '700',
+      color: t.colors.gold,
+      lineHeight: 20,
+    },
+
+    // ─── Search row ───────────────────────────────────
+    searchRow: {
+      marginTop: 18,
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'stretch',
+    },
+    searchInputWrap: {
+      flex: 1,
+      position: 'relative',
+    },
+    searchInput: {
+      backgroundColor: t.colors.panel,
+      paddingHorizontal: 14,
+      paddingLeft: 38,
+      paddingVertical: 11,
+      fontSize: 14,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderLeftWidth: 3,
+      borderLeftColor: t.colors.gold,
+      color: t.colors.text,
+    },
+    filterBtn: {
+      width: 44,
+      backgroundColor: t.colors.panel2,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    filterCount: {
+      position: 'absolute',
+      top: 3,
+      right: 3,
+      minWidth: 14,
+      height: 14,
+      paddingHorizontal: 3,
+      backgroundColor: t.colors.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filterCountText: {
+      color: t.colors.onGold,
+      fontSize: 9,
+      fontWeight: '700',
+    },
+
+    // ─── Chips ────────────────────────────────────────
+    chipsScroll: {
+      marginTop: 14,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.panel,
+    },
+    chipLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 11,
+      fontWeight: '600',
+      color: t.colors.text,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    chipBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      backgroundColor: 'rgba(245,197,24,0.15)',
+    },
+    chipBadgeText: {
+      fontFamily: 'sans-serif',
+      fontSize: 10,
+      fontWeight: '700',
+      color: t.colors.gold,
+    },
+
+    // ─── Grid + empty ─────────────────────────────────
+    cardCell: { flex: 1 },
+    emptyState: {
+      padding: 60,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    emptyText: { fontSize: 15, color: t.colors.textMuted, textAlign: 'center' },
+    emptyLink: { fontSize: 14, color: t.colors.gold, fontWeight: '600' },
+  });
