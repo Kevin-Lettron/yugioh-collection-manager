@@ -177,19 +177,24 @@ export interface ScanResult {
 
 const SCAN_SYSTEM_PROMPT = `Tu es un expert Yu-Gi-Oh chargé d'identifier une carte à partir d'une photo.
 
-Une identification basée sur le seul code de set est fragile : un chiffre mal lu donne une carte totalement différente. Tu dois donc relever TOUS les indices lisibles sur la carte, afin qu'ils puissent être recoupés avec la base de données.
+Le code de set est la clé UNIQUE qui distingue une version d'une autre. Deux cartes qui portent le même nom mais des codes différents sont deux collectionnables DIFFÉRENTS (édition, langue, rareté, valeur potentiellement toutes différentes). Ta lecture du code doit donc être quasi-parfaite.
+
+Cela dit, une seule mauvaise lecture d'un chiffre peut renvoyer la mauvaise carte — d'où l'obligation ci-dessous de fournir des candidats alternatifs ET de relever les autres indices visibles pour recoupement.
 
 === CE QUE TU DOIS LIRE ===
 
-1. LE CODE DE SET (en bas à gauche ou en bas à droite, près de la zone de texte)
+1. LE CODE DE SET — l'élément PRIORITAIRE (en bas à gauche ou en bas à droite, près de la zone de texte)
    Format : XXX-XXNNN (ex : LDK2-FRK01, LOB-EN001, CORE-FR058, SDP-F037)
    - 2 à 5 caractères alphanumériques (préfixe du set)
    - un tiret
    - 2 lettres de langue (EN, FR, DE, IT, SP, PT, JP, KR) — parfois absentes sur les cartes anciennes
-   - optionnellement 1 lettre supplémentaire
+   - optionnellement 1 lettre supplémentaire (souvent K)
    - 1 à 3 chiffres
-   Si des caractères sont ambigus (0/O, 1/I, 5/S, 8/B, 6/G, 2/Z), donne ta meilleure lecture dans "code"
-   ET les autres lectures plausibles dans "codeCandidates" (jusqu'à 4, les plus probables d'abord).
+
+   ⚠️ CRITIQUE : les 2 lettres de LANGUE sont un piège fréquent. FR / EN / DE se ressemblent à basse résolution, or elles désignent des cartes physiquement différentes. Si les lettres de langue sont ambiguës, mets tes 2-3 hypothèses dans "codeCandidates" en tête (ex : ["LOB-FR001", "LOB-EN001"]) — jamais une seule.
+
+   ⚠️ Si des caractères sont ambigus (0/O, 1/I, 5/S, 8/B, 6/G, 2/Z, 4/A), donne ta meilleure lecture dans "code"
+   ET les autres lectures plausibles dans "codeCandidates" (jusqu'à 6, les plus probables d'abord). Combine les ambiguïtés (ex : si tu hésites entre B/8 et O/0, produis 4 candidats).
 
 2. LE NOM imprimé en haut de la carte, exactement tel qu'il est écrit ("nameAsPrinted").
    Puis, si tu reconnais la carte, son nom officiel ANGLAIS dans "nameEnglish"
@@ -245,21 +250,37 @@ Retourne STRICTEMENT ce JSON, rien d'autre (pas de markdown, pas de backticks) :
 
 const CODE_ONLY_SYSTEM_PROMPT = `Tu es un expert Yu-Gi-Oh. La photo est un GROS PLAN sur le code de set imprimé sur une carte, pas sur la carte entière. Ta seule tâche : lire ce code caractère par caractère.
 
-Format : XXX-XXNNN (ex : LDK2-FRK01, LOB-EN001, CORE-FR058, SDP-F037)
+Le code désigne une version UNIQUE de carte (édition, langue, rareté). Une erreur d'une seule lettre = mauvaise carte renvoyée à l'utilisateur. Tu dois donc être ULTRA rigoureux.
+
+Format : XXX-XXNNN (ex : LDK2-FRK01, LOB-EN001, CORE-FR058, SDP-F037, SKE-FR001)
 - 2 à 5 caractères alphanumériques (préfixe du set)
 - un tiret
-- 2 lettres de langue (EN, FR, DE, IT, SP, PT, JP, KR) — parfois absentes sur les cartes anciennes
-- optionnellement 1 lettre supplémentaire
+- 2 lettres de LANGUE (EN, FR, DE, IT, SP, PT, JP, KR) — parfois absentes sur les cartes anciennes
+- optionnellement 1 lettre supplémentaire (souvent K)
 - 1 à 3 chiffres
 
-=== MÉTHODE ===
-1. Lis chaque caractère isolément, sans essayer de deviner un set connu.
-2. Les confusions classiques sont 0/O, 1/I, 5/S, 8/B, 6/G, 2/Z, 4/A.
-   Pour chaque caractère ambigu, mets ta meilleure lecture dans "code" et les
-   autres combinaisons plausibles dans "codeCandidates" (jusqu'à 4, les plus
-   probables d'abord). C'est important : ce sont elles qui seront testées si
-   ta lecture principale ne correspond à aucune carte.
-3. Ne corrige JAMAIS le code vers un set que tu connais : rends ce qui est écrit.
+=== MÉTHODE — À SUIVRE STRICTEMENT ===
+
+1. Isole visuellement chaque caractère. Ne "reconnais" pas de code connu, LIS ce qui est écrit.
+
+2. Confusions fréquentes à surveiller :
+   • Chiffres/lettres : 0↔O, 1↔I↔L, 5↔S, 8↔B, 6↔G↔C, 2↔Z, 4↔A, 9↔g
+   • Lettres de langue : F↔E, R↔B↔P, N↔M↔H, D↔O
+   ⚠️ LES 2 LETTRES DE LANGUE sont le piège n°1 : à basse résolution, FR/EN/DE/IT/SP se confondent facilement. Une confusion sur ces 2 lettres = tu renvoies la carte dans la mauvaise langue → considérée comme fausse par l'utilisateur.
+
+3. Pour chaque caractère ambigu, mets ta meilleure lecture dans "code" ET les autres
+   combinaisons plausibles dans "codeCandidates" (jusqu'à 8, les plus probables d'abord).
+   Si tu hésites sur 2 lettres à la fois (ex : "F" ou "E" ET "R" ou "B"), produis
+   les 4 combinaisons : FR, FB, ER, EB. Elles seront testées si ta lecture principale
+   ne correspond à aucune carte de la base — donc mieux vaut trop de candidats que pas assez.
+
+4. Ne corrige JAMAIS le code vers un set que tu connais : rends ce qui est écrit. Si tu
+   vois "SKE-FRO01" au lieu du plausible "SKE-FR001", écris "SKE-FRO01" dans "code"
+   et mets "SKE-FR001" en 2ᵉ candidat.
+
+5. "confidence" doit refléter honnêtement ta certitude — 0.9+ si code parfaitement net,
+   0.5-0.7 si un caractère est ambigu, <0.5 si plusieurs sont ambigus. C'est un signal
+   critique pour l'user.
 
 === AUTRES INFOS (uniquement si visibles sur ce gros plan) ===
 - "edition" : "1st Edition" / "Limited" / "Unlimited"

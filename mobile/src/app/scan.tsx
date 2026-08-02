@@ -68,6 +68,7 @@ export default function ScanScreen() {
   const [rarity, setRarity] = useState('');
   const [language, setLanguage] = useState<CardLanguage>('EN');
   const [quantity, setQuantity] = useState('1');
+  const [researching, setResearching] = useState(false);
 
   const close = () => router.back();
 
@@ -108,6 +109,49 @@ export default function ScanScreen() {
     setLanguage(candidate.detectedLanguage || scan?.detectedLanguage || 'EN');
     setQuantity('1');
     setStep('confirm');
+  };
+
+  /**
+   * L'utilisateur a modifié le code manuellement dans l'écran confirm et
+   * appuie sur « Rechercher » — on relance la recherche côté serveur avec
+   * le nouveau code, puis on injecte le résultat dans le scan pour que la
+   * preview + les raretés/langue disponibles se rafraîchissent.
+   */
+  const researchByCode = async () => {
+    const code = setCode.trim();
+    if (!code || researching) return;
+    setResearching(true);
+    try {
+      const res = await collectionApi.search(code);
+      // Reconstruit un ScanResult synthétique à partir du résultat search
+      const rarities = Array.from(new Set(res.availableSets.map((s) => s.set_rarity)));
+      const chosenSet = res.matchedSet || res.availableSets[0];
+      setScan((prev) => ({
+        ...(prev || { success: true }),
+        success: true,
+        card: res.card,
+        code: res.originalSetCode || chosenSet?.set_code || code,
+        name: res.card.name,
+        officialImage: res.card.card_images?.[0]?.image_url,
+        availableRarities: rarities,
+        detectedLanguage: res.detectedLanguage,
+        // On efface les alternatives et la lecture Claude, elles sont obsolètes
+        alternatives: [],
+        reading: undefined,
+        verification: { status: 'confirmed', score: 1, matched: ['code manuel'], mismatched: [], source: 'code' },
+      }));
+      setChosen(null);
+      setSetCode(res.originalSetCode || chosenSet?.set_code || code);
+      if (chosenSet?.set_rarity) setRarity(chosenSet.set_rarity);
+      if (res.detectedLanguage) setLanguage(res.detectedLanguage);
+    } catch (err: any) {
+      Alert.alert(
+        'Carte introuvable',
+        err?.response?.data?.error || err?.response?.data?.message || `Aucune carte trouvée pour le code « ${code} ».`
+      );
+    } finally {
+      setResearching(false);
+    }
   };
 
   const analyze = async () => {
@@ -525,14 +569,26 @@ export default function ScanScreen() {
             )}
 
             <Text style={styles.label}>Code Set</Text>
-            <TextInput
-              style={styles.input}
-              value={setCode}
-              onChangeText={(v) => setSetCode(v.toUpperCase())}
-              autoCapitalize="characters"
-              placeholder="LDK2-FRK40"
-              placeholderTextColor={colors.textMuted}
-            />
+            <View style={styles.codeRow}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={setCode}
+                onChangeText={(v) => setSetCode(v.toUpperCase())}
+                autoCapitalize="characters"
+                placeholder="LDK2-FRK40"
+                placeholderTextColor={colors.textMuted}
+                onSubmitEditing={researchByCode}
+              />
+              <CyberButton
+                label="Rechercher"
+                variant="secondary"
+                size="sm"
+                onPress={researchByCode}
+                disabled={!setCode.trim()}
+                loading={researching}
+                cutColor={colors.bg}
+              />
+            </View>
 
             <Text style={styles.label}>Rareté</Text>
             <View style={styles.chipRow}>
@@ -630,6 +686,7 @@ const makeStyles = (t: Theme) =>
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   closeText: { fontSize: 20, color: t.colors.textMuted },
   body: { padding: spacing[4], gap: spacing[3] },
+  codeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   label: {
     fontSize: 10,
     fontWeight: '700',
