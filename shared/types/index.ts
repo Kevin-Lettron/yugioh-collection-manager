@@ -80,6 +80,8 @@ export interface CollectionStats {
   total_value_eur: number;
   by_type: { monster: number; spell: number; trap: number; extra: number };
   recent_added_30d: number;
+  /** Liste des raretés distinctes présentes dans la collection, triées par fréquence desc. */
+  rarities: string[];
 }
 
 /** Stats agrégées d'un deck. */

@@ -280,15 +280,22 @@ export class UserCardModel {
       total_value_eur: 0,
       by_type: { monster: 0, spell: 0, trap: 0, extra: 0 },
       recent_added_30d: 0,
+      rarities: [],
     };
 
     const now = Date.now();
     const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
     const extraTypes = new Set(['fusion', 'synchro', 'xyz', 'link']);
+    // Compte par rareté pour trier par fréquence desc dans la liste déroulante.
+    const rarityCounts = new Map<string, number>();
 
     for (const row of result.rows) {
       const qty = Number(row.quantity) || 0;
       stats.total_cards += qty;
+
+      if (row.rarity) {
+        rarityCounts.set(row.rarity, (rarityCounts.get(row.rarity) || 0) + qty);
+      }
 
       if (isUltraRare(row.rarity)) stats.ultra_rares_count += qty;
       if (isSecretRare(row.rarity)) stats.secret_rares_count += qty;
@@ -307,6 +314,10 @@ export class UserCardModel {
         stats.recent_added_30d += qty;
       }
     }
+
+    stats.rarities = Array.from(rarityCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([r]) => r);
 
     stats.total_value_eur = Math.round(stats.total_value_eur * 100) / 100;
     return stats;

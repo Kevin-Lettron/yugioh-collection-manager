@@ -43,7 +43,6 @@ const CHIPS = [
   { label: 'Pièges', filter: { type: 'Trap Card' } },
   { label: 'Extra Deck', filter: { type: 'Fusion Monster' } },
   { label: 'Récentes', filter: {} },
-  { label: 'Ultra rares ↑', filter: { rarity: 'Ultra Rare' } },
 ];
 
 /**
@@ -62,6 +61,7 @@ const Collection = () => {
     ultra_rares_count: number;
     total_value_eur: number;
     recent_added_30d: number;
+    rarities: string[];
   } | null>(null);
 
   const [search, setSearch] = useState('');
@@ -124,7 +124,14 @@ const Collection = () => {
     setChipIdx(i);
     const f = CHIPS[i].filter as any;
     setType(f.type || '');
-    setRarity(f.rarity || '');
+    // Ne pas écraser la rarity — c'est géré par le select séparé
+    setPage(1);
+    setCards([]);
+    setHasMore(true);
+  };
+
+  const applyRarity = (value: string) => {
+    setRarity(value);
     setPage(1);
     setCards([]);
     setHasMore(true);
@@ -475,8 +482,8 @@ const Collection = () => {
           </button>
         </div>
 
-        {/* Chips */}
-        <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {/* Chips + select rareté */}
+        <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {CHIPS.map((c, i) => {
             const on = chipIdx === i;
             return (
@@ -504,6 +511,40 @@ const Collection = () => {
               </button>
             );
           })}
+
+          <select
+            value={rarity}
+            onChange={(e) => applyRarity(e.target.value)}
+            style={{
+              padding: '9px 30px 9px 14px',
+              border: `1px solid ${rarity ? '#F5C518' : '#3A2E1C'}`,
+              background: rarity ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
+              color: rarity ? '#0B0906' : '#A99C86',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 11,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              fontWeight: rarity ? 700 : 500,
+              clipPath: CUT_CHIP,
+              boxShadow: rarity ? '0 0 12px rgba(245,197,24,.35)' : 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              backgroundImage: rarity
+                ? "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%230B0906'/></svg>\")"
+                : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%23A99C86'/></svg>\")",
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 12px center',
+              minWidth: 160,
+            }}>
+            <option value="">Toutes raretés</option>
+            {(collectionStats?.rarities || []).map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Cards grid 6 cols */}
