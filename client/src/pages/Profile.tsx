@@ -1,40 +1,47 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, ChangeEvent, useRef, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User } from '../../../shared/types';
+import { User, Deck } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
+import { GlyphEye } from '../components/decor/Glyphs';
+import { CardIcon, CheckIcon } from '../components/decor/Icons';
 
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_STATS = 'polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px))';
+const CUT_TILE = 'polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))';
+const HEX = 'polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)';
+
+/**
+ * Profile — pixel-perfect `isProfile` (DesktopFrame l.469-517).
+ * Hero band 180px dégradé violet→or + quadrillage, avatar hex 120px overlap -56px,
+ * infos user, badges Top 5% + 1000 scans (« À venir » car pas de data),
+ * grid 4 cols profileStats biseautée, section « Ses decks publics » grid 4 cols.
+ */
 const Profile = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Profile data
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
   const [profilePicture, setProfilePicture] = useState(user?.profile_picture || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Stats
   const [stats, setStats] = useState({
     totalCards: 0,
     totalDecks: 0,
     followersCount: 0,
     followingCount: 0,
   });
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const [decks, setDecks] = useState<Deck[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -44,6 +51,11 @@ const Profile = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    fetchStats();
+    fetchMyDecks();
+  }, []);
+
   const fetchStats = async () => {
     try {
       const [cardsRes, decksRes, followersRes, followingRes] = await Promise.all([
@@ -52,11 +64,8 @@ const Profile = () => {
         api.get('/social/followers').catch(() => ({ data: { followers: [], total: 0 } })),
         api.get('/social/following').catch(() => ({ data: { following: [], total: 0 } })),
       ]);
-
-      // Handle different response structures
       const followersData = followersRes.data.followers || followersRes.data || [];
       const followingData = followingRes.data.following || followingRes.data || [];
-
       setStats({
         totalCards: cardsRes.data.total || 0,
         totalDecks: decksRes.data.total || decksRes.data.data?.length || decksRes.data.length || 0,
@@ -64,43 +73,43 @@ const Profile = () => {
         followingCount: followingRes.data.total || followingData.length || 0,
       });
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      console.error(error);
+    }
+  };
+
+  const fetchMyDecks = async () => {
+    try {
+      const response = await api.get('/decks', { params: { is_public: true } });
+      setDecks(response.data.data || response.data || []);
+    } catch (error) {
+      console.error(error);
     }
   };
 
   const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Veuillez télécharger un fichier image');
+      toast.error('Fichier image uniquement');
       return;
     }
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('L\'image doit faire moins de 5 Mo');
+      toast.error("L'image doit faire moins de 5 Mo");
       return;
     }
-
     const formData = new FormData();
     formData.append('profile_picture', file);
-
     setUploading(true);
     try {
       const response = await api.post('/auth/profile/avatar', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      const updatedUser: User = response.data.user;
-      setProfilePicture(updatedUser.profile_picture || '');
-      updateUser(updatedUser);
-      toast.success('Photo de profil mise à jour !');
+      const updated: User = response.data.user;
+      setProfilePicture(updated.profile_picture || '');
+      updateUser(updated);
+      toast.success('Avatar mis à jour');
     } catch (error) {
-      console.error('Failed to upload avatar:', error);
+      console.error(error);
     } finally {
       setUploading(false);
     }
@@ -108,47 +117,30 @@ const Profile = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!username.trim()) {
-      toast.error('Le nom d\'utilisateur est requis');
+    if (!username.trim() || username.length < 3) {
+      toast.error('Pseudo trop court');
       return;
     }
-
-    if (username.length < 3) {
-      toast.error('Le nom d\'utilisateur doit contenir au moins 3 caractères');
-      return;
-    }
-
     if (newPassword && newPassword !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Sceaux différents');
       return;
     }
-
     if (newPassword && newPassword.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      toast.error('Sceau trop court');
       return;
     }
-
     setLoading(true);
     try {
-      const updateData: any = {
-        username,
-      };
-
-      if (newPassword) {
-        updateData.password = newPassword;
-      }
-
-      const response = await api.put('/auth/profile', updateData);
-      const updatedUser: User = response.data.user;
-
-      updateUser(updatedUser);
-      toast.success('Profil mis à jour avec succès !');
+      const data: any = { username };
+      if (newPassword) data.password = newPassword;
+      const response = await api.put('/auth/profile', data);
+      updateUser(response.data.user);
+      toast.success('Profil mis à jour');
       setEditing(false);
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -156,235 +148,482 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen">
-        <AppNavbar />
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+        <div
+          className="animate-spin"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid rgba(245,197,24,.3)',
+            borderTopColor: '#F5C518',
+          }}
+        />
       </div>
     );
   }
 
+  const initials = (username.match(/[A-Z]/g) || username.slice(0, 2).toUpperCase().split('')).slice(0, 2).join('');
+
+  const profileStats = [
+    { label: 'Cartes', value: stats.totalCards.toLocaleString('fr-FR') },
+    { label: 'Decks publics', value: String(stats.totalDecks) },
+    { label: 'Abonnés', value: String(stats.followersCount) },
+    { label: 'Copies de deck', value: '— À venir' },
+  ];
+
   return (
-    <div className="min-h-screen relative">
+    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
-
-      {/* Navigation */}
       <AppNavbar />
 
-      {/* Main Content */}
-      <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <HeroTitle
-            kicker="— Gardien du Sanctuaire —"
-            title={user.username}
-            sub={`Membre depuis le ${new Date(user.created_at).toLocaleDateString('fr-FR')}`}
+      <div style={{ position: 'relative', zIndex: 20 }}>
+        {/* Hero band 180px */}
+        <div
+          style={{
+            position: 'relative',
+            height: 180,
+            background: 'linear-gradient(120deg,rgba(168,85,247,.24),rgba(245,197,24,.1))',
+            borderBottom: '1px solid #3A2E1C',
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage:
+                'linear-gradient(rgba(245,197,24,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(245,197,24,.07) 1px,transparent 1px)',
+              backgroundSize: '34px 34px',
+            }}
+          />
+          <GlyphEye
+            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: '#F5C518', opacity: 0.12 }}
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Profile Info */}
-          <div className="md:col-span-1">
-            <div
-              className="cyber-panel p-6"
-              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-            >
-              {/* Avatar with edit icon */}
-              <div className="text-center mb-6">
-                <div className="relative inline-block group">
-                  {profilePicture ? (
-                    <img
-                      src={getImageUrl(profilePicture)}
-                      alt={username}
-                      className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-blue-500 flex items-center justify-center border-4 border-blue-600">
-                      <span className="text-white text-4xl font-bold">
-                        {username.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
-                    </div>
-                  )}
-                  {/* Edit icon button */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Changer la photo"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </div>
+        <div style={{ padding: '0 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
+          {/* Bloc user (overlap) */}
+          <div style={{ marginTop: -56, display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
+            {profilePicture ? (
+              <img
+                src={getImageUrl(profilePicture)}
+                alt={username}
+                style={{
+                  width: 120,
+                  height: 120,
+                  objectFit: 'cover',
+                  border: '1px solid #F5C518',
+                  clipPath: HEX,
+                  boxShadow: '0 0 40px rgba(245,197,24,.3)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 120,
+                  height: 120,
+                  background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
+                  color: '#0B0906',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 38,
+                  fontWeight: 900,
+                  border: '1px solid #F5C518',
+                  clipPath: HEX,
+                  boxShadow: '0 0 40px rgba(245,197,24,.3)',
+                }}>
+                {initials}
               </div>
-
-              {/* Stats */}
-              <div className="space-y-4">
-                <div className="p-4 cyber-cut-sm" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
-                  <p className="text-2xl font-bold text-gray-800 text-center">{stats.totalCards}</p>
-                  <p className="text-sm text-gray-600 text-center">Cartes dans la collection</p>
-                </div>
-
-                <div className="p-4 cyber-cut-sm" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
-                  <p className="text-2xl font-bold text-gray-800 text-center">{stats.totalDecks}</p>
-                  <p className="text-sm text-gray-600 text-center">Decks créés</p>
-                </div>
-
-                <Link to="/followers" className="block">
-                  <div className="p-4 cyber-cut-sm transition-transform hover:-translate-y-0.5" style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-lg font-bold text-gray-800">{stats.followersCount}</p>
-                        <p className="text-xs text-gray-600">Abonnés</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-gray-800">{stats.followingCount}</p>
-                        <p className="text-xs text-gray-600">Abonnements</p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+            )}
+            <div style={{ paddingBottom: 8, flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 30,
+                  fontWeight: 900,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: '#F5EFE0',
+                }}>
+                @{username}
               </div>
+              <div style={{ marginTop: 6, fontSize: 15, color: '#A99C86' }}>
+                Gardien du sanctuaire · depuis {new Date(user.created_at).getFullYear()}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, paddingBottom: 8, alignItems: 'center' }}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  border: '1px solid #3A2E1C',
+                  color: '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 9,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                }}>
+                Top 5 % — À venir
+              </span>
+              <span
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #3A2E1C',
+                  color: '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 9,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                }}>
+                1 000 scans — À venir
+              </span>
+              <button
+                onClick={() => {
+                  setEditing(true);
+                  fileInputRef.current?.click();
+                }}
+                disabled={uploading}
+                style={{
+                  padding: '6px 12px',
+                  background: 'transparent',
+                  border: '1px solid #F5C518',
+                  color: '#F5C518',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  clipPath: CUT_SM,
+                }}
+                data-edit-profile>
+                {uploading ? '...' : 'Éditer'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                style={{ display: 'none' }}
+              />
             </div>
           </div>
 
-          {/* Right Column - Edit Form */}
-          <div className="md:col-span-2">
-            <div
-              className="cyber-panel p-6"
-              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-            >
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Informations du compte</h3>
-                {!editing && (
-                  <Button
-                    variant="primary"
-                    glitch
-                    onClick={() => setEditing(true)}
-                    data-edit-profile
-                  >
-                    Modifier le profil
-                  </Button>
-                )}
+          {/* 4 stats biseautées */}
+          <div
+            style={{
+              marginTop: 30,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 1,
+              background: '#3A2E1C',
+              border: '1px solid #3A2E1C',
+              clipPath: CUT_STATS,
+            }}
+            className="max-md:!grid-cols-2">
+            {profileStats.map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  padding: '18px 22px',
+                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 9,
+                    letterSpacing: '0.2em',
+                    color: '#A99C86',
+                    textTransform: 'uppercase',
+                  }}>
+                  {s.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 26,
+                    fontWeight: 700,
+                    color: '#F5EFE0',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                  {s.value}
+                </span>
               </div>
+            ))}
+          </div>
 
-              {editing ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom d'utilisateur</label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      placeholder="Nom d'utilisateur"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <h4 className="font-semibold text-gray-800 mb-4">Changer le mot de passe (Optionnel)</h4>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nouveau mot de passe
-                      </label>
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="Laissez vide pour garder le mot de passe actuel"
-                      />
-                    </div>
-
-                    {newPassword && (
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Confirmer le nouveau mot de passe
-                        </label>
-                        <input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                          placeholder="Confirmer le nouveau mot de passe"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="flex-1"
-                      onClick={() => {
-                        setEditing(false);
-                        setUsername(user?.username || '');
-                        setNewPassword('');
-                        setConfirmPassword('');
-                      }}
-                    >
-                      Annuler
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      className="flex-1"
-                      isLoading={loading}
-                    >
-                      Enregistrer
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</label>
-                    <p className="text-gray-900 font-semibold">{username}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <p className="text-gray-900">{email}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Membre depuis
-                    </label>
-                    <p className="text-gray-900">
-                      {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                    </p>
-                  </div>
-                </div>
+          {/* Edit form inline */}
+          {editing && (
+            <form
+              onSubmit={handleSubmit}
+              style={{
+                marginTop: 30,
+                padding: 22,
+                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                border: '1px solid #3A2E1C',
+                clipPath: 'polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 12,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: '#F5C518',
+                }}>
+                Éditer le profil
+              </div>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Pseudo"
+                style={{
+                  padding: '12px 14px',
+                  background: '#14100A',
+                  border: '1px solid #3A2E1C',
+                  borderLeft: '2px solid #F5C518',
+                  color: '#F5EFE0',
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: 14,
+                  outline: 'none',
+                }}
+              />
+              <input
+                type="email"
+                value={email}
+                disabled
+                style={{
+                  padding: '12px 14px',
+                  background: '#0F0C07',
+                  border: '1px solid #3A2E1C',
+                  color: '#6E6250',
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: 14,
+                }}
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nouveau sceau (facultatif)"
+                style={{
+                  padding: '12px 14px',
+                  background: '#14100A',
+                  border: '1px solid #3A2E1C',
+                  color: '#F5EFE0',
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: 14,
+                  outline: 'none',
+                }}
+              />
+              {newPassword && (
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirmer le sceau"
+                  style={{
+                    padding: '12px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                    outline: 'none',
+                  }}
+                />
               )}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    background: '#14100A',
+                    color: '#A99C86',
+                    border: '1px solid #3A2E1C',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    background: '#F5C518',
+                    color: '#0B0906',
+                    border: 0,
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.7 : 1,
+                    clipPath: CUT_SM,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}>
+                  <CheckIcon size={12} />
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Section Ses decks publics */}
+          <div style={{ marginTop: 34, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#F5C518',
+              }}>
+              Mes decks publics
+            </span>
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+          </div>
+          <div
+            style={{
+              marginTop: 18,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 20,
+            }}
+            className="max-lg:!grid-cols-3 max-md:!grid-cols-2 max-sm:!grid-cols-1">
+            {decks.map((d) => {
+              const main = d.main_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+              const extra = d.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+              return (
+                <Link
+                  key={d.id}
+                  to={`/decks/${d.id}`}
+                  style={{ textDecoration: 'none' }}>
+                  <div
+                    style={{
+                      padding: 18,
+                      background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                      border: '1px solid #3A2E1C',
+                      cursor: 'pointer',
+                      transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
+                      clipPath: CUT_TILE,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-6px)';
+                      e.currentTarget.style.borderColor = '#C29A0F';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = '#3A2E1C';
+                    }}>
+                    <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          width: 52,
+                          height: 74,
+                          border: '1px solid rgba(245,197,24,.42)',
+                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          transform: 'rotate(-7deg)',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}>
+                        <CardIcon size={20} className="text-blue-600" />
+                      </div>
+                      <div
+                        style={{
+                          width: 52,
+                          height: 74,
+                          border: '1px solid rgba(168,85,247,.42)',
+                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          marginLeft: -18,
+                          transform: 'rotate(7deg)',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}>
+                        <CardIcon size={20} style={{ color: '#A855F7' }} />
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: '#F5EFE0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                      {d.name}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 12,
+                        color: '#A99C86',
+                      }}>
+                      <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                        {main} · {extra} · 0
+                      </span>
+                      <span style={{ color: '#FF2E88' }}>♥ {d.likes_count || 0}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+            <div
+              onClick={() => navigate('/decks/new')}
+              style={{
+                padding: 18,
+                border: '1px dashed #3A2E1C',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                minHeight: 190,
+                cursor: 'pointer',
+                transition: 'border-color 200ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
+              <CardIcon size={40} style={{ color: '#C29A0F', opacity: 0.6 }} />
+              <span
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: '0.14em',
+                  color: '#A99C86',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                }}>
+                Dresser un deck
+              </span>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,14 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
@@ -246,73 +254,16 @@ export default function ScanScreen() {
 
   // ─── Step: camera live preview ─────────────────────────
   if (step === 'camera') {
-    return (
-      <View style={styles.cameraContainer}>
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
-
-        {/* Scanlines subtiles */}
-        <View pointerEvents="none" style={styles.scanlines} />
-
-        <SafeAreaView style={styles.cameraOverlay} edges={['top', 'bottom']}>
-          <View style={styles.cameraHeader}>
-            <TouchableOpacity onPress={close} style={styles.closeBtnDark}>
-              <Text style={styles.closeTextDark}>✕</Text>
-            </TouchableOpacity>
-            <View style={styles.oracleTitleWrap}>
-              <Text style={styles.oracleKicker}>— Oracle —</Text>
-              <Text style={styles.oracleTitle}>Aligne la carte</Text>
-            </View>
-            <View style={{ width: 40 }} />
-          </View>
-
-          {/* Cadre de visée : portrait pour la carte, bande étroite pour le code */}
-          <View style={styles.cameraFrame}>
-            <View style={mode === 'code' ? styles.frameCode : styles.frameCard}>
-              {/* 4 coins de verrouillage dorés */}
-              <View style={[styles.lockCorner, styles.lockTL]} pointerEvents="none" />
-              <View style={[styles.lockCorner, styles.lockTR]} pointerEvents="none" />
-              <View style={[styles.lockCorner, styles.lockBL]} pointerEvents="none" />
-              <View style={[styles.lockCorner, styles.lockBR]} pointerEvents="none" />
-            </View>
-          </View>
-
-          <View style={styles.cameraFooter}>
-            <View style={styles.modeRow}>
-              <TouchableOpacity
-                onPress={() => setMode('card')}
-                style={[styles.modeChip, mode === 'card' && styles.modeChipActive]}>
-                <Text style={[styles.modeText, mode === 'card' && styles.modeTextActive]}>
-                  Carte entière
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setMode('code')}
-                style={[styles.modeChip, mode === 'code' && styles.modeChipActive]}>
-                <Text style={[styles.modeText, mode === 'code' && styles.modeTextActive]}>
-                  Code uniquement
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.cameraHint}>
-              {mode === 'code'
-                ? "Colle l'appareil sur le code en bas de la carte (ex. CORE-FR058)."
-                : "Pose la carte à plat, l'oracle fait le reste."}
-            </Text>
-            <TouchableOpacity
-              style={[styles.captureBtn, capturing && { opacity: 0.5 }]}
-              onPress={capture}
-              disabled={capturing}>
-              {capturing ? (
-                <ActivityIndicator color={colors.onGold} />
-              ) : (
-                <View style={styles.captureBtnInner} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
+    return <CameraStep
+      styles={styles}
+      colors={colors}
+      cameraRef={cameraRef}
+      mode={mode}
+      setMode={setMode}
+      capture={capture}
+      capturing={capturing}
+      close={close}
+    />;
   }
 
   // ─── Step: preview photo before send ───────────────────
@@ -652,6 +603,130 @@ export default function ScanScreen() {
   return null;
 }
 
+/**
+ * Étape « camera » — plein noir, radial-gradient, ligne scan animée, 4 corners
+ * de lock, chips mode + bouton capture losange or (PhoneFrame l.502-536).
+ */
+function CameraStep({
+  styles,
+  colors,
+  cameraRef,
+  mode,
+  setMode,
+  capture,
+  capturing,
+  close,
+}: {
+  styles: ReturnType<typeof makeStyles>;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  cameraRef: React.RefObject<CameraView | null>;
+  mode: ScanMode;
+  setMode: (m: ScanMode) => void;
+  capture: () => void;
+  capturing: boolean;
+  close: () => void;
+}) {
+  // Animation de la ligne scan : glisse verticalement dans le cadre (2.6s ease-in-out).
+  const scanY = useSharedValue(0);
+  useEffect(() => {
+    scanY.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1300, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [scanY]);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    top: `${scanY.value * 100}%`,
+  }));
+
+  return (
+    <View style={styles.cameraContainer}>
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+
+      {/* Voile radial-gradient simulé + scanlines subtiles */}
+      <View pointerEvents="none" style={styles.scanRadialWash} />
+      <View pointerEvents="none" style={styles.scanlines} />
+
+      {/* Placeholder carte au centre 184x268 rotate -4deg */}
+      <View pointerEvents="none" style={styles.cardPlaceholder} />
+
+      <SafeAreaView style={styles.cameraOverlay} edges={['top', 'bottom']}>
+        <View style={styles.cameraHeader}>
+          <TouchableOpacity onPress={close} style={styles.closeBtnDark}>
+            <Text style={styles.closeTextDark}>✕</Text>
+          </TouchableOpacity>
+          <View style={styles.oracleTitleWrap}>
+            <Text style={styles.oracleKicker}>— Oracle —</Text>
+            <Text style={styles.oracleTitle}>Aligne la carte</Text>
+            <Text style={styles.oracleSub}>
+              {mode === 'code'
+                ? 'Colle le code en bas de la carte'
+                : "Pose la carte à plat, l'oracle fait le reste."}
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Cadre de visée avec 4 corners + scan line animée */}
+        <View style={styles.cameraFrame}>
+          <View style={mode === 'code' ? styles.frameCode : styles.frameCard}>
+            <View style={[styles.lockCorner, styles.lockTL]} pointerEvents="none" />
+            <View style={[styles.lockCorner, styles.lockTR]} pointerEvents="none" />
+            <View style={[styles.lockCorner, styles.lockBL]} pointerEvents="none" />
+            <View style={[styles.lockCorner, styles.lockBR]} pointerEvents="none" />
+            <Animated.View style={[styles.scanLine, scanLineStyle]} pointerEvents="none" />
+          </View>
+        </View>
+
+        <View style={styles.cameraFooter}>
+          {/* Mode chips */}
+          <View style={styles.modeRow}>
+            <TouchableOpacity
+              onPress={() => setMode('card')}
+              style={[styles.modeChip, mode === 'card' && styles.modeChipActive]}>
+              <Text style={[styles.modeText, mode === 'card' && styles.modeTextActive]}>
+                Carte entière
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMode('code')}
+              style={[styles.modeChip, mode === 'code' && styles.modeChipActive]}>
+              <Text style={[styles.modeText, mode === 'code' && styles.modeTextActive]}>
+                Code
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bouton capture losange or 78px — 4 corners biseautés simulés */}
+          <TouchableOpacity
+            style={[styles.captureBtnOuter, capturing && { opacity: 0.5 }]}
+            onPress={capture}
+            disabled={capturing}
+            accessibilityLabel="Capturer la carte">
+            <View style={styles.captureBtnRing} />
+            <View style={styles.captureBtnInnerLosange}>
+              {capturing ? (
+                <ActivityIndicator color={colors.onGold} />
+              ) : (
+                <Text style={styles.captureBtnGlyph}>◈</Text>
+              )}
+            </View>
+            {/* 4 carrés pivotés en corner biseau (loupe-losange) */}
+            <View style={[styles.captureCorner, styles.captureCornerTL]} />
+            <View style={[styles.captureCorner, styles.captureCornerTR]} />
+            <View style={[styles.captureCorner, styles.captureCornerBL]} />
+            <View style={[styles.captureCorner, styles.captureCornerBR]} />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
   root: { flex: 1, backgroundColor: t.colors.bg },
@@ -783,11 +858,33 @@ const makeStyles = (t: Theme) =>
   link: { color: t.colors.gold, fontSize: 14, fontWeight: '600', marginTop: spacing[2] },
 
   // Camera-specific
-  cameraContainer: { flex: 1, backgroundColor: t.colors.camera },
+  cameraContainer: { flex: 1, backgroundColor: '#050403' },
+  scanRadialWash: {
+    ...StyleSheet.absoluteFillObject,
+    // Simule le radial-gradient centre lumineux → bord sombre du mockup l.504.
+    backgroundColor: 'rgba(11,9,6,0.55)',
+  },
   scanlines: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
     opacity: 0.05,
+  },
+  cardPlaceholder: {
+    position: 'absolute',
+    left: '50%',
+    top: '47%',
+    width: 184,
+    height: 268,
+    marginLeft: -92,
+    marginTop: -134,
+    backgroundColor: 'rgba(58,46,28,0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,197,24,0.35)',
+    transform: [{ rotate: '-4deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 30 },
+    shadowOpacity: 0.7,
+    shadowRadius: 60,
   },
   cameraOverlay: { flex: 1, justifyContent: 'space-between' },
   cameraHeader: {
@@ -811,29 +908,36 @@ const makeStyles = (t: Theme) =>
   },
   oracleTitle: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    marginTop: 4,
+    marginTop: 6,
+  },
+  oracleSub: {
+    marginTop: 5,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 30,
   },
   closeBtnDark: {
-    width: 40,
-    height: 40,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 34,
+    height: 34,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeTextDark: { color: '#FFFFFF', fontSize: 20 },
+  closeTextDark: { color: '#FFFFFF', fontSize: 18 },
   cameraFrame: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frameCard: {
-    width: '78%',
-    aspectRatio: 59 / 86, // proportions d'une carte Yu-Gi-Oh
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
+    width: 248,
+    height: 330,
+    borderWidth: 0,
     position: 'relative',
+    overflow: 'hidden',
   },
   frameCode: {
     width: '80%',
@@ -842,17 +946,31 @@ const makeStyles = (t: Theme) =>
     borderColor: 'rgba(245,197,24,0.5)',
     backgroundColor: 'rgba(168,85,247,0.08)',
     position: 'relative',
+    overflow: 'hidden',
   },
   lockCorner: {
     position: 'absolute',
-    width: 24,
-    height: 24,
+    width: 34,
+    height: 34,
     borderColor: '#F5C518',
   },
-  lockTL: { top: -1, left: -1, borderTopWidth: 2, borderLeftWidth: 2 },
-  lockTR: { top: -1, right: -1, borderTopWidth: 2, borderRightWidth: 2 },
-  lockBL: { bottom: -1, left: -1, borderBottomWidth: 2, borderLeftWidth: 2 },
-  lockBR: { bottom: -1, right: -1, borderBottomWidth: 2, borderRightWidth: 2 },
+  lockTL: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2 },
+  lockTR: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2 },
+  lockBL: { bottom: 0, left: 0, borderBottomWidth: 2, borderLeftWidth: 2 },
+  lockBR: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2 },
+  // Ligne scan qui balaie de haut en bas
+  scanLine: {
+    position: 'absolute',
+    left: '8%',
+    right: '8%',
+    height: 1,
+    backgroundColor: '#F5C518',
+    shadowColor: '#F5C518',
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    opacity: 0.9,
+  },
   modeRow: { flexDirection: 'row', gap: spacing[2] },
   modeChip: {
     paddingHorizontal: spacing[4],
@@ -879,30 +997,52 @@ const makeStyles = (t: Theme) =>
     paddingBottom: spacing[5],
     gap: spacing[4],
   },
-  cameraHint: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderWidth: 1,
-    borderColor: 'rgba(245,197,24,0.4)',
-  },
-  captureBtn: {
+  // Bouton capture losange 78px + 4 corners biseautés simulés (PhoneFrame l.528-532)
+  captureBtnOuter: {
     width: 78,
     height: 78,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  captureBtnRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderWidth: 1,
     borderColor: 'rgba(245,197,24,0.5)',
-    backgroundColor: 'transparent',
   },
-  captureBtnInner: {
-    width: 60,
-    height: 60,
+  captureBtnInnerLosange: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    bottom: 8,
     backgroundColor: '#F5C518',
-    borderWidth: 1,
-    borderColor: '#C29A0F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#F5C518',
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
+  captureBtnGlyph: {
+    color: '#0B0906',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  captureCorner: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    backgroundColor: '#050403',
+    transform: [{ rotate: '45deg' }],
+  },
+  captureCornerTL: { top: -7, left: -7 },
+  captureCornerTR: { top: -7, right: -7 },
+  captureCornerBL: { bottom: -7, left: -7 },
+  captureCornerBR: { bottom: -7, right: -7 },
 });

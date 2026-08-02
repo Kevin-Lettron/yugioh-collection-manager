@@ -1,541 +1,549 @@
 import { Link } from 'react-router-dom';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
-import { GlyphEye, GlyphPyramid, GlyphAnkh } from '../components/decor/Glyphs';
+import { GlyphPyramid, GlyphEye } from '../components/decor/Glyphs';
+import { MillenniumMark, ScanIcon, DeckIcon, SocialIcon, CardIcon } from '../components/decor/Icons';
 
 /**
- * Landing publique « Sanctuaire du Millénium ».
- * Hero 2 colonnes (baseline + CTAs à gauche, obélisque + cartes flottantes à droite),
- * grille de features, section stats, testimonials, CTA final, footer.
+ * Landing publique — pixel-perfect « Sanctuaire du Millénium » (DesktopFrame isHome).
+ * Hero grid 1.05fr/.95fr, 3 obélisques + fan de 3 cartes flottantes, 3 stats,
+ * puis grid 3 features biseautées (Scan IA / Ateliers / Vitrine publique).
  */
+
+const HERO_STATS = [
+  { value: '3 214', label: 'Duellistes' },
+  { value: '1,2 M', label: 'Cartes scannées' },
+  { value: '18 k', label: 'Decks publics' },
+];
+
+const HERO_CARDS = [
+  {
+    wrap: {
+      position: 'absolute' as const,
+      left: 70,
+      top: 120,
+      width: 150,
+      transform: 'rotate(-7deg)',
+      animation: 'san-float 12s ease-in-out infinite',
+    },
+    ring: 'inset 0 0 0 1px #F5C518',
+    glow: '0 0 26px rgba(245,197,24,.42)',
+    plinthColor: '#F5C518',
+  },
+  {
+    wrap: {
+      position: 'absolute' as const,
+      left: 210,
+      top: 60,
+      width: 170,
+      zIndex: 2,
+      animation: 'san-float 12s ease-in-out -4s infinite',
+    },
+    ring: 'inset 0 0 0 1px #FF2E88',
+    glow: '0 0 16px rgba(255,46,136,.45),0 0 26px rgba(34,211,238,.32)',
+    plinthColor: '#FF6FAC',
+  },
+  {
+    wrap: {
+      position: 'absolute' as const,
+      left: 370,
+      top: 130,
+      width: 150,
+      transform: 'rotate(8deg)',
+      animation: 'san-float 12s ease-in-out -8s infinite',
+    },
+    ring: 'inset 0 0 0 1px rgba(168,85,247,.55)',
+    glow: '0 0 18px rgba(168,85,247,.3)',
+    plinthColor: '#C084FC',
+  },
+];
+
+const FEATURES = [
+  {
+    icon: <ScanIcon size={30} />,
+    title: 'Scan par l’IA',
+    body: 'Pose la carte, l’oracle lit le nom, l’extension, la rareté et la langue. Trois secondes par relique.',
+  },
+  {
+    icon: <DeckIcon size={30} />,
+    title: 'Ateliers de deck',
+    body: 'Construis depuis ta seule collection réelle. Compteurs 40/15/15 et ratio conseillé en direct.',
+  },
+  {
+    icon: <SocialIcon size={30} />,
+    title: 'Vitrine publique',
+    body: 'Ton profil devient une page qu’on montre. Likes, commentaires, copies de deck.',
+  },
+];
+
+// Style helper « bouton primary or/violet » de la maquette (isolate + 2 clip-path)
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_TILE = 'polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px))';
+
+// Style d'une carte flottante (art plate + plinth doré)
+const cardArt = (ring: string, glow: string): React.CSSProperties => ({
+  position: 'relative',
+  overflow: 'hidden',
+  display: 'grid',
+  placeItems: 'center',
+  width: '100%',
+  aspectRatio: '59 / 86',
+  background: 'linear-gradient(135deg,#221B12,#14100A)',
+  border: '1px solid #3A2E1C',
+  clipPath: 'polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)',
+  boxShadow: `${ring},${glow},${glow},0 18px 26px -12px rgba(0,0,0,.9)`,
+  transform: 'translateY(-5px)',
+});
+
+const plinth = (color: string): React.CSSProperties => ({
+  height: 11,
+  margin: '0 6%',
+  background: `radial-gradient(ellipse at 50% 0%,${color} 0%,transparent 68%)`,
+  opacity: 0.5,
+  filter: 'blur(2.5px)',
+});
+
 const Home = () => {
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden" style={{ background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
 
-      {/* ─── NAV publique minimaliste ───────────────────────────────── */}
+      {/* Nav publique fidèle à la maquette (nav 64px, glass, wordmark Keitland) */}
       <nav
-        className="sticky top-0 z-40 backdrop-blur-md"
+        className="sticky top-0 z-40"
         style={{
-          background:
-            'linear-gradient(180deg, rgba(11,8,19,0.85), rgba(11,8,19,0.55))',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <GlyphPyramid
-              style={{ width: 32, height: 32, color: 'var(--gold)' }}
-            />
-            <span
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 36,
+          padding: '0 40px',
+          background: 'linear-gradient(180deg,rgba(11,9,6,.92),rgba(11,9,6,.68))',
+          backdropFilter: 'blur(16px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+          borderBottom: '1px solid #3A2E1C',
+        }}>
+        <Link to="/" className="flex items-center gap-2.5" style={{ textDecoration: 'none' }}>
+          <MillenniumMark size={30} className="text-blue-600" title="Keitland" />
+          <span
+            style={{
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 900,
+              fontSize: 14,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: '#F5EFE0',
+            }}>
+            Keit<span style={{ color: '#F5C518' }}>land</span>
+          </span>
+        </Link>
+        <span style={{ flex: 1 }} />
+        <div className="flex items-center gap-3">
+          <Link to="/login">
+            <button
               style={{
+                height: 40,
+                padding: '0 22px',
+                border: '1px solid #F5C518',
+                background: 'transparent',
+                color: '#F5EFE0',
                 fontFamily: "'Orbitron', sans-serif",
-                fontWeight: 900,
-                fontSize: 17,
-                letterSpacing: '0.14em',
+                fontWeight: 700,
+                fontSize: 11,
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'var(--text)',
-              }}
-            >
-              Keit<span style={{ color: 'var(--gold)' }}>land</span>
-            </span>
+                cursor: 'pointer',
+                clipPath: CUT_SM,
+              }}>
+              Se connecter
+            </button>
           </Link>
-          <div className="hidden md:flex flex-1 gap-1">
-            <a
-              href="#features"
-              className="px-4 py-2 no-underline transition-colors"
+          <Link to="/register">
+            <button
               style={{
+                height: 44,
+                padding: '0 22px',
+                position: 'relative',
+                isolation: 'isolate',
+                border: 0,
+                background: 'transparent',
+                color: '#0B0906',
                 fontFamily: "'Orbitron', sans-serif",
+                fontWeight: 700,
                 fontSize: 12,
-                letterSpacing: '0.14em',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Fonctionnalités
-            </a>
-            <a
-              href="#numbers"
-              className="px-4 py-2 no-underline transition-colors"
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                fontSize: 12,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Chiffres
-            </a>
-            <a
-              href="#voix"
-              className="px-4 py-2 no-underline transition-colors"
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                fontSize: 12,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Témoignages
-            </a>
-          </div>
-          <div className="flex gap-2 items-center ml-auto">
-            <Link to="/login">
-              <Button variant="ghost" size="md">
-                Se connecter
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="primary" size="md" glitch>
-                S'inscrire
-              </Button>
-            </Link>
-          </div>
+                cursor: 'pointer',
+              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#A855F7',
+                  transform: 'translate(5px,0)',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#F5C518',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              S'inscrire
+            </button>
+          </Link>
         </div>
       </nav>
 
       <main className="relative z-20">
-        {/* ─── HERO ─────────────────────────────────────────────────── */}
+        {/* HERO : 2 col 1.05fr/.95fr */}
         <section
-          className="max-w-7xl mx-auto px-4 sm:px-8 py-16 lg:py-24 grid gap-12 items-center"
-          style={{ gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)' }}
-        >
-          <div className="relative z-10 col-span-full lg:col-span-1">
-            <HeroTitle
-              kicker="— Sanctuaire du Millénium —"
-              title={
-                <>
-                  Ta collection
-                  <br />
-                  mérite un
-                  <br />
-                  <span style={{ color: 'var(--gold)', WebkitTextFillColor: 'var(--gold)' }}>
-                    Sanctuaire.
-                  </span>
-                </>
-              }
-              sub="Cartographie chaque carte que tu possèdes. Construis des decks, invoque-les devant la communauté, scanne tes nouveautés en un cliché. La vitrine que les autres apps n'ont jamais su te donner."
-            />
-            <div className="flex flex-wrap gap-4 mt-8">
+          style={{
+            position: 'relative',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0,1.05fr) minmax(0,.95fr)',
+            gap: 40,
+            alignItems: 'center',
+            padding: '74px 64px 60px',
+            minHeight: 540,
+            maxWidth: 1440,
+            margin: '0 auto',
+          }}
+          className="max-lg:!grid-cols-1 max-lg:!p-8">
+          <div>
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontStyle: 'italic',
+                fontSize: 13,
+                letterSpacing: '0.34em',
+                color: '#F5C518',
+                textTransform: 'uppercase',
+              }}>
+              — Sanctuaire du Millénium —
+            </div>
+            <h1
+              style={{
+                margin: '16px 0 0',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 'clamp(40px, 5vw, 66px)',
+                fontWeight: 900,
+                lineHeight: 0.94,
+                letterSpacing: '0.01em',
+                textTransform: 'uppercase',
+                background: 'linear-gradient(180deg,#F5EFE0 20%,#C29A0F 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+                filter: 'drop-shadow(0 0 24px rgba(245,197,24,.18))',
+              }}>
+              Ta collection
+              <br />
+              mérite un temple
+            </h1>
+            <p
+              style={{
+                margin: '22px 0 0',
+                maxWidth: 520,
+                fontSize: 19,
+                lineHeight: 1.55,
+                color: '#A99C86',
+                textWrap: 'pretty' as any,
+              }}>
+              Scanne tes cartes physiques, dresse tes decks, ouvre ta vitrine au reste du monde. Ce que
+              tu as passé dix ans à rassembler se regarde enfin.
+            </p>
+            <div style={{ marginTop: 34, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               <Link to="/register">
-                <Button variant="primary" size="lg" glitch>
-                  S'inscrire — c'est gratuit
-                </Button>
+                <button
+                  style={{
+                    height: 56,
+                    padding: '0 34px',
+                    position: 'relative',
+                    isolation: 'isolate',
+                    border: 0,
+                    background: 'transparent',
+                    color: '#0B0906',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: '#A855F7',
+                      transform: 'translate(5px,0)',
+                      clipPath: CUT_BTN,
+                      zIndex: -1,
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: '#F5C518',
+                      clipPath: CUT_BTN,
+                      zIndex: -1,
+                    }}
+                  />
+                  Ouvrir mon sanctuaire
+                </button>
               </Link>
               <Link to="/login">
-                <Button variant="secondary" size="lg">
-                  Voir un deck public
-                </Button>
+                <button
+                  style={{
+                    height: 52,
+                    padding: '0 26px',
+                    border: '1px solid #F5C518',
+                    background: 'transparent',
+                    color: '#F5EFE0',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  Voir une vitrine
+                </button>
               </Link>
             </div>
-
-            {/* Stats mini */}
-            <div className="grid grid-cols-3 gap-6 mt-12 max-w-lg">
-              {[
-                { v: '13 240', l: 'Cartes' },
-                { v: '2 847', l: 'Duellistes' },
-                { v: '18 906', l: 'Decks' },
-              ].map((s) => (
-                <div key={s.l} className="text-center">
+            <div style={{ marginTop: 38, display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+              {HERO_STATS.map((s) => (
+                <div key={s.label}>
                   <div
                     style={{
                       fontFamily: "'Orbitron', sans-serif",
-                      fontWeight: 900,
-                      fontSize: 28,
-                      color: 'var(--gold)',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    {s.v}
+                      fontSize: 26,
+                      fontWeight: 700,
+                      color: '#F5C518',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                    {s.value}
                   </div>
                   <div
                     style={{
-                      fontSize: 11,
-                      letterSpacing: '0.16em',
+                      marginTop: 3,
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 9,
+                      letterSpacing: '0.2em',
                       textTransform: 'uppercase',
-                      color: 'var(--text-muted)',
-                      marginTop: 4,
-                    }}
-                  >
-                    {s.l}
+                      color: '#A99C86',
+                    }}>
+                    {s.label}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Hero right — obélisque + cartes flottantes */}
-          <div className="hidden lg:grid place-items-center relative" style={{ height: 620 }}>
+          {/* Colonne droite : 3 obélisques + fan de 3 cartes */}
+          <div style={{ position: 'relative', height: 470 }} className="max-lg:hidden">
             <div
-              className="absolute inset-0"
               style={{
-                background:
-                  'radial-gradient(ellipse at center, rgba(245,197,24,0.15), transparent 60%)',
-                filter: 'blur(40px)',
-              }}
-            />
-            <svg
-              viewBox="0 0 200 400"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              style={{
-                width: '80%',
-                height: '100%',
-                color: 'var(--gold)',
-                opacity: 0.6,
-                filter: 'drop-shadow(0 0 20px rgba(245,197,24,0.3))',
-              }}
-            >
-              <path d="M40 380 L160 380 L150 360 L50 360 Z" />
-              <path d="M50 360 L150 360 L145 340 L55 340 Z" opacity="0.7" />
-              <path d="M60 340 L140 340 L130 60 L70 60 Z" />
-              <path d="M70 60 L130 60 L100 20 Z" />
-              <ellipse cx="100" cy="180" rx="24" ry="14" />
-              <circle cx="100" cy="180" r="7" />
-              <circle cx="100" cy="180" r="3" fill="currentColor" />
-              <path
-                d="M100 220 V320 M85 240 H115 M85 260 H115 M85 280 H115 M85 300 H115"
-                opacity="0.4"
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-end',
+                gap: 44,
+                opacity: 0.55,
+                pointerEvents: 'none',
+              }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 330,
+                  background:
+                    'linear-gradient(180deg,rgba(58,46,28,.95),rgba(11,9,6,0))',
+                  borderLeft: '1px solid rgba(245,197,24,.26)',
+                  borderRight: '1px solid rgba(245,197,24,.1)',
+                }}
               />
-              <path d="M100 8 L108 24 L92 24 Z" opacity="0.7" />
-            </svg>
-          </div>
-        </section>
-
-        {/* ─── FEATURES ─────────────────────────────────────────────── */}
-        <section
-          id="features"
-          className="max-w-7xl mx-auto px-4 sm:px-8 py-20"
-        >
-          <HeroTitle
-            kicker="— Ce que tu peux faire —"
-            title={
-              <>
-                Quatre piliers.
-                <br />
-                Un seul temple.
-              </>
-            }
-            sub="Chaque fonctionnalité est pensée pour le duelliste qui prend sa collection au sérieux. Pas de gadget, pas de bruit. Juste ce qu'il faut."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
-            {[
-              {
-                icon: <GlyphEye />,
-                title: 'Collection',
-                desc: 'Chaque carte cataloguée, filtrée par langue, rareté, archétype. Halo dynamique selon la rareté.',
-              },
-              {
-                icon: <GlyphPyramid />,
-                title: 'Deck Builder',
-                desc: 'Construis Main, Extra et Side depuis ta collection. Validation banlist en temps réel. Import / export .ydk.',
-              },
-              {
-                icon: <GlyphAnkh />,
-                title: 'Scan IA',
-                desc: 'Photographie tes nouvelles cartes, l\'IA Claude Vision les identifie et les ajoute. Un booster en 30 s.',
-              },
-              {
-                icon: <GlyphEye />,
-                title: 'Social',
-                desc: 'Partage tes decks publics, suis les créateurs, commente. Une communauté qui célèbre le deckbuilding.',
-              },
-            ].map((f) => (
               <div
-                key={f.title}
-                className="cyber-tile p-6 transition-transform hover:-translate-y-1"
                 style={{
-                  background: 'var(--panel)',
-                  border: '1px solid var(--border)',
+                  width: 54,
+                  height: 410,
+                  background:
+                    'linear-gradient(180deg,rgba(58,46,28,1),rgba(11,9,6,0))',
+                  borderLeft: '1px solid rgba(245,197,24,.3)',
+                  borderRight: '1px solid rgba(245,197,24,.12)',
                 }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    color: 'var(--gold)',
-                    marginBottom: 16,
-                  }}
-                >
-                  {f.icon}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'var(--gold)',
-                    marginBottom: 8,
-                  }}
-                >
-                  {f.title}
-                </div>
-                <p
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  {f.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ─── NUMBERS ──────────────────────────────────────────────── */}
-        <section
-          id="numbers"
-          className="max-w-7xl mx-auto px-4 sm:px-8 py-20"
-        >
-          <HeroTitle
-            kicker="— Le sanctuaire en chiffres —"
-            title={
-              <>
-                Une communauté
-                <br />
-                déjà bien vivante.
-              </>
-            }
-            sub="Les décombres d'anciens forums, transformés en vitrine moderne. Rejoins ceux qui construisent déjà."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
-            {[
-              {
-                v: '13 240',
-                l: 'Cartes cataloguées',
-                s: 'Banlist TCG · OCG · Master Duel',
-              },
-              {
-                v: '2 847',
-                l: 'Duellistes actifs',
-                s: 'Depuis les 30 derniers jours',
-              },
-              {
-                v: '18 906',
-                l: 'Decks partagés',
-                s: 'Meta, casuals, jank inclus',
-              },
-            ].map((n) => (
+              />
               <div
-                key={n.l}
-                className="cyber-panel p-8 text-center"
                 style={{
-                  background: 'var(--panel)',
-                  border: '1px solid var(--border)',
+                  width: 40,
+                  height: 330,
+                  background:
+                    'linear-gradient(180deg,rgba(58,46,28,.95),rgba(11,9,6,0))',
+                  borderLeft: '1px solid rgba(245,197,24,.26)',
+                  borderRight: '1px solid rgba(245,197,24,.1)',
                 }}
-              >
-                <div
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontWeight: 900,
-                    fontSize: 48,
-                    color: 'var(--gold)',
-                    letterSpacing: '0.02em',
-                    filter: 'drop-shadow(0 0 20px rgba(245,197,24,0.2))',
-                  }}
-                >
-                  {n.v}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: 13,
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text)',
-                    marginTop: 8,
-                  }}
-                >
-                  {n.l}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text-muted)',
-                    marginTop: 4,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {n.s}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ─── TESTIMONIALS ─────────────────────────────────────────── */}
-        <section id="voix" className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
-          <HeroTitle
-            kicker="— Les voix du sanctuaire —"
-            title="Ce qu'on nous dit."
-            sub="Trois joueurs qui ont troqué Excel et YGOProDeck contre Keitland. Ils racontent."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
-            {[
-              {
-                quote:
-                  "J'avais 2 300 cartes dans un classeur, aucune idée de ce que je possédais. En un weekend et deux paquets de scans, tout est là. Enfin je respire.",
-                name: 'Sébastien R.',
-                meta: 'Collectionneur · Lyon',
-                initials: 'SR',
-              },
-              {
-                quote:
-                  'Le deck builder valide ma banlist en temps réel, exporte en .ydk propre. Zéro friction. Le reste du monde en 2010, ce site en 2026.',
-                name: 'Manon K.',
-                meta: 'Compétitive · YCS regular',
-                initials: 'MK',
-              },
-              {
-                quote:
-                  "J'ai partagé mon deck Sky Striker sur le feed, reçu 40 likes en deux heures. Le premier endroit où je poste un deck sans avoir honte du design.",
-                name: 'Thomas L.',
-                meta: 'Deckbuilder · Bruxelles',
-                initials: 'TL',
-              },
-            ].map((t) => (
-              <div
-                key={t.initials}
-                className="cyber-tile p-6 flex flex-col"
-                style={{
-                  background: 'var(--panel-2)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 18,
-                    lineHeight: 1.5,
-                    fontStyle: 'italic',
-                    color: 'var(--text)',
-                    flex: 1,
-                  }}
-                >
-                  « {t.quote} »
-                </p>
-                <div className="flex items-center gap-3 mt-6">
+              />
+            </div>
+            {HERO_CARDS.map((c, i) => (
+              <div key={i} style={c.wrap}>
+                <div style={cardArt(c.ring, c.glow)}>
                   <div
-                    className="w-11 h-11 flex items-center justify-center"
                     style={{
-                      background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
-                      color: 'var(--on-gold)',
-                      fontFamily: "'Orbitron', sans-serif",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      letterSpacing: '0.1em',
-                      clipPath:
-                        'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'repeating-linear-gradient(45deg,transparent 0 10px,rgba(168,85,247,.05) 10px 11px),linear-gradient(150deg,#221B12,#14100A)',
                     }}
-                  >
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: "'Orbitron', sans-serif",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: 'var(--text)',
-                        letterSpacing: '0.08em',
-                      }}
-                    >
-                      {t.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {t.meta}
-                    </div>
-                  </div>
+                  />
+                  <CardIcon size={40} className="relative" />
                 </div>
+                <div style={plinth(c.plinthColor)} />
               </div>
             ))}
           </div>
         </section>
 
-        {/* ─── CTA FINAL ────────────────────────────────────────────── */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-8 py-20">
+        {/* FEATURES : grille 3 cols biseautée */}
+        <section
+          style={{
+            position: 'relative',
+            padding: '0 64px 70px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 20,
+            maxWidth: 1440,
+            margin: '0 auto',
+          }}
+          className="max-md:!grid-cols-1 max-md:!p-8">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              style={{
+                padding: '26px 26px 28px',
+                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                border: '1px solid #3A2E1C',
+                clipPath: CUT_TILE,
+                transition: 'border-color 200ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
+              <div style={{ color: '#F5C518' }}>{f.icon}</div>
+              <div
+                style={{
+                  marginTop: 16,
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: '#F5EFE0',
+                }}>
+                {f.title}
+              </div>
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                  color: '#A99C86',
+                  textWrap: 'pretty' as any,
+                }}>
+                {f.body}
+              </p>
+            </div>
+          ))}
+        </section>
+
+        {/* Bloc « À venir » : témoignages chiffrés promis mais pas encore data-backed */}
+        <section
+          style={{
+            padding: '0 64px 60px',
+            maxWidth: 1440,
+            margin: '0 auto',
+          }}>
           <div
-            className="cyber-panel cyber-panel--glow p-12 text-center relative overflow-hidden"
             style={{
-              background: 'var(--panel)',
-              border: '1px solid var(--border-gold, var(--gold-dim))',
-            }}
-          >
-            <HeroTitle
-              kicker="— Rejoins-nous —"
-              title={
-                <>
-                  Rejoins
-                  <br />
-                  le Sanctuaire.
-                </>
-              }
-              sub="Compte gratuit. Aucune carte bancaire. Ta collection reste la tienne, exportable à tout moment. Trente secondes pour commencer."
-              className="mx-auto"
-            />
-            <div className="flex flex-wrap gap-4 justify-center mt-8">
-              <Link to="/register">
-                <Button variant="primary" size="lg" glitch>
-                  Créer mon compte
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="ghost" size="lg">
-                  Déjà membre ? Se connecter
-                </Button>
-              </Link>
+              padding: '30px 34px',
+              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+              border: '1px dashed #3A2E1C',
+              clipPath: CUT_TILE,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+            }}>
+            <GlyphEye style={{ width: 40, height: 40, color: '#C29A0F', flex: 'none' }} />
+            <div>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 11,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#F5C518',
+                }}>
+                Voix du sanctuaire — À venir
+              </div>
+              <p style={{ margin: '6px 0 0', color: '#A99C86', fontSize: 14, lineHeight: 1.5 }}>
+                Trois témoignages de duellistes seront affichés dès qu’on aura recueilli les retours des
+                premiers gardiens.
+              </p>
             </div>
           </div>
         </section>
       </main>
 
-      {/* ─── FOOTER ──────────────────────────────────────────────── */}
       <footer
-        className="relative z-20 max-w-7xl mx-auto px-4 sm:px-8 py-10 flex flex-wrap justify-between items-center gap-4"
-        style={{ borderTop: '1px solid var(--border)' }}
-      >
+        style={{
+          position: 'relative',
+          zIndex: 20,
+          maxWidth: 1440,
+          margin: '0 auto',
+          padding: '32px 64px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+          borderTop: '1px solid #3A2E1C',
+        }}>
         <div
-          className="flex items-center gap-3"
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
             fontFamily: "'Cormorant Garamond', serif",
             fontStyle: 'italic',
-            fontSize: 14,
+            fontSize: 13,
             letterSpacing: '0.14em',
-            color: 'var(--text-muted)',
-          }}
-        >
-          <GlyphPyramid style={{ width: 24, height: 24, color: 'var(--gold-dim)' }} />
+            color: '#A99C86',
+          }}>
+          <GlyphPyramid style={{ width: 22, height: 22, color: '#C29A0F' }} />
           Keitland · Le sanctuaire des duellistes · MMXXVI
         </div>
-        <div className="flex gap-6">
-          {['Mentions légales', 'Confidentialité', 'API YGOProDeck', 'GitHub'].map(
-            (l) => (
-              <a
-                key={l}
-                href="#"
-                className="no-underline"
-                style={{
-                  fontFamily: "'Orbitron', sans-serif",
-                  fontSize: 11,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {l}
-              </a>
-            )
-          )}
+        <div style={{ display: 'flex', gap: 22 }}>
+          {['Mentions légales', 'Confidentialité', 'API YGOProDeck', 'GitHub'].map((l) => (
+            <a
+              key={l}
+              href="#"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 10,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: '#A99C86',
+                textDecoration: 'none',
+              }}>
+              {l}
+            </a>
+          ))}
         </div>
       </footer>
     </div>

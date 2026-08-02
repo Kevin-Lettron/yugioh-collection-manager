@@ -2,11 +2,21 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
+import { GlyphEye } from '../components/decor/Glyphs';
+import { MillenniumMark } from '../components/decor/Icons';
 
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_PANEL = 'polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px))';
+const CUT_INPUT = 'polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)';
+
+/**
+ * Login — pixel-perfect mockup `isLogin` (DesktopFrame l.112-145).
+ * Panneau centré 470px biseauté 22px, deux obélisques d'ambiance,
+ * logo Millennium 56px, kicker italique, CTA « Franchir le seuil » or/violet.
+ */
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -16,20 +26,16 @@ const Login = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    // Validation
     if (!identifier || !password) {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
-
     setLoading(true);
     try {
       await login(identifier, password);
       toast.success('Bon retour parmi nous !');
       navigate('/collection');
-    } catch (error: any) {
-      // Error is handled by the API interceptor
+    } catch (error) {
       console.error('Login failed:', error);
     } finally {
       setLoading(false);
@@ -37,108 +43,266 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+    <div
+      style={{
+        minHeight: '100vh',
+        position: 'relative',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '60px 16px',
+        background: '#0B0906',
+        overflow: 'hidden',
+      }}>
       <AppBackground />
       <CornerOrnaments />
 
+      {/* Deux obélisques d'ambiance */}
       <div
-        className="relative z-20 w-full max-w-md cyber-panel p-8"
         style={{
-          background: 'var(--panel)',
-          border: '1px solid var(--border)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5), var(--glow)',
-        }}
-      >
-        <div className="text-center mb-8">
-          <HeroTitle
-            kicker="— Retour au Sanctuaire —"
-            title="Entrer"
-            sub="Reprends là où tu t'étais arrêté."
-            className="text-center"
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          gap: 120,
+          opacity: 0.4,
+          pointerEvents: 'none',
+        }}>
+        <div
+          style={{
+            width: 54,
+            height: 520,
+            background: 'linear-gradient(180deg,rgba(58,46,28,1),rgba(11,9,6,0))',
+            borderLeft: '1px solid rgba(245,197,24,.28)',
+            borderRight: '1px solid rgba(245,197,24,.1)',
+          }}
+        />
+        <div
+          style={{
+            width: 54,
+            height: 520,
+            background: 'linear-gradient(180deg,rgba(58,46,28,1),rgba(11,9,6,0))',
+            borderLeft: '1px solid rgba(245,197,24,.28)',
+            borderRight: '1px solid rgba(245,197,24,.1)',
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 20,
+          width: '100%',
+          maxWidth: 470,
+          padding: '44px 46px 40px',
+          background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
+          border: '1px solid #3A2E1C',
+          boxShadow: '0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(245,197,24,.08)',
+          clipPath: CUT_PANEL,
+        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <MillenniumMark
+            size={56}
+            className="text-blue-600"
+            title="Keitland"
           />
+          <div
+            style={{
+              marginTop: 16,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: 'italic',
+              fontSize: 11,
+              letterSpacing: '0.3em',
+              color: '#F5C518',
+              textTransform: 'uppercase',
+            }}>
+            — Retour au sanctuaire —
+          </div>
+          <h1
+            style={{
+              margin: '8px 0 0',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 30,
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: '#F5EFE0',
+            }}>
+            Entrer
+          </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="identifier"
-              className="block mb-2"
+        <form
+          onSubmit={handleSubmit}
+          style={{ marginTop: 30, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span
               style={{
                 fontFamily: "'Orbitron', sans-serif",
-                fontSize: 11,
-                letterSpacing: '0.16em',
+                fontSize: 9,
+                letterSpacing: '0.2em',
+                color: '#A99C86',
                 textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Email ou pseudo
-            </label>
+              }}>
+              Courriel ou pseudo
+            </span>
             <input
-              id="identifier"
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full px-4 py-3 outline-none cyber-input transition"
-              placeholder="votre@email.com ou pseudo"
+              placeholder="kaiba_pa"
               disabled={loading}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                background: '#14100A',
+                border: '1px solid #3A2E1C',
+                borderLeft: '2px solid #F5C518',
+                color: '#F5EFE0',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: 16,
+                outline: 'none',
+                clipPath: CUT_INPUT,
+              }}
             />
-          </div>
+          </label>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block mb-2"
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span
               style={{
                 fontFamily: "'Orbitron', sans-serif",
-                fontSize: 11,
-                letterSpacing: '0.16em',
+                fontSize: 9,
+                letterSpacing: '0.2em',
+                color: '#A99C86',
                 textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Mot de passe
-            </label>
+              }}>
+              Sceau
+            </span>
             <input
-              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 outline-none cyber-input transition"
-              placeholder="Entrez votre mot de passe"
+              placeholder="••••••••"
               disabled={loading}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                background: '#14100A',
+                border: '1px solid #3A2E1C',
+                borderLeft: '2px solid #F5C518',
+                color: '#F5EFE0',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: 16,
+                outline: 'none',
+                clipPath: CUT_INPUT,
+              }}
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              marginTop: 8,
+              width: '100%',
+              height: 54,
+              position: 'relative',
+              isolation: 'isolate',
+              border: 0,
+              background: 'transparent',
+              color: '#0B0906',
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 700,
+              fontSize: 13,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}>
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: '#A855F7',
+                transform: 'translate(5px,0)',
+                clipPath: CUT_BTN,
+                zIndex: -1,
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: '#F5C518',
+                clipPath: CUT_BTN,
+                zIndex: -1,
+              }}
+            />
+            {loading ? 'Ouverture...' : 'Franchir le seuil'}
+          </button>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              margin: '8px 0',
+            }}>
+            <span
+              style={{
+                flex: 1,
+                height: 1,
+                background: 'linear-gradient(90deg,transparent,#3A2E1C)',
+              }}
+            />
+            <GlyphEye style={{ width: 18, height: 18, color: '#C29A0F' }} />
+            <span
+              style={{
+                flex: 1,
+                height: 1,
+                background: 'linear-gradient(90deg,#3A2E1C,transparent)',
+              }}
             />
           </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            glitch
-            isLoading={loading}
-            className="w-full"
-          >
-            Entrer dans le sanctuaire
-          </Button>
+          <button
+            type="button"
+            style={{
+              width: '100%',
+              height: 48,
+              border: '1px solid #3A2E1C',
+              background: '#14100A',
+              color: '#A99C86',
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 600,
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              clipPath: CUT_SM,
+            }}
+            onClick={() =>
+              toast('Discord OAuth arrive bientôt', { icon: '⏳' })
+            }>
+            Continuer avec Discord
+          </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            Pas encore de gardien ?{' '}
-            <Link
-              to="/register"
-              style={{
-                color: 'var(--gold)',
-                textDecoration: 'none',
-                fontFamily: "'Orbitron', sans-serif",
-                fontSize: 12,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-              }}
-            >
-              Ouvrir un temple
-            </Link>
-          </p>
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <span style={{ color: '#A99C86', fontSize: 13 }}>Nouveau gardien ? </span>
+          <Link
+            to="/register"
+            style={{
+              color: '#F5C518',
+              textDecoration: 'none',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+            }}>
+            Sceller un compte
+          </Link>
         </div>
       </div>
     </div>

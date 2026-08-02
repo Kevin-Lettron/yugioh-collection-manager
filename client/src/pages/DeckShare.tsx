@@ -1,26 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Deck, DeckCard } from '../../../shared/types';
+import { useAuth } from '../context/AuthContext';
+import { Deck } from '../../../shared/types';
 import api from '../services/api';
-import Button from '../components/ui/Button';
+import toast from 'react-hot-toast';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
 import CardTile from '../components/decor/CardTile';
-import { GlyphPyramid } from '../components/decor/Glyphs';
+import { MillenniumMark, CardIcon } from '../components/decor/Icons';
 
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_PANEL = 'polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px))';
+const CUT_ARENA = 'polygon(0 0,calc(100% - 24px) 0,100% 24px,100% 100%,24px 100%,0 calc(100% - 24px))';
+
+/**
+ * DeckShare — layout `isArena` (DesktopFrame l.211-300) sans navbar full sanctuaire.
+ * Nav publique minimaliste, plateau 3D, sidebar avec CTA « Copier ce deck »
+ * pour user connecté, ou « Créer un compte » pour visiteur.
+ */
 const DeckShare = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCardDetail, setSelectedCardDetail] = useState<DeckCard | null>(null);
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
-    if (shareToken) {
-      fetchSharedDeck();
-    }
+    if (shareToken) fetchSharedDeck();
   }, [shareToken]);
 
   const fetchSharedDeck = async () => {
@@ -28,404 +37,500 @@ const DeckShare = () => {
       const response = await api.get(`/decks/shared/${shareToken}`);
       setDeck(response.data.deck);
     } catch (err: any) {
-      console.error('Failed to fetch shared deck:', err);
-      if (err.response?.status === 404) {
-        setError('Ce lien de partage est invalide ou a expire.');
-      } else {
-        setError('Impossible de charger le deck partage.');
-      }
+      if (err.response?.status === 404) setError('Ce lien est invalide ou expiré.');
+      else setError('Impossible de charger le deck.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCopyDeck = async () => {
+    if (!user) {
+      navigate('/register');
+      return;
+    }
+    if (!deck) return;
+    setCopying(true);
+    try {
+      await api.post(`/social/wishlist/${deck.id}`);
+      toast.success('Deck ajouté à ta wishlist');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Impossible');
+    } finally {
+      setCopying(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+        <div
+          className="animate-spin"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid rgba(245,197,24,.3)',
+            borderTopColor: '#F5C518',
+          }}
+        />
       </div>
     );
   }
 
   if (error || !deck) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
-          <svg className="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Lien invalide</h2>
-          <p className="text-gray-600 mb-6">{error || 'Ce deck n\'existe pas ou n\'est plus disponible.'}</p>
-          <Button
-            variant="primary"
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906', padding: 32 }}>
+        <div
+          style={{
+            maxWidth: 460,
+            textAlign: 'center',
+            padding: '40px 32px',
+            background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
+            border: '1px solid #3A2E1C',
+            clipPath: 'polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px))',
+          }}>
+          <MillenniumMark size={56} className="text-blue-600" />
+          <h2
+            style={{
+              margin: '16px 0 8px',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 24,
+              fontWeight: 900,
+              color: '#F5EFE0',
+              textTransform: 'uppercase',
+            }}>
+            Lien invalide
+          </h2>
+          <p style={{ color: '#A99C86', fontSize: 14, marginBottom: 20 }}>{error}</p>
+          <button
             onClick={() => navigate('/login')}
-          >
+            style={{
+              padding: '10px 22px',
+              background: '#F5C518',
+              color: '#0B0906',
+              border: 0,
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              clipPath: CUT_SM,
+            }}>
             Se connecter
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
-  const mainDeck = deck.main_deck || [];
-  const extraDeck = deck.extra_deck || [];
-  const mainDeckCount = mainDeck.reduce((sum, card) => sum + card.quantity, 0);
-  const extraDeckCount = extraDeck.reduce((sum, card) => sum + card.quantity, 0);
+  const mainCount = deck.main_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+  const extraCount = deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
 
   return (
-    <div className="min-h-screen relative">
+    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
 
-      {/* Navigation - Guest version */}
+      {/* Navbar publique minimaliste */}
       <nav
-        className="sticky top-0 z-40 backdrop-blur-md"
         style={{
-          background:
-            'linear-gradient(180deg, rgba(11,8,19,0.85), rgba(11,8,19,0.55))',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <GlyphPyramid style={{ width: 24, height: 24, color: 'var(--gold)' }} />
-              <span
-                style={{
-                  fontFamily: "'Orbitron', sans-serif",
-                  fontWeight: 900,
-                  fontSize: 15,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text)',
-                }}
-              >
-                Keit<span style={{ color: 'var(--gold)' }}>land</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span style={{ color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Orbitron', sans-serif" }}>
-                Mode Visiteur
-              </span>
-              <Button variant="primary" size="sm" onClick={() => navigate('/login')}>
-                Se connecter
-              </Button>
-            </div>
-          </div>
+          position: 'sticky',
+          top: 0,
+          zIndex: 40,
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 20,
+          padding: '0 40px',
+          background: 'linear-gradient(180deg,rgba(11,9,6,.92),rgba(11,9,6,.68))',
+          backdropFilter: 'blur(16px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+          borderBottom: '1px solid #3A2E1C',
+        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MillenniumMark size={28} className="text-blue-600" />
+          <span
+            style={{
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 900,
+              fontSize: 14,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: '#F5EFE0',
+            }}>
+            Keit<span style={{ color: '#F5C518' }}>land</span>
+          </span>
         </div>
+        <span style={{ flex: 1 }} />
+        <span
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontStyle: 'italic',
+            fontSize: 11,
+            letterSpacing: '0.2em',
+            color: '#A99C86',
+            textTransform: 'uppercase',
+          }}>
+          — Vitrine publique —
+        </span>
       </nav>
 
-      {/* Main Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with deck info */}
-        <div
-          className="cyber-panel p-6 mb-6"
-          style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <HeroTitle
-              kicker="— Vitrine ouverte —"
-              title={deck.name}
-              sub={`Créé par ${deck.user?.username || 'Utilisateur inconnu'}`}
-            />
-            <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
-              {deck.is_public && (
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  Public
-                </span>
-              )}
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${deck.respect_banlist ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
-                {deck.respect_banlist ? 'Conforme Banlist' : 'Banlist ignoree'}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 20,
+          padding: '38px 40px 60px',
+          maxWidth: 1440,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 380px',
+          gap: 32,
+          alignItems: 'start',
+        }}
+        className="max-lg:!grid-cols-1">
+        <div>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontStyle: 'italic',
+                fontSize: 11,
+                letterSpacing: '0.3em',
+                color: '#F5C518',
+                textTransform: 'uppercase',
+              }}>
+              — Vitrine ouverte —
+            </div>
+            <h1
+              style={{
+                margin: '8px 0 0',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 40,
+                fontWeight: 900,
+                letterSpacing: '0.02em',
+                textTransform: 'uppercase',
+                color: '#F5EFE0',
+                lineHeight: 1,
+              }}>
+              {deck.name}
+            </h1>
+            <div style={{ marginTop: 8, fontSize: 15, color: '#A99C86' }}>
+              par{' '}
+              <span style={{ color: '#A855F7' }}>@{deck.user?.username}</span>{' '}
+              ·{' '}
+              <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: '#F5C518' }}>
+                {mainCount} · {extraCount} · 0
               </span>
             </div>
           </div>
 
-          {/* Deck Stats */}
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Plateau — placeholder minimal */}
+          <div
+            style={{
+              marginTop: 26,
+              position: 'relative',
+              padding: '44px 40px 34px',
+              background: 'linear-gradient(180deg,#14100A,#0B0906)',
+              border: '1px solid #3A2E1C',
+              overflow: 'hidden',
+              clipPath: CUT_ARENA,
+            }}>
             <div
-              className="p-4 text-center cyber-cut-sm"
-              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-sm text-gray-500">Main Deck</p>
-              <p className={`text-2xl font-bold ${mainDeckCount >= 40 && mainDeckCount <= 60 ? 'text-green-600' : 'text-red-600'}`}>
-                {mainDeckCount}
-              </p>
-              <p className="text-xs text-gray-400">/ 40-60 cartes</p>
-            </div>
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'radial-gradient(ellipse 60% 50% at 50% 100%,rgba(168,85,247,.2),transparent 70%)',
+              }}
+            />
             <div
-              className="p-4 text-center cyber-cut-sm"
-              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-sm text-gray-500">Extra Deck</p>
-              <p className={`text-2xl font-bold ${extraDeckCount <= 15 ? 'text-green-600' : 'text-red-600'}`}>
-                {extraDeckCount}
-              </p>
-              <p className="text-xs text-gray-400">/ 0-15 cartes</p>
-            </div>
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage:
+                  'linear-gradient(rgba(245,197,24,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(245,197,24,.055) 1px,transparent 1px)',
+                backgroundSize: '34px 34px',
+              }}
+            />
             <div
-              className="p-4 text-center cyber-cut-sm"
-              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-sm text-gray-500">Likes</p>
-              <p className="text-2xl font-bold text-green-600">{deck.likes_count || 0}</p>
-            </div>
-            <div
-              className="p-4 text-center cyber-cut-sm"
-              style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-sm text-gray-500">Commentaires</p>
-              <p className="text-2xl font-bold text-blue-600">{deck.comments_count || 0}</p>
+              style={{
+                position: 'relative',
+                transform: 'perspective(1100px) rotateX(17deg)',
+                transformOrigin: '50% 100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+                alignItems: 'center',
+              }}>
+              <div style={{ display: 'flex', gap: 14 }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 82,
+                      height: 112,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background:
+                        i < 3 ? 'linear-gradient(150deg,#2A2216,#14100A)' : 'rgba(255,255,255,.02)',
+                      border: i < 3 ? '1px solid rgba(245,197,24,.55)' : '1px dashed rgba(245,197,24,.22)',
+                      boxShadow: i < 3 ? '0 0 20px -4px rgba(245,197,24,.55)' : undefined,
+                    }}>
+                    {i < 3 && (
+                      <span
+                        style={{
+                          fontFamily: "'Orbitron', sans-serif",
+                          fontSize: 9,
+                          letterSpacing: '0.12em',
+                          color: '#A99C86',
+                          opacity: 0.75,
+                        }}>
+                        MONSTRE
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 14 }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 82,
+                      height: 112,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background:
+                        i < 2 || i === 3
+                          ? 'linear-gradient(150deg,#2A2216,#14100A)'
+                          : 'rgba(255,255,255,.02)',
+                      border:
+                        i < 2
+                          ? '1px solid rgba(168,85,247,.55)'
+                          : i === 3
+                          ? '1px solid rgba(34,211,238,.5)'
+                          : '1px dashed rgba(245,197,24,.22)',
+                    }}>
+                    {(i < 2 || i === 3) && (
+                      <span
+                        style={{
+                          fontFamily: "'Orbitron', sans-serif",
+                          fontSize: 9,
+                          letterSpacing: '0.12em',
+                          color: '#A99C86',
+                          opacity: 0.75,
+                        }}>
+                        {i < 2 ? 'MAGIE' : 'PIÈGE'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Cartes clés */}
+          <div style={{ marginTop: 30, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#F5C518',
+              }}>
+              Cartes clés
+            </span>
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+          </div>
+          <div
+            style={{
+              marginTop: 18,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+              gap: 20,
+            }}
+            className="max-lg:!grid-cols-4 max-sm:!grid-cols-3">
+            {(deck.main_deck || []).slice(0, 6).map((dc, i) => (
+              <CardTile
+                key={dc.id}
+                uri={dc.card?.card_images?.[0]?.image_url_small}
+                name={dc.card?.name}
+                quantity={dc.quantity}
+                index={i}
+              />
+            ))}
+          </div>
+
+          {/* Extra deck compact list */}
+          {(deck.extra_deck || []).length > 0 && (
+            <>
+              <div style={{ marginTop: 30, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 12,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#C084FC',
+                  }}>
+                  Extra deck
+                </span>
+                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+              </div>
+              <div
+                style={{
+                  marginTop: 18,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                  gap: 20,
+                }}
+                className="max-lg:!grid-cols-4 max-sm:!grid-cols-3">
+                {(deck.extra_deck || []).map((dc, i) => (
+                  <CardTile
+                    key={dc.id}
+                    uri={dc.card?.card_images?.[0]?.image_url_small}
+                    name={dc.card?.name}
+                    quantity={dc.quantity}
+                    index={i}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Deck Lists */}
-        <div className="space-y-6">
-          {/* Main Deck */}
+        {/* Sidebar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div
-            className="cyber-panel p-6"
-            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-          >
-            <h3 className="cyber-title mb-4">Deck Principal ({mainDeckCount} cartes)</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {mainDeck.map((deckCard, i) => (
-                <CardTile
-                  key={deckCard.id}
-                  uri={deckCard.card?.card_images?.[0]?.image_url_small}
-                  name={deckCard.card?.name}
-                  quantity={deckCard.quantity}
-                  index={i}
-                  onClick={() => setSelectedCardDetail(deckCard)}
-                />
+            style={{
+              padding: 22,
+              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+              border: '1px solid #3A2E1C',
+              clipPath: CUT_PANEL,
+            }}>
+            <button
+              onClick={handleCopyDeck}
+              disabled={copying}
+              style={{
+                width: '100%',
+                height: 50,
+                position: 'relative',
+                isolation: 'isolate',
+                border: 0,
+                background: 'transparent',
+                color: '#0B0906',
+                fontFamily: "'Orbitron', sans-serif",
+                fontWeight: 700,
+                fontSize: 12,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: copying ? 'not-allowed' : 'pointer',
+                opacity: copying ? 0.7 : 1,
+              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#A855F7',
+                  transform: 'translate(5px,0)',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#F5C518',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              {user ? 'Copier ce deck' : 'Créer un compte pour copier'}
+            </button>
+
+            <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { label: 'Archétype', value: (deck as any).archetype || '— À venir' },
+                { label: 'Format', value: 'TCG Advanced' },
+                { label: 'Copié', value: '— À venir' },
+                { label: 'Valeur du deck', value: '— À venir' },
+              ].map((m) => (
+                <div
+                  key={m.label}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 14,
+                    color: '#A99C86',
+                    paddingBottom: 8,
+                    borderBottom: '1px solid rgba(58,46,28,.6)',
+                  }}>
+                  <span>{m.label}</span>
+                  <span
+                    style={{
+                      color: '#F5EFE0',
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 12,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                    {m.value}
+                  </span>
+                </div>
               ))}
             </div>
-            {mainDeck.length === 0 && (
-              <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
-                Aucune carte dans le Deck Principal.
+          </div>
+
+          {!user && (
+            <div
+              style={{
+                padding: 22,
+                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                border: '1px solid #C29A0F',
+                clipPath: CUT_PANEL,
+                boxShadow: '0 0 24px rgba(245,197,24,.25)',
+              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <CardIcon size={20} className="text-blue-600" />
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: '#F5C518',
+                  }}>
+                  Rejoins-nous
+                </span>
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, lineHeight: 1.5, color: '#A99C86' }}>
+                Compte gratuit. Ta collection reste la tienne, exportable à tout moment.
               </p>
-            )}
-          </div>
-
-          {/* Extra Deck */}
-          <div
-            className="cyber-panel p-6"
-            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-          >
-            <h3 className="cyber-title mb-4">Extra Deck ({extraDeckCount} cartes)</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {extraDeck.map((deckCard, i) => (
-                <CardTile
-                  key={deckCard.id}
-                  uri={deckCard.card?.card_images?.[0]?.image_url_small}
-                  name={deckCard.card?.name}
-                  quantity={deckCard.quantity}
-                  index={i}
-                  onClick={() => setSelectedCardDetail(deckCard)}
-                />
-              ))}
-            </div>
-            {extraDeck.length === 0 && (
-              <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
-                Aucune carte dans l'Extra Deck.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Call to action */}
-        <div
-          className="mt-8 cyber-panel cyber-panel--glow p-8 text-center"
-          style={{ background: 'var(--panel)', border: '1px solid var(--gold-dim)' }}
-        >
-          <HeroTitle
-            kicker="— Rejoins-nous —"
-            title="Ta propre vitrine t'attend"
-            sub="Inscris-toi gratuitement pour créer tes propres decks et gérer ta collection."
-            className="text-center"
-          />
-          <div className="mt-6">
-            <Button
-              variant="primary"
-              size="lg"
-              glitch
-              onClick={() => navigate('/register')}
-            >
-              S'inscrire gratuitement
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Card Detail Modal */}
-      {selectedCardDetail && selectedCardDetail.card && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedCardDetail(null)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-              <h3 className="text-2xl font-bold text-gray-800">
-                {selectedCardDetail.card.name}
-              </h3>
               <button
-                onClick={() => setSelectedCardDetail(null)}
-                className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
-              >
-                &times;
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  background: 'transparent',
+                  color: '#F5EFE0',
+                  border: '1px solid #F5C518',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 11,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  clipPath: CUT_SM,
+                }}>
+                Sceller mon compte
               </button>
             </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Card Image */}
-                <div className="flex-shrink-0 mx-auto md:mx-0">
-                  <img
-                    src={selectedCardDetail.card.card_images?.[0]?.image_url || '/placeholder-card.png'}
-                    alt={selectedCardDetail.card.name}
-                    className="w-64 h-auto rounded-lg shadow-lg"
-                  />
-                </div>
-
-                {/* Card Info */}
-                <div className="flex-1 space-y-4">
-                  {/* Type & Attribute Row */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                      {selectedCardDetail.card.type}
-                    </span>
-                    {selectedCardDetail.card.attribute && (
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedCardDetail.card.attribute === 'DARK' ? 'bg-gray-800 text-white' :
-                        selectedCardDetail.card.attribute === 'LIGHT' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedCardDetail.card.attribute === 'FIRE' ? 'bg-red-100 text-red-800' :
-                        selectedCardDetail.card.attribute === 'WATER' ? 'bg-blue-100 text-blue-800' :
-                        selectedCardDetail.card.attribute === 'EARTH' ? 'bg-amber-100 text-amber-800' :
-                        selectedCardDetail.card.attribute === 'WIND' ? 'bg-green-100 text-green-800' :
-                        selectedCardDetail.card.attribute === 'DIVINE' ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedCardDetail.card.attribute}
-                      </span>
-                    )}
-                    {selectedCardDetail.card.race && (
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-                        {selectedCardDetail.card.race}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Monster Stats */}
-                  {(selectedCardDetail.card.level !== undefined ||
-                    selectedCardDetail.card.linkval !== undefined ||
-                    selectedCardDetail.card.atk !== undefined) && (
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {selectedCardDetail.card.level !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-500 text-lg">&#9733;</span>
-                          <span className="font-medium">Niveau {selectedCardDetail.card.level}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.linkval !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-blue-500 font-bold">LIEN-{selectedCardDetail.card.linkval}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.scale !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-teal-600 font-medium">Echelle : {selectedCardDetail.card.scale}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.atk !== undefined && (
-                        <div className="font-medium">
-                          <span className="text-red-600">ATK</span> {selectedCardDetail.card.atk}
-                        </div>
-                      )}
-                      {selectedCardDetail.card.def !== undefined && (
-                        <div className="font-medium">
-                          <span className="text-blue-600">DEF</span> {selectedCardDetail.card.def}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Link Markers */}
-                  {selectedCardDetail.card.linkmarkers && selectedCardDetail.card.linkmarkers.length > 0 && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Fleches Lien : </span>
-                      <span className="text-gray-600">
-                        {selectedCardDetail.card.linkmarkers.join(', ')}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Archetype */}
-                  {selectedCardDetail.card.archetype && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Archetype : </span>
-                      <span className="text-gray-600">{selectedCardDetail.card.archetype}</span>
-                    </div>
-                  )}
-
-                  {/* Card Description/Effect */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-800 mb-2">Texte de la carte</h4>
-                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                      {selectedCardDetail.card.description}
-                    </p>
-                  </div>
-
-                  {/* Banlist Info */}
-                  {selectedCardDetail.card.banlist_info && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCardDetail.card.banlist_info.ban_tcg && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          selectedCardDetail.card.banlist_info.ban_tcg === 'Banned' ? 'bg-red-100 text-red-800' :
-                          selectedCardDetail.card.banlist_info.ban_tcg === 'Limited' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          TCG: {selectedCardDetail.card.banlist_info.ban_tcg}
-                        </span>
-                      )}
-                      {selectedCardDetail.card.banlist_info.ban_ocg && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          selectedCardDetail.card.banlist_info.ban_ocg === 'Banned' ? 'bg-red-100 text-red-800' :
-                          selectedCardDetail.card.banlist_info.ban_ocg === 'Limited' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          OCG: {selectedCardDetail.card.banlist_info.ban_ocg}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Quantity in deck */}
-              <div className="mt-6 pt-6 border-t">
-                <div className="bg-blue-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-500">Quantite dans ce deck</p>
-                  <p className="text-2xl font-bold text-blue-600">x{selectedCardDetail.quantity}</p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="mt-6 flex justify-end">
-                <Button
-                  variant="primary"
-                  onClick={() => setSelectedCardDetail(null)}
-                >
-                  Fermer
-                </Button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

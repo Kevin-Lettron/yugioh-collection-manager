@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,33 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { deckApi } from '@/services/deckApi';
-import type { Deck, DeckComment } from '@/types';
+import type { Deck, DeckCard, DeckComment } from '@/types';
 import { API_URL } from '@/config';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
 import { AppBackground } from '@/components/decor/AppBackground';
 import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
-import { HeroTitle } from '@/components/decor/HeroTitle';
-import { CardTile } from '@/components/decor/CardTile';
 import { spacing } from '@/theme/palette';
 
+const CARD_ICON = require('@/assets/images/decor/glyph-pyramid.png'); // placeholder svg-card icon
+
+type ViewMode = 'arena' | 'list';
+
+/**
+ * DeckView — implémente les deux variantes du PhoneFrame :
+ *   • sc-if `isArena` (l.190-260) — variante A « Sanctuaire draconique » avec
+ *     plateau 3D perspective + zones + compteurs + Cartes clés scrollables.
+ *   • sc-if `isList`  (l.262-323) — variante B « grimoire » avec jauge répartition
+ *     et sections Deck principal / Extra / Side en rows biseautés.
+ * Toggle « Vue arène ↔ Vue liste » en haut à droite du header.
+ */
 export default function DeckViewScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
@@ -43,6 +54,7 @@ export default function DeckViewScreen() {
   const [reacting, setReacting] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('arena');
 
   const fetchAll = useCallback(async () => {
     try {
@@ -67,18 +79,16 @@ export default function DeckViewScreen() {
     }, [fetchAll])
   );
 
-  const isOwner = deck && user && deck.user_id === user.id;
+  const isOwner = !!(deck && user && deck.user_id === user.id);
 
-  const handleReaction = async (type: 'like' | 'dislike') => {
+  const handleReaction = async () => {
     if (!deck || reacting) return;
     setReacting(true);
     try {
-      if (deck.user_reaction === type) {
+      if (deck.user_reaction === 'like') {
         await deckApi.clearReaction(deckId);
-      } else if (type === 'like') {
-        await deckApi.like(deckId);
       } else {
-        await deckApi.dislike(deckId);
+        await deckApi.like(deckId);
       }
       await fetchAll();
     } catch (err: any) {
@@ -98,10 +108,7 @@ export default function DeckViewScreen() {
         await fetchAll();
       }
       const url = `${API_URL}/deck/share/${token}`;
-      await Share.share({
-        message: `Regarde mon deck "${deck.name}" : ${url}`,
-        url,
-      });
+      await Share.share({ message: `Regarde mon deck "${deck.name}" : ${url}`, url });
     } catch (err: any) {
       Alert.alert('Erreur', err?.response?.data?.error || 'Partage échoué');
     }
@@ -141,6 +148,15 @@ export default function DeckViewScreen() {
     ]);
   };
 
+  const mainCount = useMemo(
+    () => deck?.main_deck?.reduce((s, c) => s + c.quantity, 0) || 0,
+    [deck]
+  );
+  const extraCount = useMemo(
+    () => deck?.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0,
+    [deck]
+  );
+
   if (loading || !deck) {
     return (
       <View style={styles.root}>
@@ -152,22 +168,21 @@ export default function DeckViewScreen() {
     );
   }
 
-  const mainCount = deck.main_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
-  const extraCount = deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+  const liked = deck.user_reaction === 'like';
+  const authorName = isOwner ? 'toi' : deck.user?.username || 'anonyme';
 
   return (
     <View style={styles.root}>
       <AppBackground />
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <Text style={styles.iconBtnText}>‹</Text>
+        {/* Mini-header : back + share */}
+        <View style={styles.chromeHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.chromeBtn}>
+            <Text style={styles.chromeBtnText}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerCrumb} numberOfLines={1}>
-            Arène
-          </Text>
-          <TouchableOpacity onPress={handleShare} style={styles.iconBtn}>
-            <Text style={styles.iconBtnText}>↗</Text>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity onPress={handleShare} style={styles.chromeBtn}>
+            <Text style={styles.chromeBtnText}>↗</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,105 +195,126 @@ export default function DeckViewScreen() {
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                onRefresh={() => { setRefreshing(true); fetchAll(); }}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  fetchAll();
+                }}
                 tintColor={colors.gold}
               />
             }>
-            <HeroTitle
-              kicker="— Arène ouverte —"
-              title={deck.name}
-              sub={`par ${isOwner ? 'toi' : deck.user?.username || 'Anonyme'} · ${mainCount} · ${extraCount}`}
-            />
+            {/* Header du deck : kicker + titre + author line + like/comment badges */}
+            <View style={styles.deckHeader}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.kicker}>
+                  {viewMode === 'arena' ? '— Arène · Variante A —' : '— Grimoire · Variante B —'}
+                </Text>
+                <Text style={styles.title} numberOfLines={2}>
+                  {deck.name}
+                </Text>
+                <Text style={styles.authorLine}>
+                  par <Text style={{ color: colors.violet }}>@{authorName}</Text>
+                  {viewMode === 'list'
+                    ? ` · ${mainCount} · ${extraCount} · 0`
+                    : ' · mis à jour récemment'}
+                </Text>
+              </View>
 
-            {/* Meta badges */}
-            <View style={styles.metaBadges}>
-              {deck.is_public && <Badge label="Public" />}
-              {deck.is_shared && <Badge label="Partagé" />}
-              {deck.respect_banlist && <Badge label="Banlist" />}
+              <View style={styles.actionsCol}>
+                <TouchableOpacity
+                  onPress={handleReaction}
+                  disabled={reacting}
+                  style={[
+                    styles.likeBtn,
+                    liked && {
+                      borderColor: colors.magenta,
+                      backgroundColor: 'rgba(255,46,136,0.16)',
+                    },
+                  ]}>
+                  <Text
+                    style={[
+                      styles.likeText,
+                      { color: liked ? colors.magenta : colors.textMuted, fontSize: 12 },
+                    ]}>
+                    ♥ {deck.likes_count ?? 0}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.commentBadge}>
+                  <Text style={[styles.likeText, { fontSize: 12 }]}>◦ {comments.length}</Text>
+                </View>
+              </View>
             </View>
 
-            {/* Stats */}
-            <View style={styles.statsGrid}>
-              <StatCell label="Main" value={mainCount} />
-              <StatCell label="Extra" value={extraCount} />
-              <StatCell label="Aimés" value={deck.likes_count ?? 0} />
-              <StatCell label="Voix" value={deck.comments_count ?? comments.length} />
+            {/* Toggle Arène / Liste — bouton biseauté droite (PhoneFrame l.257 / l.320) */}
+            <View style={styles.viewToggleRow}>
+              <TouchableOpacity
+                onPress={() => setViewMode(viewMode === 'arena' ? 'list' : 'arena')}
+                style={styles.viewToggle}>
+                <Text style={styles.viewToggleText}>
+                  {viewMode === 'arena' ? 'Vue liste →' : '← Vue arène'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Reactions */}
-            <View style={styles.reactionsRow}>
-              <CyberButton
-                label={deck.user_reaction === 'like' ? "J'aime · Oui" : "J'aime"}
-                variant={deck.user_reaction === 'like' ? 'primary' : 'ghost'}
-                onPress={() => handleReaction('like')}
-                disabled={reacting}
-                block
-                style={{ flex: 1 }}
-                cutColor={colors.bg}
+            {/* ═══ VUE ARÈNE ═══ */}
+            {viewMode === 'arena' ? (
+              <ArenaBlock
+                mainCount={mainCount}
+                extraCount={extraCount}
+                mainDeck={deck.main_deck || []}
+                colors={colors}
+                styles={styles}
               />
-              <CyberButton
-                label={deck.user_reaction === 'dislike' ? 'Pas fan' : 'Pas fan'}
-                variant={deck.user_reaction === 'dislike' ? 'danger' : 'ghost'}
-                onPress={() => handleReaction('dislike')}
-                disabled={reacting}
-                block
-                style={{ flex: 1 }}
-                cutColor={colors.bg}
+            ) : (
+              <ListBlock
+                mainCount={mainCount}
+                extraCount={extraCount}
+                deck={deck}
+                colors={colors}
+                styles={styles}
               />
+            )}
+
+            {/* CTA Copier + toggle secondaire */}
+            <View style={styles.ctaRow}>
+              <View style={{ flex: 1 }}>
+                <CyberButton
+                  label="Copier ce deck"
+                  variant="primary"
+                  block
+                  cutColor={colors.bg}
+                  onPress={() =>
+                    Alert.alert('— À venir —', 'La copie de deck arrive bientôt.')
+                  }
+                />
+              </View>
             </View>
 
-            {/* Owner actions */}
             {isOwner && (
-              <CyberButton
-                label="Éditer le deck"
-                variant="primary"
-                onPress={() => router.push(`/deck/edit/${deck.id}`)}
-                block
-                cutColor={colors.bg}
-              />
+              <View style={{ marginTop: spacing[3] }}>
+                <CyberButton
+                  label="Éditer le grimoire"
+                  variant="secondary"
+                  onPress={() => router.push(`/deck/edit/${deck.id}`)}
+                  block
+                  cutColor={colors.bg}
+                />
+              </View>
             )}
 
-            {/* Main deck */}
-            <SectionTitle label="Deck principal" count={mainCount} />
-            <View style={styles.cardGrid}>
-              {(deck.main_deck || []).map((dc) => (
-                <View key={dc.id} style={styles.cardCell}>
-                  <CardTile
-                    uri={dc.card?.card_images?.[0]?.image_url_small}
-                    name={dc.card?.name}
-                    quantity={dc.quantity}
-                  />
-                </View>
-              ))}
-              {mainCount === 0 && <Text style={styles.emptyDeck}>Deck principal vide.</Text>}
+            {/* ═══ COMMENTAIRES ═══ */}
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>Commentaires</Text>
+              <Text style={styles.sectionCount}>{comments.length}</Text>
+              <View style={styles.sectionSep} />
             </View>
 
-            {/* Extra deck */}
-            {(deck.extra_deck || []).length > 0 && (
-              <>
-                <SectionTitle label="Extra deck" count={extraCount} />
-                <View style={styles.cardGrid}>
-                  {deck.extra_deck!.map((dc) => (
-                    <View key={dc.id} style={styles.cardCell}>
-                      <CardTile
-                        uri={dc.card?.card_images?.[0]?.image_url_small}
-                        name={dc.card?.name}
-                        quantity={dc.quantity}
-                      />
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Comments */}
-            <SectionTitle label="Commentaires" count={comments.length} />
             <View style={styles.commentInputRow}>
               <TextInput
                 style={styles.commentInput}
                 value={commentText}
                 onChangeText={setCommentText}
-                placeholder="Ajouter un commentaire…"
+                placeholder="Laisser une offrande…"
                 placeholderTextColor={colors.textMuted}
                 multiline
                 editable={!postingComment}
@@ -295,13 +331,15 @@ export default function DeckViewScreen() {
             </View>
 
             {comments.length === 0 ? (
-              <Text style={styles.noComments}>Aucun commentaire pour l'instant.</Text>
+              <Text style={styles.noComments}>Aucun commentaire pour l&apos;instant.</Text>
             ) : (
               comments.map((c) => (
                 <View key={c.id} style={styles.commentBox}>
                   <View style={styles.commentAccent} pointerEvents="none" />
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentAuthor}>{c.user?.username || 'Anonyme'}</Text>
+                  <View style={styles.commentHeaderRow}>
+                    <Text style={styles.commentAuthor}>
+                      @{c.user?.username || 'anonyme'}
+                    </Text>
                     <Text style={styles.commentDate}>
                       {new Date(c.created_at).toLocaleDateString('fr-FR')}
                     </Text>
@@ -323,190 +361,658 @@ export default function DeckViewScreen() {
   );
 }
 
-const Badge = ({ label }: { label: string }) => {
-  const styles = useThemedStyles(makeStyles);
-  return (
-  <View style={styles.badge}>
-    <Text style={styles.badgeText}>{label}</Text>
-  </View>
-  );
-};
+// ═══════════════════════════════════════════════════════════════════════════
+// Blocs internes — Arena et List
+// ═══════════════════════════════════════════════════════════════════════════
 
-const StatCell = ({ label, value }: { label: string; value: number }) => {
-  const styles = useThemedStyles(makeStyles);
+/**
+ * Bloc Arène — plateau 3D + Cartes clés horizontales + 3 compteurs biseautés.
+ * Le plateau perspective 3D est mis en placeholder « — À venir » (React Native n'a
+ * pas d'équivalent de `perspective+rotateX+transform-origin` avec le rendu attendu).
+ */
+function ArenaBlock({
+  mainCount,
+  extraCount,
+  mainDeck,
+  colors,
+  styles,
+}: {
+  mainCount: number;
+  extraCount: number;
+  mainDeck: DeckCard[];
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  styles: ReturnType<typeof makeStyles>;
+}) {
   return (
-  <View style={styles.statCell}>
-    <View style={styles.statAccent} pointerEvents="none" />
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statValue}>{value}</Text>
-  </View>
-  );
-};
+    <>
+      {/* Plateau — placeholder « À venir » avec 5+5 zones stylées */}
+      <View style={styles.arenaBoard}>
+        <View style={styles.arenaGrid}>
+          <View style={styles.arenaGridLines} pointerEvents="none" />
 
-const SectionTitle = ({ label, count }: { label: string; count: number }) => {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.sectionRow}>
-      <Text style={styles.sectionTitle}>{label}</Text>
-      <Text style={styles.sectionCount}>{count}</Text>
-      <View style={styles.sectionSep} />
-    </View>
+          {/* Back row — 3 Monstres actives + 2 vides */}
+          <View style={styles.arenaZoneRow}>
+            {[true, true, true, false, false].map((filled, i) => (
+              <View
+                key={`b-${i}`}
+                style={[
+                  styles.arenaZone,
+                  filled
+                    ? { borderColor: colors.rarityUltra, backgroundColor: colors.panel2 }
+                    : styles.arenaZoneEmpty,
+                ]}>
+                {filled && <Text style={styles.arenaZoneLabel}>M</Text>}
+              </View>
+            ))}
+          </View>
+          {/* Front row — 2 Magies + 1 vide + 1 Piège + 1 vide */}
+          <View style={styles.arenaZoneRow}>
+            {[
+              { filled: true, color: colors.raritySuper, label: 'S' },
+              { filled: true, color: colors.raritySuper, label: 'S' },
+              { filled: false, color: null, label: '' },
+              { filled: true, color: colors.raritySecret2, label: 'T' },
+              { filled: false, color: null, label: '' },
+            ].map((z, i) => (
+              <View
+                key={`f-${i}`}
+                style={[
+                  styles.arenaZone,
+                  z.filled
+                    ? { borderColor: z.color!, backgroundColor: colors.panel2 }
+                    : styles.arenaZoneEmpty,
+                ]}>
+                {z.filled && <Text style={styles.arenaZoneLabel}>{z.label}</Text>}
+              </View>
+            ))}
+          </View>
+
+          {/* Extra / Terrain / Cimetière row */}
+          <View style={styles.arenaBottomRow}>
+            <View style={[styles.arenaTag, { borderColor: colors.rarityRare }]}>
+              <Text style={[styles.arenaTagText, { color: colors.cyan }]}>EXTRA</Text>
+            </View>
+            <View style={[styles.arenaTag, { borderColor: colors.rarityUltra }]}>
+              <Text style={[styles.arenaTagText, { color: colors.goldDim }]}>TERRAIN</Text>
+            </View>
+            <View style={[styles.arenaTag, { borderColor: colors.raritySecret1 }]}>
+              <Text style={[styles.arenaTagText, { color: colors.magenta }]}>CIM.</Text>
+            </View>
+          </View>
+
+          {/* 3 compteurs biseautés Main / Extra / Side */}
+          <View style={styles.arenaCounters}>
+            <View style={styles.arenaCounter}>
+              <Text style={styles.arenaCounterLabel}>Main</Text>
+              <Text style={[styles.arenaCounterVal, { color: colors.gold }]}>{mainCount}</Text>
+            </View>
+            <View style={styles.arenaCounter}>
+              <Text style={styles.arenaCounterLabel}>Extra</Text>
+              <Text style={[styles.arenaCounterVal, { color: colors.violet }]}>{extraCount}</Text>
+            </View>
+            <View style={styles.arenaCounter}>
+              <Text style={styles.arenaCounterLabel}>Side</Text>
+              <Text style={[styles.arenaCounterVal, { color: colors.cyan }]}>—</Text>
+            </View>
+          </View>
+
+          <Text style={styles.arenaComingSoon}>— Plateau 3D interactif à venir —</Text>
+        </View>
+      </View>
+
+      {/* Cartes clés — horizontal scroll */}
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>Cartes clés</Text>
+        <View style={styles.sectionSep} />
+      </View>
+      {mainDeck.length === 0 ? (
+        <Text style={styles.emptyDeck}>Deck principal vide.</Text>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingBottom: 6 }}>
+          {mainDeck.slice(0, 8).map((dc) => (
+            <View key={dc.id} style={styles.keyCardWrap}>
+              <View style={styles.keyCardArt}>
+                {dc.card?.card_images?.[0]?.image_url_small ? (
+                  <Image
+                    source={{ uri: dc.card.card_images[0].image_url_small }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Image
+                    source={CARD_ICON}
+                    style={{ width: '55%', height: '55%', tintColor: '#F5C518', opacity: 0.3 }}
+                    resizeMode="contain"
+                  />
+                )}
+                <View style={styles.keyCardQty}>
+                  <Text style={styles.keyCardQtyText}>×{dc.quantity}</Text>
+                </View>
+              </View>
+              <Text style={styles.keyCardName} numberOfLines={1}>
+                {dc.card?.name || '—'}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+    </>
   );
-};
+}
+
+/**
+ * Bloc Liste — jauge répartition + sections rows.
+ * La jauge de répartition Monstres/Magies/Pièges est en « — À venir » : le modèle
+ * DeckCard n'expose pas encore le type agrégé côté client.
+ */
+function ListBlock({
+  mainCount,
+  extraCount,
+  deck,
+  colors,
+  styles,
+}: {
+  mainCount: number;
+  extraCount: number;
+  deck: Deck;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const sections = [
+    { title: 'Deck principal', count: mainCount, rows: deck.main_deck || [], accent: colors.gold },
+    { title: 'Extra', count: extraCount, rows: deck.extra_deck || [], accent: colors.violet },
+  ];
+
+  return (
+    <>
+      {/* Jauge répartition biseautée */}
+      <View style={styles.repartitionBox}>
+        <View style={styles.repartitionHeader}>
+          <Text style={styles.repartitionLabel}>Répartition</Text>
+          <Text style={styles.repartitionValue}>{mainCount} / 40</Text>
+        </View>
+        <View style={styles.repartitionBar}>
+          <View style={[styles.repartitionSeg, { flex: 22, backgroundColor: colors.gold }]} />
+          <View style={[styles.repartitionSeg, { flex: 12, backgroundColor: colors.violet }]} />
+          <View style={[styles.repartitionSeg, { flex: 6, backgroundColor: colors.cyan }]} />
+        </View>
+        <View style={styles.repartitionLegend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.gold }]} />
+            <Text style={styles.legendText}>Monstres — À venir</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.violet }]} />
+            <Text style={styles.legendText}>Magies —</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.cyan }]} />
+            <Text style={styles.legendText}>Pièges —</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Sections avec rows biseautés (PhoneFrame l.292-311) */}
+      {sections.map((sec) => (
+        <View key={sec.title} style={{ marginTop: 20 }}>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>{sec.title}</Text>
+            <Text style={styles.sectionCount}>{sec.count}</Text>
+            <View style={styles.sectionSep} />
+          </View>
+          <View style={{ marginTop: 10, gap: 6 }}>
+            {sec.rows.length === 0 ? (
+              <Text style={styles.emptyDeck}>—</Text>
+            ) : (
+              sec.rows.map((row) => (
+                <View
+                  key={row.id}
+                  style={[styles.deckRow, { borderLeftColor: sec.accent }]}>
+                  <View style={styles.deckRowThumb}>
+                    {row.card?.card_images?.[0]?.image_url_small ? (
+                      <Image
+                        source={{ uri: row.card.card_images[0].image_url_small }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    ) : null}
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.deckRowName} numberOfLines={1}>
+                      {row.card?.name || `Carte #${row.card_id}`}
+                    </Text>
+                    <Text style={styles.deckRowMeta} numberOfLines={1}>
+                      {row.card?.type || '—'}
+                    </Text>
+                  </View>
+                  <Text style={styles.deckRowQty}>×{row.quantity}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      ))}
+    </>
+  );
+}
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  root: { flex: 1, backgroundColor: t.colors.bg },
-  container: { flex: 1, backgroundColor: 'transparent' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
-  },
-  headerCrumb: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '700',
-    color: t.colors.gold,
-    textAlign: 'center',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 22, color: t.colors.text },
-  body: { padding: spacing[3], gap: spacing[3], paddingBottom: spacing[7] },
-  metaBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[1],
-    marginTop: spacing[1],
-  },
-  badge: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    backgroundColor: t.colors.panel2,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: t.colors.textMuted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  statsGrid: { flexDirection: 'row', gap: spacing[2] },
-  statCell: {
-    flex: 1,
-    backgroundColor: t.colors.panel,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[2],
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  statAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: t.colors.gold,
-    opacity: 0.6,
-  },
-  statValue: { fontSize: 18, fontWeight: '700', color: t.colors.text, marginTop: 2 },
-  statLabel: {
-    fontSize: 9,
-    color: t.colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  reactionsRow: { flexDirection: 'row', gap: spacing[2] },
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginTop: spacing[3],
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: t.colors.gold,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  sectionCount: {
-    fontSize: 11,
-    color: t.colors.textMuted,
-    fontWeight: '700',
-  },
-  sectionSep: {
-    flex: 1,
-    height: 1,
-    backgroundColor: t.colors.border,
-  },
-  cardGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  cardCell: { width: '31%' },
-  emptyDeck: {
-    fontSize: 13,
-    color: t.colors.textMuted,
-    fontStyle: 'italic',
-    padding: spacing[3],
-  },
-  commentInputRow: { flexDirection: 'row', gap: spacing[2], alignItems: 'flex-end' },
-  commentInput: {
-    flex: 1,
-    backgroundColor: t.colors.panel,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderLeftWidth: 2,
-    borderLeftColor: t.colors.gold,
-    color: t.colors.text,
-    minHeight: 40,
-    maxHeight: 100,
-  },
-  noComments: {
-    fontSize: 13,
-    color: t.colors.textMuted,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: spacing[3],
-  },
-  commentBox: {
-    backgroundColor: t.colors.panel,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    gap: spacing[1],
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  commentAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 2,
-    backgroundColor: t.colors.violet,
-    opacity: 0.6,
-  },
-  commentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  commentAuthor: { fontSize: 13, fontWeight: '700', color: t.colors.text },
-  commentDate: { fontSize: 11, color: t.colors.textMuted, fontStyle: 'italic' },
-  commentText: { fontSize: 14, color: t.colors.text },
-  commentDelete: { fontSize: 11, color: t.colors.danger, marginTop: spacing[1], fontWeight: '600' },
-});
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    container: { flex: 1, backgroundColor: 'transparent' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    chromeHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    chromeBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chromeBtnText: { fontSize: 22, color: t.colors.text },
+    body: { padding: 18, paddingBottom: 96, gap: 6 },
+
+    // ─── Header du deck ─────────────────────────────
+    deckHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    kicker: {
+      fontFamily: 'serif',
+      fontStyle: 'italic',
+      fontSize: 10,
+      letterSpacing: 2.8,
+      color: t.colors.gold,
+      textTransform: 'uppercase',
+    },
+    title: {
+      marginTop: 4,
+      fontFamily: 'sans-serif',
+      fontSize: 22,
+      fontWeight: '900',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: t.colors.text,
+      lineHeight: 24,
+    },
+    authorLine: {
+      marginTop: 6,
+      fontSize: 12,
+      color: t.colors.textMuted,
+    },
+    actionsCol: {
+      gap: 6,
+      alignItems: 'flex-end',
+    },
+    likeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.panel,
+    },
+    likeText: {
+      fontFamily: 'sans-serif',
+      fontSize: 10,
+      fontWeight: '700',
+      color: t.colors.textMuted,
+    },
+    commentBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.panel,
+    },
+
+    // ─── Toggle vue ─────────────────────────────────
+    viewToggleRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 4,
+    },
+    viewToggle: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: t.colors.gold,
+      backgroundColor: 'rgba(245,197,24,0.06)',
+    },
+    viewToggleText: {
+      fontFamily: 'sans-serif',
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      color: t.colors.text,
+    },
+
+    // ─── Plateau arène ──────────────────────────────
+    arenaBoard: {
+      marginTop: 18,
+      padding: 12,
+      backgroundColor: t.colors.bgElev,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    arenaGrid: {
+      gap: 9,
+    },
+    arenaGridLines: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'transparent',
+    },
+    arenaZoneRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 7,
+    },
+    arenaZone: {
+      width: 38,
+      height: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
+    arenaZoneEmpty: {
+      borderStyle: 'dashed',
+      borderColor: 'rgba(245,197,24,0.22)',
+      backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    arenaZoneLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 8,
+      color: t.colors.textMuted,
+      letterSpacing: 0.8,
+      opacity: 0.75,
+    },
+    arenaBottomRow: {
+      marginTop: 4,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    arenaTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+    },
+    arenaTagText: {
+      fontFamily: 'sans-serif',
+      fontSize: 7,
+      letterSpacing: 0.8,
+      fontWeight: '700',
+    },
+    arenaCounters: {
+      marginTop: 8,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    arenaCounter: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: t.colors.panel,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      alignItems: 'center',
+    },
+    arenaCounterLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 8,
+      letterSpacing: 1.6,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    arenaCounterVal: {
+      fontFamily: 'sans-serif',
+      fontSize: 15,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    arenaComingSoon: {
+      marginTop: 8,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      fontSize: 10,
+      color: t.colors.textMuted,
+      letterSpacing: 1,
+    },
+
+    // ─── Cartes clés (arena) ────────────────────────
+    keyCardWrap: {
+      width: 88,
+    },
+    keyCardArt: {
+      width: 88,
+      height: 124,
+      backgroundColor: t.colors.panel2,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    keyCardQty: {
+      position: 'absolute',
+      top: 5,
+      right: 5,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      backgroundColor: t.colors.bg,
+      borderWidth: 1,
+      borderColor: t.colors.gold,
+    },
+    keyCardQtyText: {
+      fontFamily: 'sans-serif',
+      fontSize: 8,
+      fontWeight: '700',
+      color: t.colors.gold,
+    },
+    keyCardName: {
+      marginTop: 5,
+      fontFamily: 'sans-serif',
+      fontSize: 8,
+      color: t.colors.text,
+    },
+
+    // ─── Jauge répartition (list) ───────────────────
+    repartitionBox: {
+      marginTop: 16,
+      padding: 12,
+      backgroundColor: t.colors.panel,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+    },
+    repartitionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    repartitionLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 9,
+      letterSpacing: 1.6,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    repartitionValue: {
+      fontFamily: 'sans-serif',
+      fontSize: 9,
+      color: t.colors.gold,
+      fontWeight: '700',
+    },
+    repartitionBar: {
+      marginTop: 8,
+      height: 8,
+      flexDirection: 'row',
+      gap: 2,
+    },
+    repartitionSeg: {
+      opacity: 0.9,
+    },
+    repartitionLegend: {
+      marginTop: 8,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    legendDot: { width: 8, height: 8 },
+    legendText: { fontSize: 11, color: t.colors.textMuted },
+
+    // ─── Rows (list) ────────────────────────────────
+    deckRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      backgroundColor: t.colors.bgElev,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderLeftWidth: 2,
+    },
+    deckRowThumb: {
+      width: 24,
+      height: 34,
+      backgroundColor: t.colors.panel2,
+      overflow: 'hidden',
+    },
+    deckRowName: {
+      fontFamily: 'sans-serif',
+      fontSize: 10,
+      fontWeight: '600',
+      color: t.colors.text,
+    },
+    deckRowMeta: {
+      fontSize: 10,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+    deckRowQty: {
+      fontFamily: 'sans-serif',
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.colors.gold,
+    },
+
+    // ─── Sections + CTA + comments ──────────────────
+    sectionRow: {
+      marginTop: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    sectionTitle: {
+      fontFamily: 'sans-serif',
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.colors.gold,
+      letterSpacing: 1.6,
+      textTransform: 'uppercase',
+    },
+    sectionCount: {
+      fontFamily: 'sans-serif',
+      fontSize: 11,
+      color: t.colors.textMuted,
+      fontWeight: '700',
+    },
+    sectionSep: { flex: 1, height: 1, backgroundColor: t.colors.border },
+    ctaRow: { marginTop: 18, flexDirection: 'row', gap: 10 },
+    emptyDeck: {
+      fontSize: 13,
+      color: t.colors.textMuted,
+      fontStyle: 'italic',
+      padding: 12,
+    },
+    commentInputRow: {
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'flex-end',
+    },
+    commentInput: {
+      flex: 1,
+      backgroundColor: t.colors.panel,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 14,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderLeftWidth: 2,
+      borderLeftColor: t.colors.violet,
+      color: t.colors.text,
+      minHeight: 40,
+      maxHeight: 100,
+    },
+    noComments: {
+      fontSize: 13,
+      color: t.colors.textMuted,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      padding: 12,
+    },
+    commentBox: {
+      padding: 12,
+      backgroundColor: t.colors.panel,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      gap: 4,
+      position: 'relative',
+      overflow: 'hidden',
+      marginTop: spacing[2],
+    },
+    commentAccent: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 2,
+      backgroundColor: t.colors.violet,
+      opacity: 0.7,
+    },
+    commentHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    commentAuthor: {
+      fontFamily: 'sans-serif',
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: t.colors.violet,
+      fontWeight: '700',
+    },
+    commentDate: {
+      fontSize: 11,
+      color: t.colors.textMuted,
+      fontStyle: 'italic',
+    },
+    commentText: { fontSize: 14, color: t.colors.text, lineHeight: 20 },
+    commentDelete: {
+      fontSize: 11,
+      color: t.colors.danger,
+      marginTop: 4,
+      fontWeight: '600',
+    },
+  });

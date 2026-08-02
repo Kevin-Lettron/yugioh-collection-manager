@@ -8,20 +8,28 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
+  Image,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
 import { AppBackground } from '@/components/decor/AppBackground';
-import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
-import { HeroTitle } from '@/components/decor/HeroTitle';
 import { spacing } from '@/theme/palette';
 
+const GLYPH_EYE = require('@/assets/images/decor/glyph-eye.png');
+
+/**
+ * Register — sc-if `isAuth` de PhoneFrame.dc.html (l.97-127, variante register).
+ * Layout centré, 3 champs (pseudo / courriel / sceau), CTA « Sceller mon compte ».
+ * Le titre est sur 2 lignes « Ouvrir\nson temple ».
+ */
 export default function RegisterScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
+  const router = useRouter();
   const { register } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -40,8 +48,7 @@ export default function RegisterScreen() {
     try {
       await register(username.trim(), email.trim(), password);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.error || err?.message || 'Erreur d’inscription';
+      const msg = err?.response?.data?.error || err?.message || 'Erreur d’inscription';
       Alert.alert('Inscription échouée', msg);
     } finally {
       setSubmitting(false);
@@ -57,123 +64,238 @@ export default function RegisterScreen() {
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled">
-          <View style={styles.heroWrap}>
-            <HeroTitle
-              kicker="— Nouveau Gardien —"
-              title={'Ouvrir\nson temple'}
-              sub="Sceller ton compte et bâtir ta vitrine."
-            />
+          <View style={styles.hero}>
+            <MillenniumLogo color={colors.gold} size={52} />
+            <Text style={styles.kicker}>— Nouveau gardien —</Text>
+            <Text style={styles.title}>Ouvrir{'\n'}son temple</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.label}>Pseudo de duelliste</Text>
-            <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="kaiba_pa"
-              placeholderTextColor={colors.textMuted}
-              editable={!submitting}
-            />
-
-            <Text style={styles.label}>Courriel</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              placeholder="toi@exemple.fr"
-              placeholderTextColor={colors.textMuted}
-              editable={!submitting}
-            />
-
-            <Text style={styles.label}>Sceau (mot de passe)</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-              editable={!submitting}
-              onSubmitEditing={handleSubmit}
-            />
-            <Text style={styles.hint}>
-              10 caractères min, combine au moins 3 des 4 types :
-              minuscule, majuscule, chiffre, spécial.
-            </Text>
-
-            <CyberButton
-              label={submitting ? 'Invocation…' : 'Sceller mon compte'}
-              onPress={handleSubmit}
-              disabled={!canSubmit}
-              loading={submitting}
-              block
-              cutColor={colors.panel}
-              glitch
-            />
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Déjà un sanctuaire ?</Text>
-              <Link href="/(auth)/login" style={styles.footerLink}>
-                Entrer
-              </Link>
+          <View style={styles.fields}>
+            <View>
+              <Text style={styles.fieldLabel}>Pseudo de duelliste</Text>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="kaiba_pa"
+                placeholderTextColor={colors.textMuted}
+                editable={!submitting}
+              />
             </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Courriel</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                placeholder="toi@exemple.fr"
+                placeholderTextColor={colors.textMuted}
+                editable={!submitting}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Sceau (mot de passe)</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                editable={!submitting}
+                onSubmitEditing={handleSubmit}
+              />
+              <Text style={styles.hint}>
+                10 caractères min, combine au moins 3 des 4 types (minuscule, majuscule,
+                chiffre, spécial).
+              </Text>
+            </View>
+
+            <View style={{ marginTop: 8 }}>
+              <CyberButton
+                label={submitting ? 'Invocation…' : 'Sceller mon compte'}
+                onPress={handleSubmit}
+                disabled={!canSubmit}
+                loading={submitting}
+                block
+                cutColor={colors.bg}
+                glitch
+              />
+            </View>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Image
+                source={GLYPH_EYE}
+                style={{ width: 16, height: 16, tintColor: colors.goldDim, opacity: 0.8 }}
+                resizeMode="contain"
+              />
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.discordBtn}
+              onPress={() =>
+                Alert.alert('— À venir —', 'La connexion Discord arrive bientôt.')
+              }>
+              <Text style={styles.discordText}>Continuer avec Discord</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ marginTop: 4, alignSelf: 'center' }}
+              onPress={() => router.push('/(auth)/login')}>
+              <Text style={styles.switchLink}>J&apos;ai déjà un compte — entrer</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <CornerOrnaments />
+    </View>
+  );
+}
+
+/** Logo Millennium simplifié — triangle inversé (borderTop) + point central noir. */
+function MillenniumLogo({ color, size = 52 }: { color: string; size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: color,
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 0 },
+      }}>
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: size / 2,
+          borderLeftColor: 'transparent',
+          borderRightWidth: size / 2,
+          borderRightColor: 'transparent',
+          borderTopWidth: (size * 22) / 26,
+          borderTopColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: size * 0.24,
+          alignSelf: 'center',
+          width: size * 0.15,
+          height: size * 0.15,
+          borderRadius: (size * 0.15) / 2,
+          backgroundColor: '#0B0906',
+        }}
+      />
     </View>
   );
 }
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  root: { flex: 1, backgroundColor: t.colors.bg },
-  container: { flex: 1, backgroundColor: 'transparent' },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing[5] },
-  heroWrap: {
-    alignItems: 'center',
-    marginBottom: spacing[5],
-  },
-  card: {
-    backgroundColor: t.colors.panel,
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    gap: spacing[3],
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: t.colors.textMuted,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginTop: spacing[2],
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderLeftWidth: 2,
-    borderLeftColor: t.colors.gold,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    fontSize: 15,
-    backgroundColor: t.colors.bgElev,
-    color: t.colors.text,
-  },
-  hint: { fontSize: 12, color: t.colors.textMuted },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing[2],
-    marginTop: spacing[4],
-  },
-  footerText: { color: t.colors.textMuted, fontSize: 14 },
-  footerLink: { color: t.colors.gold, fontSize: 14, fontWeight: '600' },
-});
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    container: { flex: 1, backgroundColor: 'transparent' },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 26,
+      paddingVertical: spacing[5],
+    },
+    hero: {
+      alignItems: 'center',
+      marginBottom: 26,
+    },
+    kicker: {
+      marginTop: 14,
+      fontFamily: 'serif',
+      fontStyle: 'italic',
+      fontSize: 10,
+      letterSpacing: 2.8,
+      color: t.colors.gold,
+      textTransform: 'uppercase',
+    },
+    title: {
+      marginTop: 6,
+      fontFamily: 'sans-serif',
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: t.colors.text,
+      textAlign: 'center',
+      lineHeight: 30,
+    },
+    fields: { gap: 12 },
+    fieldLabel: {
+      fontFamily: 'sans-serif',
+      fontSize: 9,
+      letterSpacing: 2,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+      marginBottom: 5,
+      fontWeight: '600',
+    },
+    input: {
+      width: '100%',
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      backgroundColor: t.colors.bgElev,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderLeftWidth: 2,
+      borderLeftColor: t.colors.gold,
+      color: t.colors.text,
+      fontSize: 15,
+    },
+    hint: {
+      marginTop: 6,
+      fontSize: 11,
+      color: t.colors.textMuted,
+      lineHeight: 15,
+    },
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginVertical: 6,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: t.colors.border,
+    },
+    discordBtn: {
+      width: '100%',
+      height: 46,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.panel,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    discordText: {
+      fontFamily: 'sans-serif',
+      fontSize: 11,
+      fontWeight: '600',
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+      color: t.colors.textMuted,
+    },
+    switchLink: {
+      color: t.colors.textMuted,
+      fontSize: 13,
+      textDecorationLine: 'underline',
+      textDecorationColor: t.colors.goldDim,
+    },
+  });

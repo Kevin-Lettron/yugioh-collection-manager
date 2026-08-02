@@ -5,11 +5,11 @@ import { UserCard, CollectionFilters, Card, CardLanguage } from '../../../shared
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
 import CardTile from '../components/decor/CardTile';
+import { GlyphPyramid } from '../components/decor/Glyphs';
+import { SearchIcon, ScanIcon, AddIcon } from '../components/decor/Icons';
 
 interface CardSet {
   set_name: string;
@@ -30,21 +30,41 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   KR: 'Coréen',
 };
 
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_STATS = 'polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px))';
+const CUT_CHIP = 'polygon(0 0,calc(100% - 8px) 0,100% 100%,8px 100%)';
+const CUT_INPUT = 'polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%)';
+
+const CHIPS = [
+  { label: 'Toutes', filter: {} },
+  { label: 'Monstres', filter: { type: 'Effect Monster' } },
+  { label: 'Magies', filter: { type: 'Spell Card' } },
+  { label: 'Pièges', filter: { type: 'Trap Card' } },
+  { label: 'Extra Deck', filter: { type: 'Fusion Monster' } },
+  { label: 'Récentes', filter: {} },
+  { label: 'Ultra rares ↑', filter: { rarity: 'Ultra Rare' } },
+];
+
+/**
+ * Collection — pixel-perfect `isCollection` (DesktopFrame l.147-209).
+ * Header kicker or + h1 54px dégradé, 4 stats bar biseautée, search+CTA+Scanner,
+ * chips scroll, grid de card-tiles avec halo au sol.
+ */
 const Collection = () => {
   const [cards, setCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
+  const [uniqueCards, setUniqueCards] = useState(0);
 
-  // Filters
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
-  const [attribute, setAttribute] = useState('');
   const [rarity, setRarity] = useState('');
+  const [chipIdx, setChipIdx] = useState(0);
   const debouncedSearch = useDebounce(search, 500);
 
-  // Add card modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchCode, setSearchCode] = useState('');
   const [searchedCard, setSearchedCard] = useState<Card | null>(null);
@@ -55,8 +75,6 @@ const Collection = () => {
   const [quantity, setQuantity] = useState(1);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
-
-  // Card detail modal
   const [selectedCardDetail, setSelectedCardDetail] = useState<UserCard | null>(null);
 
   const loadMoreRef = useInfiniteScroll({
@@ -67,30 +85,24 @@ const Collection = () => {
 
   useEffect(() => {
     fetchCards(page);
-  }, [page, debouncedSearch, type, attribute, rarity]);
+  }, [page, debouncedSearch, type, rarity]);
 
   const fetchCards = async (pageNum: number) => {
     setLoading(true);
     try {
       const params: CollectionFilters = {
         page: pageNum,
-        limit: 20,
+        limit: 24,
         search: debouncedSearch || undefined,
         type: type || undefined,
-        attribute: attribute || undefined,
         rarity: rarity || undefined,
       };
-
       const response = await api.get('/collection/cards', { params });
       const { data, total, total_pages } = response.data;
-
-      if (pageNum === 1) {
-        setCards(data);
-      } else {
-        setCards((prev) => [...prev, ...data]);
-      }
-
+      if (pageNum === 1) setCards(data);
+      else setCards((prev) => [...prev, ...data]);
       setTotalCards(total);
+      setUniqueCards(response.data.unique_count ?? data.length);
       setHasMore(pageNum < total_pages);
     } catch (error) {
       console.error('Failed to fetch cards:', error);
@@ -99,7 +111,11 @@ const Collection = () => {
     }
   };
 
-  const handleFilterChange = () => {
+  const applyChip = (i: number) => {
+    setChipIdx(i);
+    const f = CHIPS[i].filter as any;
+    setType(f.type || '');
+    setRarity(f.rarity || '');
     setPage(1);
     setCards([]);
     setHasMore(true);
@@ -110,7 +126,6 @@ const Collection = () => {
       setSearchError('Entrez un ID de carte ou un Code Set');
       return;
     }
-
     setSearchLoading(true);
     setSearchError('');
     setSearchedCard(null);
@@ -118,24 +133,15 @@ const Collection = () => {
     setSelectedSet('');
     setSelectedRarity('');
     setSelectedLanguage('EN');
-
     try {
       const response = await api.get('/collection/search', {
         params: { code: searchCode.trim() },
       });
-
       const { card, matchedSet, availableSets: sets, detectedLanguage, originalSetCode } = response.data;
       setSearchedCard(card);
       setAvailableSets(sets || []);
-
-      // Auto-select language from detected set code
-      if (detectedLanguage) {
-        setSelectedLanguage(detectedLanguage as CardLanguage);
-      }
-
-      // Auto-select set and rarity if found via set code
+      if (detectedLanguage) setSelectedLanguage(detectedLanguage as CardLanguage);
       if (originalSetCode && matchedSet) {
-        // Use the ORIGINAL set code entered by user (e.g., LDK2-FRK40 for French)
         setSelectedSet(originalSetCode);
         setSelectedRarity(matchedSet.set_rarity);
       } else if (matchedSet) {
@@ -146,30 +152,18 @@ const Collection = () => {
         setSelectedRarity(sets[0].set_rarity);
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Carte non trouvée';
-      setSearchError(message);
+      setSearchError(error.response?.data?.message || 'Carte non trouvée');
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleSetChange = (setCode: string) => {
-    setSelectedSet(setCode);
-    // Auto-select rarity for this set
-    const setInfo = availableSets.find((s) => s.set_code === setCode);
-    if (setInfo) {
-      setSelectedRarity(setInfo.set_rarity);
-    }
-  };
-
   const handleAddCard = async (e: FormEvent) => {
     e.preventDefault();
-
     if (!searchedCard || !selectedSet || !selectedRarity) {
-      toast.error('Veuillez rechercher une carte et sélectionner le set/rareté');
+      toast.error('Recherche une carte et choisis set + rareté');
       return;
     }
-
     try {
       await api.post('/collection/cards/add', {
         card_code: searchedCard.card_id,
@@ -178,16 +172,12 @@ const Collection = () => {
         language: selectedLanguage,
         quantity,
       });
-
-      toast.success(`Carte ajoutée à la collection ! (${LANGUAGE_LABELS[selectedLanguage]})`);
+      toast.success(`Carte ajoutée (${LANGUAGE_LABELS[selectedLanguage]})`);
       resetAddModal();
-
-      // Refresh collection
       setPage(1);
       fetchCards(1);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Échec de l\'ajout de la carte';
-      toast.error(message);
+      toast.error(error.response?.data?.message || "Échec de l'ajout");
     }
   };
 
@@ -204,682 +194,781 @@ const Collection = () => {
   };
 
   const handleRemoveCard = async (cardId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir retirer cette carte de votre collection ?')) {
-      return;
-    }
-
+    if (!confirm('Retirer cette carte de la collection ?')) return;
     try {
       await api.delete(`/collection/cards/${cardId}`);
-      toast.success('Carte retirée de la collection');
-      setCards((prev) => prev.filter((card) => card.id !== cardId));
+      toast.success('Carte retirée');
+      setCards((prev) => prev.filter((c) => c.id !== cardId));
       setTotalCards((prev) => prev - 1);
     } catch (error) {
-      console.error('Failed to remove card:', error);
+      console.error(error);
     }
   };
 
-  const handleUpdateQuantity = async (cardId: number, newQuantity: number) => {
-    if (newQuantity < 1) {
-      handleRemoveCard(cardId);
-      return;
-    }
-
-    try {
-      await api.put(`/collection/cards/${cardId}/quantity`, { quantity: newQuantity });
-      setCards((prev) =>
-        prev.map((card) => (card.id === cardId ? { ...card, quantity: newQuantity } : card))
-      );
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
-    }
-  };
+  const stats = [
+    {
+      label: 'Cartes totales',
+      value: totalCards.toLocaleString('fr-FR'),
+      trend: '— À venir',
+      accent: '#F5C518',
+    },
+    {
+      label: 'Cartes uniques',
+      value: uniqueCards.toLocaleString('fr-FR'),
+      trend: '',
+      accent: '#F5EFE0',
+    },
+    {
+      label: 'Ultra rares +',
+      value: '— À venir',
+      trend: '',
+      accent: '#F5EFE0',
+    },
+    {
+      label: 'Valeur estimée',
+      value: '— À venir',
+      trend: '',
+      accent: '#F5EFE0',
+    },
+  ];
 
   return (
-    <div className="min-h-screen relative">
+    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
-
-      {/* Navigation */}
       <AppNavbar />
 
-      {/* Main Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div style={{ position: 'relative', zIndex: 20, padding: '46px 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
-          <HeroTitle
-            kicker="— Vitrine du Millénium —"
-            title="Ma Collection"
-            sub={
-              totalCards > 0
-                ? `${totalCards.toLocaleString('fr-FR')} carte${totalCards > 1 ? 's' : ''} rassemblée${totalCards > 1 ? 's' : ''}`
-                : 'Votre sanctuaire est encore vide'
-            }
+        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid #3A2E1C' }}>
+          <GlyphPyramid
+            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: '#F5C518', opacity: 0.07 }}
           />
-          <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="lg" glitch onClick={() => setShowAddModal(true)}>
-              + Ajouter une carte
-            </Button>
+          <div
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: 'italic',
+              fontSize: 12,
+              letterSpacing: '0.32em',
+              color: '#F5C518',
+              textTransform: 'uppercase',
+            }}>
+            — Vitrine du Millénium —
           </div>
-        </div>
+          <h1
+            style={{
+              margin: '10px 0 0',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 'clamp(38px, 5vw, 54px)',
+              fontWeight: 900,
+              lineHeight: 0.96,
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+              background: 'linear-gradient(180deg,#F5EFE0 25%,#C29A0F 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+              filter: 'drop-shadow(0 0 18px rgba(245,197,24,.16))',
+            }}>
+            Ma Collection
+          </h1>
+          <p style={{ margin: '14px 0 0', maxWidth: 560, fontSize: 17, lineHeight: 1.5, color: '#A99C86' }}>
+            {totalCards > 0
+              ? `${totalCards.toLocaleString('fr-FR')} cartes rassemblées, cataloguées, prêtes à être invoquées. Ton grimoire vivant de duelliste.`
+              : 'Ta vitrine est vide. Scanne, ajoute, catalogue.'}
+          </p>
 
-        {/* Filters */}
-        <div className="cyber-panel p-6 mb-6"
-             style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-700">Filtres</span>
-            {(search || type || attribute || rarity) && (
-              <button
-                onClick={() => {
-                  setSearch('');
-                  setType('');
-                  setAttribute('');
-                  setRarity('');
-                  handleFilterChange();
-                }}
-                className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Reset filtres
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  handleFilterChange();
-                }}
-                placeholder="Nom de la carte..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-              <select
-                value={type}
-                onChange={(e) => {
-                  setType(e.target.value);
-                  handleFilterChange();
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">Tous les types</option>
-                <option value="Effect Monster">Monstre à Effet</option>
-                <option value="Normal Monster">Monstre Normal</option>
-                <option value="Spell Card">Carte Magie</option>
-                <option value="Trap Card">Carte Piège</option>
-                <option value="Fusion Monster">Monstre Fusion</option>
-                <option value="Synchro Monster">Monstre Synchro</option>
-                <option value="XYZ Monster">Monstre Xyz</option>
-                <option value="Link Monster">Monstre Lien</option>
-                <option value="Ritual Monster">Monstre Rituel</option>
-                <option value="Pendulum Effect Monster">Monstre Pendule à Effet</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Attribut</label>
-              <select
-                value={attribute}
-                onChange={(e) => {
-                  setAttribute(e.target.value);
-                  handleFilterChange();
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">Tous les attributs</option>
-                <option value="DARK">TÉNÈBRES</option>
-                <option value="LIGHT">LUMIÈRE</option>
-                <option value="EARTH">TERRE</option>
-                <option value="WATER">EAU</option>
-                <option value="FIRE">FEU</option>
-                <option value="WIND">VENT</option>
-                <option value="DIVINE">DIVIN</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rareté</label>
-              <select
-                value={rarity}
-                onChange={(e) => {
-                  setRarity(e.target.value);
-                  handleFilterChange();
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">Toutes les raretés</option>
-                <option value="Common">Common</option>
-                <option value="Short Print">Short Print</option>
-                <option value="Rare">Rare</option>
-                <option value="Super Rare">Super Rare</option>
-                <option value="Ultra Rare">Ultra Rare</option>
-                <option value="Secret Rare">Secret Rare</option>
-                <option value="Ultimate Rare">Ultimate Rare</option>
-                <option value="Ghost Rare">Ghost Rare</option>
-                <option value="Starlight Rare">Starlight Rare</option>
-                <option value="Collector's Rare">Collector's Rare</option>
-                <option value="Prismatic Secret Rare">Prismatic Secret Rare</option>
-                <option value="Platinum Secret Rare">Platinum Secret Rare</option>
-                <option value="Quarter Century Secret Rare">Quarter Century Secret Rare</option>
-                <option value="Gold Rare">Gold Rare</option>
-                <option value="Gold Secret Rare">Gold Secret Rare</option>
-                <option value="Premium Gold Rare">Premium Gold Rare</option>
-                <option value="Starfoil Rare">Starfoil Rare</option>
-                <option value="Mosaic Rare">Mosaic Rare</option>
-                <option value="Shatterfoil Rare">Shatterfoil Rare</option>
-                <option value="Duel Terminal Normal Parallel Rare">Duel Terminal Normal Parallel Rare</option>
-                <option value="Duel Terminal Rare Parallel Rare">Duel Terminal Rare Parallel Rare</option>
-                <option value="Duel Terminal Super Parallel Rare">Duel Terminal Super Parallel Rare</option>
-                <option value="Duel Terminal Ultra Parallel Rare">Duel Terminal Ultra Parallel Rare</option>
-                <option value="Parallel Rare">Parallel Rare</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-          {cards.map((userCard, i) => (
-            <div key={userCard.id} className="flex flex-col gap-2">
-              <CardTile
-                uri={userCard.card?.card_images?.[0]?.image_url_small}
-                name={userCard.card?.name}
-                rarity={userCard.rarity}
-                quantity={userCard.quantity}
-                language={userCard.language}
-                setCode={userCard.set_code}
-                index={i}
-                onClick={() => setSelectedCardDetail(userCard)}
-              />
-              {/* Quick actions under tile */}
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-1.5">
-                  <button
-                    aria-label="Diminuer la quantité"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUpdateQuantity(userCard.id, userCard.quantity - 1);
-                    }}
-                    className="w-6 h-6 flex items-center justify-center text-xs font-bold border transition-colors"
-                    style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-muted)',
-                      background: 'var(--panel)',
-                    }}
-                  >
-                    −
-                  </button>
-                  <button
-                    aria-label="Augmenter la quantité"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUpdateQuantity(userCard.id, userCard.quantity + 1);
-                    }}
-                    className="w-6 h-6 flex items-center justify-center text-xs font-bold border transition-colors"
-                    style={{
-                      borderColor: 'var(--gold-dim)',
-                      color: 'var(--gold)',
-                      background: 'var(--panel)',
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveCard(userCard.id);
+          {/* 4 stats biseautée */}
+          <div
+            style={{
+              marginTop: 26,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 1,
+              background: '#3A2E1C',
+              border: '1px solid #3A2E1C',
+              clipPath: CUT_STATS,
+            }}
+            className="max-md:!grid-cols-2">
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  padding: '18px 22px',
+                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 3,
+                    height: '100%',
+                    background: '#F5C518',
+                    opacity: 0.55,
                   }}
-                  className="text-xs uppercase tracking-wider transition-colors"
-                  style={{ color: 'var(--danger)', fontFamily: "'Orbitron', sans-serif" }}
-                >
-                  Retirer
-                </button>
+                />
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 9,
+                    letterSpacing: '0.2em',
+                    color: '#A99C86',
+                    textTransform: 'uppercase',
+                  }}>
+                  {s.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 30,
+                    fontWeight: 700,
+                    color: s.accent,
+                    fontVariantNumeric: 'tabular-nums',
+                    lineHeight: 1,
+                  }}>
+                  {s.value}
+                </span>
+                {s.trend && (
+                  <span style={{ fontSize: 12, color: '#6E6250', letterSpacing: '0.04em' }}>{s.trend}</span>
+                )}
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Barre search + CTA */}
+        <div style={{ marginTop: 28, display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 300px', position: 'relative', minWidth: 240 }}>
+            <SearchIcon
+              size={18}
+              className="absolute"
+            />
+            <div
+              style={{
+                position: 'absolute',
+                left: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#F5C518',
+                pointerEvents: 'none',
+              }}>
+              <SearchIcon size={18} />
             </div>
+            <input
+              placeholder="Cherche par nom, effet, archétype…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+                setCards([]);
+                setHasMore(true);
+              }}
+              style={{
+                width: '100%',
+                height: 52,
+                padding: '0 18px 0 46px',
+                background: '#1A1510',
+                border: '1px solid #3A2E1C',
+                borderLeft: '3px solid #F5C518',
+                color: '#F5EFE0',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: 16,
+                outline: 'none',
+                clipPath: CUT_INPUT,
+              }}
+            />
+          </div>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              height: 52,
+              padding: '0 26px',
+              position: 'relative',
+              isolation: 'isolate',
+              border: 0,
+              background: 'transparent',
+              color: '#0B0906',
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 9,
+            }}>
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: '#A855F7',
+                transform: 'translate(5px,0)',
+                clipPath: CUT_BTN,
+                zIndex: -1,
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: '#F5C518',
+                clipPath: CUT_BTN,
+                zIndex: -1,
+              }}
+            />
+            <AddIcon size={14} />
+            Ajouter
+          </button>
+
+          <button
+            onClick={() =>
+              toast('Scanner arrive bientôt sur web — utilise l’app mobile', { icon: '⏳' })
+            }
+            style={{
+              height: 52,
+              padding: '0 24px',
+              border: '1px solid #A855F7',
+              background: 'rgba(168,85,247,.12)',
+              color: '#C084FC',
+              fontFamily: "'Orbitron', sans-serif",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 9,
+              clipPath: CUT_SM,
+            }}>
+            <ScanIcon size={15} />
+            Scanner
+          </button>
+        </div>
+
+        {/* Chips */}
+        <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {CHIPS.map((c, i) => {
+            const on = chipIdx === i;
+            return (
+              <button
+                key={c.label}
+                onClick={() => applyChip(i)}
+                style={{
+                  padding: '9px 17px',
+                  border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
+                  background: on ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
+                  color: on ? '#0B0906' : '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 11,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  fontWeight: on ? 700 : 500,
+                  clipPath: CUT_CHIP,
+                  boxShadow: on ? '0 0 12px rgba(245,197,24,.35)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cards grid 6 cols */}
+        <div
+          style={{
+            marginTop: 30,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+            gap: 22,
+          }}
+          className="max-2xl:!grid-cols-5 max-xl:!grid-cols-4 max-lg:!grid-cols-3 max-sm:!grid-cols-2">
+          {cards.map((userCard, i) => (
+            <CardTile
+              key={userCard.id}
+              uri={userCard.card?.card_images?.[0]?.image_url_small}
+              name={userCard.card?.name}
+              rarity={userCard.rarity}
+              quantity={userCard.quantity}
+              language={userCard.language}
+              setCode={userCard.set_code}
+              index={i}
+              onClick={() => setSelectedCardDetail(userCard)}
+            />
           ))}
         </div>
 
-        {/* Loading indicator */}
         {loading && (
           <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+            <div
+              className="inline-block animate-spin"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                border: '3px solid rgba(245,197,24,.3)',
+                borderTopColor: '#F5C518',
+              }}
+            />
           </div>
         )}
-
-        {/* Load more trigger */}
         <div ref={loadMoreRef} className="h-10" />
 
-        {/* Empty state */}
         {!loading && cards.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">Aucune carte dans votre collection.</p>
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <p style={{ color: '#A99C86', fontSize: 16 }}>Aucune carte dans votre grimoire.</p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="mt-4 text-blue-600 hover:text-blue-700 font-semibold"
-            >
-              Ajouter votre première carte
+              style={{
+                marginTop: 16,
+                color: '#F5C518',
+                background: 'transparent',
+                border: 0,
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+              Ajouter la première carte
             </button>
           </div>
         )}
       </div>
 
-      {/* Add Card Modal */}
+      {/* Modal Add — kept structurally but restyled */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Ajouter une carte</h3>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(3,2,1,.86)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: 16,
+          }}
+          onClick={resetAddModal}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
+              border: '1px solid #3A2E1C',
+              boxShadow: '0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(245,197,24,.08)',
+              padding: 32,
+              maxWidth: 520,
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              clipPath: 'polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px))',
+            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#F5EFE0',
+                }}>
+                Ajouter une carte
+              </div>
               <button
                 onClick={resetAddModal}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                &times;
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  color: '#A99C86',
+                  fontSize: 24,
+                  cursor: 'pointer',
+                }}>
+                ×
               </button>
             </div>
 
-            {/* Step 1: Search */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ID de carte ou Code Set
+            <div style={{ marginBottom: 20 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: '#A99C86',
+                  marginBottom: 6,
+                }}>
+                Code Set ou ID
               </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Entrez le Code Set (ex: LDK2-FRK40) situé sous l'illustration de la carte, ou l'ID de carte (ex: 46986414) en bas à gauche.
+              <p style={{ color: '#6E6250', fontSize: 12, marginBottom: 8 }}>
+                Ex : LDK2-FRK40 (sous l'illustration) ou 46986414 (bas gauche).
               </p>
-              <div className="flex space-x-2">
+              <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   type="text"
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearchCard()}
-                  placeholder="ex: LDK2-FRK40 ou 46986414"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="LDK2-FRK40"
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    borderLeft: '2px solid #F5C518',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                    outline: 'none',
+                  }}
                 />
                 <button
                   type="button"
                   onClick={handleSearchCard}
                   disabled={searchLoading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-blue-300"
-                >
-                  {searchLoading ? 'Recherche...' : 'Rechercher'}
+                  style={{
+                    padding: '0 16px',
+                    background: '#F5C518',
+                    color: '#0B0906',
+                    border: 0,
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  {searchLoading ? '...' : 'Chercher'}
                 </button>
               </div>
               {searchError && (
-                <p className="text-red-500 text-sm mt-2">{searchError}</p>
+                <p style={{ color: '#FF4D6D', fontSize: 12, marginTop: 8 }}>{searchError}</p>
               )}
             </div>
 
-            {/* Step 2: Card Preview */}
             {searchedCard && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex space-x-4">
+              <div
+                style={{
+                  padding: 12,
+                  background: '#14100A',
+                  border: '1px solid #3A2E1C',
+                  display: 'flex',
+                  gap: 12,
+                  marginBottom: 20,
+                }}>
+                {searchedCard.card_images?.[0]?.image_url_small && (
                   <img
-                    src={searchedCard.card_images?.[0]?.image_url_small || '/placeholder-card.png'}
+                    src={searchedCard.card_images[0].image_url_small}
                     alt={searchedCard.name}
-                    className="w-24 h-auto rounded"
+                    style={{ width: 60, height: 'auto' }}
                   />
-                  <div className="flex-1">
-                    <h4 className="font-bold text-lg text-gray-800">{searchedCard.name}</h4>
-                    <p className="text-sm text-gray-600">{searchedCard.type}</p>
-                    {searchedCard.attribute && (
-                      <p className="text-sm text-gray-500">Attribut : {searchedCard.attribute}</p>
-                    )}
-                    {searchedCard.level && (
-                      <p className="text-sm text-gray-500">Niveau : {searchedCard.level}</p>
-                    )}
-                    {(searchedCard.atk !== undefined || searchedCard.def !== undefined) && (
-                      <p className="text-sm text-gray-500">
-                        ATK : {searchedCard.atk ?? '?'} / DEF : {searchedCard.def ?? '?'}
-                      </p>
-                    )}
+                )}
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#F5EFE0',
+                    }}>
+                    {searchedCard.name}
                   </div>
+                  <div style={{ fontSize: 12, color: '#A99C86', marginTop: 4 }}>{searchedCard.type}</div>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Select Set and Rarity */}
             {searchedCard && (
-              <form onSubmit={handleAddCard} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Code Set
-                    {selectedSet && !availableSets.some(s => s.set_code === selectedSet) && (
-                      <span className="ml-2 text-xs text-blue-600">
-                        (Code de votre carte)
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedSet}
-                    onChange={(e) => setSelectedSet(e.target.value.toUpperCase())}
-                    placeholder="ex: LDK2-FRK40"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                  {availableSets.length > 0 && (
-                    <div className="mt-2">
-                      <label className="block text-xs text-gray-500 mb-1">
-                        Ou choisir parmi {availableSets.length} sets disponibles :
-                      </label>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleSetChange(e.target.value);
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-gray-50"
-                      >
-                        <option value="">Sélectionner dans la liste...</option>
-                        {availableSets.map((set) => (
-                          <option key={set.set_code} value={set.set_code}>
-                            {set.set_code} - {set.set_name} ({set.set_rarity})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rareté</label>
+              <form onSubmit={handleAddCard} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input
+                  type="text"
+                  value={selectedSet}
+                  onChange={(e) => setSelectedSet(e.target.value.toUpperCase())}
+                  placeholder="Code Set"
+                  style={{
+                    padding: '10px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    borderLeft: '2px solid #F5C518',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                    outline: 'none',
+                  }}
+                />
+                {availableSets.length > 0 && (
                   <select
-                    value={selectedRarity}
-                    onChange={(e) => setSelectedRarity(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Sélectionner la rareté</option>
-                    <option value="Common">Common</option>
-                    <option value="Short Print">Short Print</option>
-                    <option value="Rare">Rare</option>
-                    <option value="Super Rare">Super Rare</option>
-                    <option value="Ultra Rare">Ultra Rare</option>
-                    <option value="Secret Rare">Secret Rare</option>
-                    <option value="Ultimate Rare">Ultimate Rare</option>
-                    <option value="Ghost Rare">Ghost Rare</option>
-                    <option value="Starlight Rare">Starlight Rare</option>
-                    <option value="Collector's Rare">Collector's Rare</option>
-                    <option value="Prismatic Secret Rare">Prismatic Secret Rare</option>
-                    <option value="Platinum Secret Rare">Platinum Secret Rare</option>
-                    <option value="Quarter Century Secret Rare">Quarter Century Secret Rare</option>
-                    <option value="Gold Rare">Gold Rare</option>
-                    <option value="Gold Secret Rare">Gold Secret Rare</option>
-                    <option value="Premium Gold Rare">Premium Gold Rare</option>
-                    <option value="Starfoil Rare">Starfoil Rare</option>
-                    <option value="Mosaic Rare">Mosaic Rare</option>
-                    <option value="Shatterfoil Rare">Shatterfoil Rare</option>
-                    <option value="Duel Terminal Normal Parallel Rare">Duel Terminal Normal Parallel Rare</option>
-                    <option value="Duel Terminal Rare Parallel Rare">Duel Terminal Rare Parallel Rare</option>
-                    <option value="Duel Terminal Super Parallel Rare">Duel Terminal Super Parallel Rare</option>
-                    <option value="Duel Terminal Ultra Parallel Rare">Duel Terminal Ultra Parallel Rare</option>
-                    <option value="Parallel Rare">Parallel Rare</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Langue
-                    {selectedLanguage !== 'EN' && (
-                      <span className="ml-2 text-xs text-blue-600">
-                        (Détecté automatiquement)
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value as CardLanguage)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((lang) => (
-                      <option key={lang} value={lang}>
-                        {LANGUAGE_LABELS[lang]} ({lang})
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedSet(e.target.value);
+                        const setInfo = availableSets.find((s) => s.set_code === e.target.value);
+                        if (setInfo) setSelectedRarity(setInfo.set_rarity);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      background: '#14100A',
+                      border: '1px solid #3A2E1C',
+                      color: '#F5EFE0',
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontSize: 13,
+                    }}>
+                    <option value="">— Sets disponibles ({availableSets.length}) —</option>
+                    {availableSets.map((s) => (
+                      <option key={s.set_code} value={s.set_code}>
+                        {s.set_code} — {s.set_name} ({s.set_rarity})
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    min="1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4">
+                )}
+                <select
+                  value={selectedRarity}
+                  onChange={(e) => setSelectedRarity(e.target.value)}
+                  style={{
+                    padding: '10px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                  }}>
+                  <option value="">Rareté</option>
+                  {[
+                    'Common', 'Rare', 'Super Rare', 'Ultra Rare', 'Secret Rare',
+                    'Ultimate Rare', 'Ghost Rare', 'Starlight Rare', "Collector's Rare",
+                  ].map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value as CardLanguage)}
+                  style={{
+                    padding: '10px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                  }}>
+                  {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
+                    <option key={l} value={l}>{LANGUAGE_LABELS[l]} ({l})</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                  min={1}
+                  placeholder="Quantité"
+                  style={{
+                    padding: '10px 14px',
+                    background: '#14100A',
+                    border: '1px solid #3A2E1C',
+                    color: '#F5EFE0',
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: 14,
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button
                     type="button"
                     onClick={resetAddModal}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
-                  >
+                    style={{
+                      flex: 1,
+                      height: 44,
+                      background: '#14100A',
+                      color: '#A99C86',
+                      border: '1px solid #3A2E1C',
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontWeight: 600,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      clipPath: CUT_SM,
+                    }}>
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={!selectedSet || !selectedRarity}
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-blue-300"
-                  >
+                    style={{
+                      flex: 1,
+                      height: 44,
+                      background: '#F5C518',
+                      color: '#0B0906',
+                      border: 0,
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontWeight: 700,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      clipPath: CUT_SM,
+                    }}>
                     Ajouter
                   </button>
                 </div>
               </form>
             )}
-
-            {/* Instructions when no card searched */}
-            {!searchedCard && !searchLoading && (
-              <div className="text-center py-8 text-gray-500">
-                <p>Recherchez une carte par son Code Set ou ID de carte</p>
-                <p className="text-sm mt-2">
-                  Le Code Set se trouve sous l'illustration de la carte (ex: LDK2-FRK40)
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* Card Detail Modal */}
+      {/* Modal Card Detail — allégée */}
       {selectedCardDetail && selectedCardDetail.card && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedCardDetail(null)}
-        >
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(3,2,1,.86)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 46,
+            padding: 60,
+            zIndex: 100,
+          }}
+          onClick={() => setSelectedCardDetail(null)}>
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-              <h3 className="text-2xl font-bold text-gray-800">
+            style={{
+              display: 'flex',
+              gap: 46,
+              maxWidth: 900,
+              flexWrap: 'wrap',
+            }}>
+            {selectedCardDetail.card.card_images?.[0]?.image_url && (
+              <img
+                src={selectedCardDetail.card.card_images[0].image_url}
+                alt={selectedCardDetail.card.name}
+                style={{
+                  width: 330,
+                  height: 'auto',
+                  border: '1px solid #F5C518',
+                  boxShadow: '0 40px 90px rgba(0,0,0,.75),0 0 60px rgba(245,197,24,.25)',
+                }}
+              />
+            )}
+            <div style={{ maxWidth: 420, color: '#F5EFE0' }}>
+              <div
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle: 'italic',
+                  fontSize: 11,
+                  letterSpacing: '0.3em',
+                  color: '#F5C518',
+                  textTransform: 'uppercase',
+                }}>
+                — {selectedCardDetail.rarity} —
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 30,
+                  fontWeight: 900,
+                  letterSpacing: '0.02em',
+                  color: '#F5EFE0',
+                  lineHeight: 1.05,
+                }}>
                 {selectedCardDetail.card.name}
-              </h3>
-              <button
-                onClick={() => setSelectedCardDetail(null)}
-                className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Card Image */}
-                <div className="flex-shrink-0 mx-auto md:mx-0">
-                  <img
-                    src={selectedCardDetail.card.card_images?.[0]?.image_url || '/placeholder-card.png'}
-                    alt={selectedCardDetail.card.name}
-                    className="w-64 h-auto rounded-lg shadow-lg"
-                  />
-                </div>
-
-                {/* Card Info */}
-                <div className="flex-1 space-y-4">
-                  {/* Type & Attribute Row */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                      {selectedCardDetail.card.type}
-                    </span>
-                    {selectedCardDetail.card.attribute && (
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedCardDetail.card.attribute === 'DARK' ? 'bg-gray-800 text-white' :
-                        selectedCardDetail.card.attribute === 'LIGHT' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedCardDetail.card.attribute === 'FIRE' ? 'bg-red-100 text-red-800' :
-                        selectedCardDetail.card.attribute === 'WATER' ? 'bg-blue-100 text-blue-800' :
-                        selectedCardDetail.card.attribute === 'EARTH' ? 'bg-amber-100 text-amber-800' :
-                        selectedCardDetail.card.attribute === 'WIND' ? 'bg-green-100 text-green-800' :
-                        selectedCardDetail.card.attribute === 'DIVINE' ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedCardDetail.card.attribute}
-                      </span>
-                    )}
-                    {selectedCardDetail.card.race && (
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-                        {selectedCardDetail.card.race}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Monster Stats */}
-                  {(selectedCardDetail.card.level !== undefined ||
-                    selectedCardDetail.card.linkval !== undefined ||
-                    selectedCardDetail.card.atk !== undefined) && (
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {selectedCardDetail.card.level !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-500 text-lg">★</span>
-                          <span className="font-medium">Niveau {selectedCardDetail.card.level}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.linkval !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-blue-500 font-bold">LIEN-{selectedCardDetail.card.linkval}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.scale !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-teal-600 font-medium">Échelle : {selectedCardDetail.card.scale}</span>
-                        </div>
-                      )}
-                      {selectedCardDetail.card.atk !== undefined && (
-                        <div className="font-medium">
-                          <span className="text-red-600">ATK</span> {selectedCardDetail.card.atk}
-                        </div>
-                      )}
-                      {selectedCardDetail.card.def !== undefined && (
-                        <div className="font-medium">
-                          <span className="text-blue-600">DEF</span> {selectedCardDetail.card.def}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Link Markers */}
-                  {selectedCardDetail.card.linkmarkers && selectedCardDetail.card.linkmarkers.length > 0 && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Flèches Lien : </span>
-                      <span className="text-gray-600">
-                        {selectedCardDetail.card.linkmarkers.join(', ')}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Archetype */}
-                  {selectedCardDetail.card.archetype && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Archétype : </span>
-                      <span className="text-gray-600">{selectedCardDetail.card.archetype}</span>
-                    </div>
-                  )}
-
-                  {/* Card Description/Effect */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-800 mb-2">Texte de la carte</h4>
-                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                      {selectedCardDetail.card.description}
-                    </p>
-                  </div>
-
-                  {/* Banlist Info */}
-                  {selectedCardDetail.card.banlist_info && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCardDetail.card.banlist_info.ban_tcg && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          selectedCardDetail.card.banlist_info.ban_tcg === 'Banned' ? 'bg-red-100 text-red-800' :
-                          selectedCardDetail.card.banlist_info.ban_tcg === 'Limited' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          TCG: {selectedCardDetail.card.banlist_info.ban_tcg}
-                        </span>
-                      )}
-                      {selectedCardDetail.card.banlist_info.ban_ocg && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          selectedCardDetail.card.banlist_info.ban_ocg === 'Banned' ? 'bg-red-100 text-red-800' :
-                          selectedCardDetail.card.banlist_info.ban_ocg === 'Limited' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          OCG: {selectedCardDetail.card.banlist_info.ban_ocg}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
-
-              {/* Collection Info Section */}
-              <div className="mt-6 pt-6 border-t">
-                <h4 className="font-semibold text-gray-800 mb-4">Infos de votre collection</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500 uppercase">Code Set</p>
-                    <p className="font-semibold text-blue-700">{selectedCardDetail.set_code}</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500 uppercase">Rareté</p>
-                    <p className="font-semibold text-purple-700">{selectedCardDetail.rarity}</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500 uppercase">Langue</p>
-                    <p className="font-semibold text-green-700">
-                      {LANGUAGE_LABELS[selectedCardDetail.language] || selectedCardDetail.language}
-                    </p>
-                  </div>
-                  <div className="bg-orange-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500 uppercase">Quantité</p>
-                    <p className="font-semibold text-orange-700">{selectedCardDetail.quantity}</p>
-                  </div>
-                </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 11,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#A99C86',
+                }}>
+                {selectedCardDetail.set_code} · {selectedCardDetail.card.type}
               </div>
-
-              {/* Actions */}
-              <div className="mt-6 flex justify-end gap-3">
+              {(selectedCardDetail.card.atk !== undefined || selectedCardDetail.card.def !== undefined) && (
+                <div style={{ marginTop: 22, display: 'flex', gap: 26, fontSize: 13 }}>
+                  {selectedCardDetail.card.atk !== undefined && (
+                    <span style={{ color: '#A99C86' }}>ATK <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.atk}</span></span>
+                  )}
+                  {selectedCardDetail.card.def !== undefined && (
+                    <span style={{ color: '#A99C86' }}>DEF <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.def}</span></span>
+                  )}
+                  {selectedCardDetail.card.level !== undefined && (
+                    <span style={{ color: '#A99C86' }}>NIV <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.level}</span></span>
+                  )}
+                </div>
+              )}
+              {selectedCardDetail.card.description && (
+                <p style={{ marginTop: 22, fontSize: 14, lineHeight: 1.6, color: '#A99C86' }}>
+                  {selectedCardDetail.card.description}
+                </p>
+              )}
+              <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                 <button
                   onClick={() => {
                     handleRemoveCard(selectedCardDetail.id);
                     setSelectedCardDetail(null);
                   }}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
-                >
-                  Retirer de la collection
+                  style={{
+                    padding: '10px 16px',
+                    background: 'transparent',
+                    border: '1px solid #FF4D6D',
+                    color: '#FF4D6D',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  Retirer
                 </button>
                 <button
                   onClick={() => setSelectedCardDetail(null)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
+                  style={{
+                    padding: '10px 16px',
+                    background: '#F5C518',
+                    color: '#0B0906',
+                    border: 0,
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
                   Fermer
                 </button>
+              </div>
+              <div
+                style={{
+                  marginTop: 24,
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: 12,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(245,239,224,.4)',
+                }}>
+                Clique n'importe où pour refermer
               </div>
             </div>
           </div>

@@ -5,40 +5,43 @@ import { User, Deck } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
+import { GlyphEye } from '../components/decor/Glyphs';
+import { CardIcon } from '../components/decor/Icons';
 
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_STATS = 'polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px))';
+const CUT_TILE = 'polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))';
+const HEX = 'polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)';
+
+/**
+ * UserProfile — même layout que Profile mais version publique.
+ * Pas de bouton Éditer, ajout d'un CTA « Suivre / Ne plus suivre » primary.
+ */
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
-  const [decksLoading, setDecksLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [stats, setStats] = useState({
-    followersCount: 0,
-    followingCount: 0,
-  });
+  const [stats, setStats] = useState({ followersCount: 0, followingCount: 0 });
 
-  const isOwnProfile = currentUser && parseInt(userId || '0') === currentUser.id;
+  const isOwn = currentUser && parseInt(userId || '0') === currentUser.id;
 
   useEffect(() => {
     if (userId) {
-      fetchUserProfile();
-      fetchUserDecks();
-      if (!isOwnProfile) {
-        checkIfFollowing();
-      }
+      fetchProfile();
+      fetchDecks();
+      if (!isOwn) checkFollowing();
     }
   }, [userId, currentUser]);
 
-  const fetchUserProfile = async () => {
+  const fetchProfile = async () => {
     setLoading(true);
     try {
       const response = await api.get(`/auth/users/${userId}`);
@@ -48,39 +51,30 @@ const UserProfile = () => {
         followingCount: response.data.followingCount || 0,
       });
     } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      toast.error('Utilisateur non trouvé');
+      console.error(error);
+      toast.error('Utilisateur introuvable');
       navigate('/social');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUserDecks = async () => {
-    setDecksLoading(true);
+  const fetchDecks = async () => {
     try {
-      const response = await api.get('/decks/public', {
-        params: { user_id: userId, limit: 50 },
-      });
+      const response = await api.get('/decks/public', { params: { user_id: userId, limit: 50 } });
       setDecks(response.data.data || response.data || []);
     } catch (error) {
-      console.error('Failed to fetch user decks:', error);
-      setDecks([]);
-    } finally {
-      setDecksLoading(false);
+      console.error(error);
     }
   };
 
-  const checkIfFollowing = async () => {
+  const checkFollowing = async () => {
     try {
       const response = await api.get('/social/following');
       const following = response.data.following || response.data || [];
-      const isFollowingUser = following.some(
-        (f: any) => (f.following_id || f.id) === parseInt(userId!)
-      );
-      setIsFollowing(isFollowingUser);
+      setIsFollowing(following.some((f: any) => (f.following_id || f.id) === parseInt(userId!)));
     } catch (error) {
-      console.error('Failed to check following status:', error);
+      console.error(error);
     }
   };
 
@@ -89,13 +83,10 @@ const UserProfile = () => {
     try {
       await api.post(`/social/follow/${userId}`);
       setIsFollowing(true);
-      setStats((prev) => ({
-        ...prev,
-        followersCount: prev.followersCount + 1,
-      }));
-      toast.success('Utilisateur suivi !');
+      setStats((p) => ({ ...p, followersCount: p.followersCount + 1 }));
+      toast.success('Suivi');
     } catch (error) {
-      console.error('Failed to follow user:', error);
+      console.error(error);
     } finally {
       setFollowLoading(false);
     }
@@ -106,247 +97,374 @@ const UserProfile = () => {
     try {
       await api.delete(`/social/follow/${userId}`);
       setIsFollowing(false);
-      setStats((prev) => ({
-        ...prev,
-        followersCount: Math.max(0, prev.followersCount - 1),
-      }));
-      toast.success('Vous ne suivez plus cet utilisateur');
+      setStats((p) => ({ ...p, followersCount: Math.max(0, p.followersCount - 1) }));
+      toast.success('Retiré');
     } catch (error) {
-      console.error('Failed to unfollow user:', error);
+      console.error(error);
     } finally {
       setFollowLoading(false);
     }
   };
 
-  const getDeckCardCount = (deck: any) => {
-    // Use pre-computed counts from API if available, otherwise calculate from arrays
-    const mainCount = deck.main_deck_count ?? deck.main_deck?.reduce((sum: number, card: any) => sum + card.quantity, 0) ?? 0;
-    const extraCount = deck.extra_deck_count ?? deck.extra_deck?.reduce((sum: number, card: any) => sum + card.quantity, 0) ?? 0;
-    return { mainCount, extraCount };
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+        <div
+          className="animate-spin"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid rgba(245,197,24,.3)',
+            borderTopColor: '#F5C518',
+          }}
+        />
       </div>
     );
   }
-
   if (!profileUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Utilisateur non trouve</h2>
-          <Link to="/social" className="text-blue-600 hover:text-blue-700">
-            Retour au fil d'actualites
-          </Link>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+        <div style={{ textAlign: 'center', color: '#A99C86' }}>
+          <h2 style={{ fontFamily: "'Orbitron', sans-serif", color: '#F5EFE0', fontSize: 20 }}>Utilisateur introuvable</h2>
+          <Link to="/social" style={{ color: '#F5C518' }}>Retour</Link>
         </div>
       </div>
     );
   }
 
+  const initials = profileUser.username.slice(0, 2).toUpperCase();
+  const profileStats = [
+    { label: 'Cartes', value: '— À venir' },
+    { label: 'Decks publics', value: String(decks.length) },
+    { label: 'Abonnés', value: String(stats.followersCount) },
+    { label: 'Copies de deck', value: '— À venir' },
+  ];
+
   return (
-    <div className="min-h-screen relative">
+    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
-
-      {/* Navigation */}
       <AppNavbar />
 
-      {/* Main Content */}
-      <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header */}
+      <div style={{ position: 'relative', zIndex: 20 }}>
         <div
-          className="cyber-panel p-6 mb-8"
-          style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-            {/* Avatar */}
+          style={{
+            position: 'relative',
+            height: 180,
+            background: 'linear-gradient(120deg,rgba(168,85,247,.24),rgba(245,197,24,.1))',
+            borderBottom: '1px solid #3A2E1C',
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage:
+                'linear-gradient(rgba(245,197,24,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(245,197,24,.07) 1px,transparent 1px)',
+              backgroundSize: '34px 34px',
+            }}
+          />
+          <GlyphEye
+            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: '#F5C518', opacity: 0.12 }}
+          />
+        </div>
+
+        <div style={{ padding: '0 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
+          <div style={{ marginTop: -56, display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
             {profileUser.profile_picture ? (
               <img
                 src={getImageUrl(profileUser.profile_picture)}
                 alt={profileUser.username}
-                className="w-32 h-32 rounded-full object-cover"
-                style={{ border: '2px solid var(--gold)', boxShadow: '0 0 24px rgba(245,197,24,0.35)' }}
+                style={{
+                  width: 120,
+                  height: 120,
+                  objectFit: 'cover',
+                  border: '1px solid #F5C518',
+                  clipPath: HEX,
+                  boxShadow: '0 0 40px rgba(245,197,24,.3)',
+                }}
               />
             ) : (
               <div
-                className="w-32 h-32 rounded-full flex items-center justify-center"
                 style={{
-                  background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
-                  border: '2px solid var(--gold)',
-                  boxShadow: '0 0 24px rgba(245,197,24,0.35)',
-                }}
-              >
-                <span
-                  style={{
-                    color: 'var(--on-gold)',
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: 40,
-                    fontWeight: 900,
-                  }}
-                >
-                  {profileUser.username.charAt(0).toUpperCase()}
-                </span>
+                  width: 120,
+                  height: 120,
+                  background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
+                  color: '#0B0906',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 38,
+                  fontWeight: 900,
+                  border: '1px solid #F5C518',
+                  clipPath: HEX,
+                  boxShadow: '0 0 40px rgba(245,197,24,.3)',
+                }}>
+                {initials}
               </div>
             )}
-
-            {/* User Info */}
-            <div className="flex-1 text-center md:text-left">
-              <HeroTitle
-                kicker="— Visite guidée —"
-                title={profileUser.username}
-                sub={`Membre depuis le ${new Date(profileUser.created_at).toLocaleDateString('fr-FR')}`}
-              />
-
-              {/* Stats */}
-              <div className="mt-6 flex justify-center md:justify-start space-x-6 mb-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-800">{stats.followersCount}</p>
-                  <p className="text-sm text-gray-600">Abonnes</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-800">{stats.followingCount}</p>
-                  <p className="text-sm text-gray-600">Abonnements</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-800">{decks.length}</p>
-                  <p className="text-sm text-gray-600">Decks publics</p>
-                </div>
+            <div style={{ paddingBottom: 8, flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 30,
+                  fontWeight: 900,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: '#F5EFE0',
+                }}>
+                @{profileUser.username}
               </div>
-
-              {/* Follow Button or Edit Profile Button */}
-              {isOwnProfile ? (
-                <Button
-                  variant="primary"
-                  glitch
-                  onClick={() => navigate('/profile')}
-                >
-                  Modifier mon profil
-                </Button>
-              ) : (
-                <Button
-                  variant={isFollowing ? 'ghost' : 'primary'}
-                  glitch={!isFollowing}
-                  isLoading={followLoading}
-                  onClick={isFollowing ? handleUnfollow : handleFollow}
-                >
-                  {isFollowing ? 'Ne plus suivre' : 'Suivre'}
-                </Button>
+              <div style={{ marginTop: 6, fontSize: 15, color: '#A99C86' }}>
+                Gardien du sanctuaire · depuis {new Date(profileUser.created_at).getFullYear()}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, paddingBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #3A2E1C',
+                  color: '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 9,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                }}>
+                Top 5 % — À venir
+              </span>
+              <span
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #3A2E1C',
+                  color: '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 9,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                }}>
+                1 000 scans — À venir
+              </span>
+              {!isOwn && (
+                isFollowing ? (
+                  <button
+                    onClick={handleUnfollow}
+                    disabled={followLoading}
+                    style={{
+                      height: 44,
+                      padding: '0 20px',
+                      background: 'transparent',
+                      border: '1px solid #3A2E1C',
+                      color: '#A99C86',
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
+                      cursor: followLoading ? 'not-allowed' : 'pointer',
+                      clipPath: CUT_SM,
+                    }}>
+                    Suivi
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    style={{
+                      height: 44,
+                      padding: '0 22px',
+                      position: 'relative',
+                      isolation: 'isolate',
+                      border: 0,
+                      background: 'transparent',
+                      color: '#0B0906',
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontWeight: 700,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: followLoading ? 'not-allowed' : 'pointer',
+                    }}>
+                    <span
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: '#A855F7',
+                        transform: 'translate(5px,0)',
+                        clipPath: CUT_BTN,
+                        zIndex: -1,
+                      }}
+                    />
+                    <span
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: '#F5C518',
+                        clipPath: CUT_BTN,
+                        zIndex: -1,
+                      }}
+                    />
+                    Suivre
+                  </button>
+                )
               )}
             </div>
           </div>
-        </div>
 
-        {/* Public Decks Section */}
-        <div className="mb-6">
-          <h3 className="cyber-title text-xl">Decks publics de {profileUser.username}</h3>
-        </div>
-
-        {decksLoading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+          <div
+            style={{
+              marginTop: 30,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 1,
+              background: '#3A2E1C',
+              border: '1px solid #3A2E1C',
+              clipPath: CUT_STATS,
+            }}
+            className="max-md:!grid-cols-2">
+            {profileStats.map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  padding: '18px 22px',
+                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 9,
+                    letterSpacing: '0.2em',
+                    color: '#A99C86',
+                    textTransform: 'uppercase',
+                  }}>
+                  {s.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 26,
+                    fontWeight: 700,
+                    color: '#F5EFE0',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                  {s.value}
+                </span>
+              </div>
+            ))}
           </div>
-        ) : decks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {decks.map((deck) => {
-              const { mainCount, extraCount } = getDeckCardCount(deck);
-              return (
-                <div
-                  key={deck.id}
-                  className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
-                  style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-                >
-                  {/* Deck Cover */}
-                  <div
-                    className="h-48 relative"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
-                    }}
-                  >
-                    {deck.cover_image ? (
-                      <img
-                        src={deck.cover_image}
-                        alt={deck.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <span className="text-white text-4xl font-bold opacity-50">
-                          {deck.name.charAt(0).toUpperCase()}
+
+          <div style={{ marginTop: 34, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 12,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#F5C518',
+              }}>
+              Ses decks publics
+            </span>
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+          </div>
+
+          {decks.length === 0 ? (
+            <div style={{ marginTop: 24, textAlign: 'center', padding: '60px 20px', color: '#A99C86', fontSize: 14, border: '1px dashed #3A2E1C' }}>
+              {profileUser.username} n'a pas encore de deck public.
+            </div>
+          ) : (
+            <div
+              style={{
+                marginTop: 18,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: 20,
+              }}
+              className="max-lg:!grid-cols-3 max-md:!grid-cols-2 max-sm:!grid-cols-1">
+              {decks.map((d) => {
+                const main = d.main_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+                const extra = d.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
+                return (
+                  <Link key={d.id} to={`/decks/${d.id}`} style={{ textDecoration: 'none' }}>
+                    <div
+                      style={{
+                        padding: 18,
+                        background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                        border: '1px solid #3A2E1C',
+                        cursor: 'pointer',
+                        transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
+                        clipPath: CUT_TILE,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-6px)';
+                        e.currentTarget.style.borderColor = '#C29A0F';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.borderColor = '#3A2E1C';
+                      }}>
+                      <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 74,
+                            border: '1px solid rgba(245,197,24,.42)',
+                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            transform: 'rotate(-7deg)',
+                            display: 'grid',
+                            placeItems: 'center',
+                          }}>
+                          <CardIcon size={20} className="text-blue-600" />
+                        </div>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 74,
+                            border: '1px solid rgba(168,85,247,.42)',
+                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            marginLeft: -18,
+                            transform: 'rotate(7deg)',
+                            display: 'grid',
+                            placeItems: 'center',
+                          }}>
+                          <CardIcon size={20} style={{ color: '#A855F7' }} />
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          fontFamily: "'Orbitron', sans-serif",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: '#F5EFE0',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                        {d.name}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 12,
+                          color: '#A99C86',
+                        }}>
+                        <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                          {main} · {extra} · 0
                         </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Deck Info */}
-                  <div className="p-4">
-                    <h4 className="font-bold text-xl text-gray-800 mb-2">{deck.name}</h4>
-
-                    <div className="space-y-1 text-sm text-gray-600 mb-4">
-                      <div className="flex justify-between">
-                        <span>Principal :</span>
-                        <span className="font-semibold">{mainCount} cartes</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Extra :</span>
-                        <span className="font-semibold">{extraCount} cartes</span>
+                        <span style={{ color: '#FF2E88' }}>♥ {d.likes_count || 0}</span>
                       </div>
                     </div>
-
-                    {/* Stats */}
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                        </svg>
-                        {deck.likes_count || 0}
-                      </span>
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                        </svg>
-                        {deck.comments_count || 0}
-                      </span>
-                    </div>
-
-                    {/* Actions */}
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => navigate(`/decks/${deck.id}`)}
-                    >
-                      Voir le deck
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="cyber-panel p-12 text-center" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun deck public</h3>
-            <p className="text-sm text-gray-500">
-              {profileUser.username} n'a pas encore partage de decks publics.
-            </p>
-          </div>
-        )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

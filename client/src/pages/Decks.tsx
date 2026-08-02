@@ -4,10 +4,10 @@ import { Deck, DeckFilters } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import Button from '../components/ui/Button';
 import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
-import HeroTitle from '../components/decor/HeroTitle';
+import { GlyphPyramid } from '../components/decor/Glyphs';
+import { CardIcon } from '../components/decor/Icons';
 
 interface WishlistItem {
   id: number;
@@ -17,6 +17,16 @@ interface WishlistItem {
   deck: Deck;
 }
 
+const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
+const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
+const CUT_TILE = 'polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))';
+
+/**
+ * Decks — grille 4 cols de deck-cards biseautées (mockup profile lignes 495-514).
+ * Preview 2 cartes rotate, nom Orbitron, count + likes rose.
+ * Header kicker « Grimoires » + CTA « Fonder un deck » primary.
+ * Toggle Mes decks / Wishlist en tabs biseautés.
+ */
 const Decks = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'mydecks' | 'wishlist'>('mydecks');
@@ -27,11 +37,8 @@ const Decks = () => {
   const [isPublic, setIsPublic] = useState<string>('');
 
   useEffect(() => {
-    if (activeTab === 'mydecks') {
-      fetchDecks();
-    } else {
-      fetchWishlist();
-    }
+    if (activeTab === 'mydecks') fetchDecks();
+    else fetchWishlist();
   }, [activeTab, respectBanlist, isPublic]);
 
   const fetchDecks = async () => {
@@ -41,7 +48,6 @@ const Decks = () => {
         respect_banlist: respectBanlist === 'true' ? true : respectBanlist === 'false' ? false : undefined,
         is_public: isPublic === 'true' ? true : isPublic === 'false' ? false : undefined,
       };
-
       const response = await api.get('/decks', { params });
       setDecks(response.data.data || response.data);
     } catch (error) {
@@ -65,456 +71,468 @@ const Decks = () => {
   };
 
   const handleDeleteDeck = async (deckId: number) => {
-    if (!confirm('Etes-vous sur de vouloir supprimer ce deck ?')) {
-      return;
-    }
-
+    if (!confirm('Supprimer ce deck ?')) return;
     try {
       await api.delete(`/decks/${deckId}`);
-      toast.success('Deck supprime avec succes');
-      setDecks((prev) => prev.filter((deck) => deck.id !== deckId));
+      toast.success('Deck supprimé');
+      setDecks((prev) => prev.filter((d) => d.id !== deckId));
     } catch (error) {
-      console.error('Failed to delete deck:', error);
+      console.error(error);
     }
   };
 
   const handleRemoveFromWishlist = async (deckId: number) => {
     try {
       await api.delete(`/social/wishlist/${deckId}`);
-      toast.success('Deck retire de la wishlist');
-      setWishlist((prev) => prev.filter((item) => item.original_deck_id !== deckId));
+      toast.success('Retiré de la wishlist');
+      setWishlist((prev) => prev.filter((i) => i.original_deck_id !== deckId));
     } catch (error) {
-      console.error('Failed to remove from wishlist:', error);
+      console.error(error);
     }
   };
 
-  const getDeckCardCount = (deck: Deck) => {
-    const mainCount = deck.main_deck?.reduce((sum, card) => sum + card.quantity, 0) || 0;
-    const extraCount = deck.extra_deck?.reduce((sum, card) => sum + card.quantity, 0) || 0;
-    return { mainCount, extraCount };
-  };
-
-  const getWishlistDeckCardCount = (item: WishlistItem) => {
-    // Use pre-computed counts if available, otherwise calculate from arrays
-    const deck = item.deck;
-    const mainCount = (deck as any).main_deck_count ?? deck.main_deck?.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
-    const extraCount = (deck as any).extra_deck_count ?? deck.extra_deck?.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
-    return { mainCount, extraCount };
+  const cardCount = (deck: Deck) => {
+    const main = (deck as any).main_deck_count ?? deck.main_deck?.reduce((s, c) => s + c.quantity, 0) ?? 0;
+    const extra = (deck as any).extra_deck_count ?? deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) ?? 0;
+    const side = (deck as any).side_deck_count ?? 0;
+    return { main, extra, side };
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
       <AppBackground />
       <CornerOrnaments />
-
-      {/* Navigation */}
       <AppNavbar />
 
-      {/* Main Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div
-          className="flex gap-1 p-1 mb-8 max-w-md cyber-cut-sm"
-          style={{ background: 'var(--panel-2)', border: '1px solid var(--border)' }}
-        >
-          <button
-            onClick={() => setActiveTab('mydecks')}
-            className="flex-1 py-2 px-4 transition"
-            style={{
-              fontFamily: "'Orbitron', sans-serif",
-              fontSize: 12,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              fontWeight: 700,
-              background: activeTab === 'mydecks' ? 'var(--gold)' : 'transparent',
-              color: activeTab === 'mydecks' ? 'var(--on-gold)' : 'var(--text-muted)',
-              clipPath:
-                'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
-            }}
-          >
-            Mes Decks ({decks.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('wishlist')}
-            className="flex-1 py-2 px-4 transition"
-            style={{
-              fontFamily: "'Orbitron', sans-serif",
-              fontSize: 12,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              fontWeight: 700,
-              background: activeTab === 'wishlist' ? 'var(--violet)' : 'transparent',
-              color: activeTab === 'wishlist' ? '#fff' : 'var(--text-muted)',
-              clipPath:
-                'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
-            }}
-          >
-            Wishlist ({wishlist.length})
-          </button>
+      <div style={{ position: 'relative', zIndex: 20, padding: '46px 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid #3A2E1C' }}>
+          <GlyphPyramid
+            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: '#F5C518', opacity: 0.07 }}
+          />
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
+            <div>
+              <div
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle: 'italic',
+                  fontSize: 12,
+                  letterSpacing: '0.32em',
+                  color: '#F5C518',
+                  textTransform: 'uppercase',
+                }}>
+                — Grimoires du Sanctuaire —
+              </div>
+              <h1
+                style={{
+                  margin: '10px 0 0',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 'clamp(38px, 5vw, 54px)',
+                  fontWeight: 900,
+                  lineHeight: 0.96,
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase',
+                  background: 'linear-gradient(180deg,#F5EFE0 25%,#C29A0F 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  filter: 'drop-shadow(0 0 18px rgba(245,197,24,.16))',
+                }}>
+                Mes Decks
+              </h1>
+              <p style={{ margin: '10px 0 0', fontSize: 16, color: '#A99C86' }}>
+                {activeTab === 'mydecks'
+                  ? `${decks.length} grimoire${decks.length > 1 ? 's' : ''} en préparation`
+                  : `${wishlist.length} deck${wishlist.length > 1 ? 's' : ''} en tête`}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/decks/new')}
+              style={{
+                height: 52,
+                padding: '0 26px',
+                position: 'relative',
+                isolation: 'isolate',
+                border: 0,
+                background: 'transparent',
+                color: '#0B0906',
+                fontFamily: "'Orbitron', sans-serif",
+                fontWeight: 700,
+                fontSize: 12,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#A855F7',
+                  transform: 'translate(5px,0)',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#F5C518',
+                  clipPath: CUT_BTN,
+                  zIndex: -1,
+                }}
+              />
+              Fonder un deck
+            </button>
+          </div>
+
+          {/* Tabs Mes decks / Wishlist */}
+          <div style={{ marginTop: 26, display: 'flex', gap: 8 }}>
+            {[
+              { id: 'mydecks' as const, label: `Mes decks (${decks.length})` },
+              { id: 'wishlist' as const, label: `Wishlist (${wishlist.length})` },
+            ].map((t) => {
+              const on = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={{
+                    height: 44,
+                    padding: '0 22px',
+                    border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
+                    background: on ? 'rgba(245,197,24,.14)' : 'transparent',
+                    color: on ? '#F5C518' : '#A99C86',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {activeTab === 'mydecks' ? (
-          <>
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
-              <HeroTitle
-                kicker="— Grimoires du Sanctuaire —"
-                title="Mes Decks"
-                sub={`${decks.length} grimoire${decks.length > 1 ? 's' : ''} en préparation`}
-              />
-              <Button
-                variant="primary"
-                size="lg"
-                glitch
-                onClick={() => navigate('/decks/new')}
-              >
-                + Creer un deck
-              </Button>
-            </div>
+        {/* Filters (only for mydecks) */}
+        {activeTab === 'mydecks' && (
+          <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <select
+              value={respectBanlist}
+              onChange={(e) => setRespectBanlist(e.target.value)}
+              style={{
+                padding: '10px 14px',
+                background: '#1A1510',
+                border: '1px solid #3A2E1C',
+                color: '#F5EFE0',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: 13,
+                letterSpacing: '0.06em',
+              }}>
+              <option value="">Tous les decks</option>
+              <option value="true">Conformes banlist</option>
+              <option value="false">Hors banlist</option>
+            </select>
+            <select
+              value={isPublic}
+              onChange={(e) => setIsPublic(e.target.value)}
+              style={{
+                padding: '10px 14px',
+                background: '#1A1510',
+                border: '1px solid #3A2E1C',
+                color: '#F5EFE0',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: 13,
+                letterSpacing: '0.06em',
+              }}>
+              <option value="">Toute visibilité</option>
+              <option value="true">Publics</option>
+              <option value="false">Privés</option>
+            </select>
+          </div>
+        )}
 
-            {/* Filters */}
+        {loading ? (
+          <div className="text-center py-16">
             <div
-              className="p-6 mb-6 cyber-tile"
-              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Conformite Banlist
-                  </label>
-                  <select
-                    value={respectBanlist}
-                    onChange={(e) => setRespectBanlist(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Tous les decks</option>
-                    <option value="true">Respecte la banlist</option>
-                    <option value="false">Ignore la banlist</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Visibilite</label>
-                  <select
-                    value={isPublic}
-                    onChange={(e) => setIsPublic(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Tous les decks</option>
-                    <option value="true">Public</option>
-                    <option value="false">Prive</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Loading */}
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-              </div>
-            ) : (
-              <>
-                {/* Decks Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {decks.map((deck) => {
-                    const { mainCount, extraCount } = getDeckCardCount(deck);
-                    return (
-                      <div
-                        key={deck.id}
-                        className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
-                        style={{
-                          background: 'var(--panel)',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        {/* Deck Cover */}
-                        <div
-                          className="h-48 relative"
-                          style={{
-                            background:
-                              'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
-                          }}
-                        >
-                          {deck.cover_image ? (
-                            <img
-                              src={deck.cover_image}
-                              alt={deck.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <span className="text-white text-4xl font-bold opacity-50">
-                                {deck.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          {deck.is_public && (
-                            <span
-                              className="absolute top-2 right-2 text-xs px-2 py-1"
-                              style={{
-                                background: 'var(--panel)',
-                                border: '1px solid var(--success)',
-                                color: 'var(--success)',
-                                fontFamily: "'Orbitron', sans-serif",
-                                letterSpacing: '0.12em',
-                                textTransform: 'uppercase',
-                                fontWeight: 700,
-                              }}
-                            >
-                              Public
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Deck Info */}
-                        <div className="p-4">
-                          <h3 className="font-bold text-xl text-gray-800 mb-2">{deck.name}</h3>
-
-                          <div className="space-y-2 text-sm text-gray-600 mb-4">
-                            <div className="flex justify-between">
-                              <span>Deck Principal :</span>
-                              <span className={mainCount >= 40 && mainCount <= 60 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                                {mainCount} cartes
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Extra Deck :</span>
-                              <span className={extraCount <= 15 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                                {extraCount} cartes
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Banlist :</span>
-                              <span className={deck.respect_banlist ? 'text-green-600' : 'text-orange-600'}>
-                                {deck.respect_banlist ? 'Conforme' : 'Ignoree'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Stats */}
-                          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                            <span className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                              </svg>
-                              {deck.likes_count || 0}
-                            </span>
-                            <span className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                              </svg>
-                              {deck.comments_count || 0}
-                            </span>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => navigate(`/decks/${deck.id}/edit`)}
-                              className="flex-1"
-                            >
-                              Voir / Editer
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteDeck(deck.id)}
-                            >
-                              Supprimer
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Empty state */}
-                {decks.length === 0 && (
-                  <div
-                    className="text-center py-12 cyber-panel"
-                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-                  >
-                    <p className="text-gray-600 text-lg mb-4">Vous n'avez pas encore de deck.</p>
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={() => navigate('/decks/new')}
-                    >
-                      Creer votre premier deck
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </>
+              className="inline-block animate-spin"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                border: '3px solid rgba(245,197,24,.3)',
+                borderTopColor: '#F5C518',
+              }}
+            />
+          </div>
         ) : (
           <>
-            {/* Wishlist Header */}
-            <div className="mb-8">
-              <HeroTitle
-                kicker="— Codex des envies —"
-                title="Ma Wishlist"
-                sub={`${wishlist.length} deck(s) sauvegardés d'autres joueurs`}
-              />
+            {/* Grid 4 cols */}
+            <div
+              style={{
+                marginTop: 30,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: 20,
+              }}
+              className="max-xl:!grid-cols-3 max-lg:!grid-cols-2 max-sm:!grid-cols-1">
+              {(activeTab === 'mydecks' ? decks : wishlist.map((w) => w.deck)).map((deck) => {
+                const c = cardCount(deck);
+                const isWishlist = activeTab === 'wishlist';
+                return (
+                  <div
+                    key={deck.id}
+                    onClick={() => navigate(`/decks/${deck.id}`)}
+                    style={{
+                      padding: 18,
+                      background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
+                      border: '1px solid #3A2E1C',
+                      cursor: 'pointer',
+                      transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
+                      clipPath: CUT_TILE,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-6px)';
+                      e.currentTarget.style.borderColor = '#C29A0F';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = '#3A2E1C';
+                    }}>
+                    <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          width: 52,
+                          height: 74,
+                          border: '1px solid rgba(245,197,24,.42)',
+                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          transform: 'rotate(-7deg)',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}>
+                        <CardIcon size={20} className="text-blue-600" />
+                      </div>
+                      <div
+                        style={{
+                          width: 52,
+                          height: 74,
+                          border: '1px solid rgba(168,85,247,.42)',
+                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          marginLeft: -18,
+                          transform: 'rotate(7deg)',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}>
+                        <CardIcon size={20} style={{ color: '#A855F7' }} />
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: '#F5EFE0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                      {deck.name}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 12,
+                        color: '#A99C86',
+                      }}>
+                      <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                        {c.main} · {c.extra} · {c.side}
+                      </span>
+                      <span style={{ color: '#FF2E88' }}>♥ {deck.likes_count || 0}</span>
+                    </div>
+                    {isWishlist && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 11,
+                          color: '#A99C86',
+                        }}>
+                        par <span style={{ color: '#A855F7' }}>@{deck.user?.username}</span>
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: 'flex',
+                        gap: 6,
+                      }}>
+                      {activeTab === 'mydecks' ? (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/decks/${deck.id}/edit`);
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: '6px 10px',
+                              background: '#14100A',
+                              border: '1px solid #3A2E1C',
+                              color: '#F5C518',
+                              fontFamily: "'Orbitron', sans-serif",
+                              fontSize: 9,
+                              letterSpacing: '0.12em',
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}>
+                            Éditer
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDeck(deck.id);
+                            }}
+                            style={{
+                              padding: '6px 10px',
+                              background: 'transparent',
+                              border: '1px solid #FF4D6D',
+                              color: '#FF4D6D',
+                              fontFamily: "'Orbitron', sans-serif",
+                              fontSize: 9,
+                              letterSpacing: '0.12em',
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}>
+                            ×
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFromWishlist(deck.id);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '6px 10px',
+                            background: 'transparent',
+                            border: '1px solid #FF4D6D',
+                            color: '#FF4D6D',
+                            fontFamily: "'Orbitron', sans-serif",
+                            fontSize: 9,
+                            letterSpacing: '0.12em',
+                            textTransform: 'uppercase',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}>
+                          Retirer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Bloc "Dresser un deck" placeholder */}
+              {activeTab === 'mydecks' && decks.length > 0 && (
+                <div
+                  onClick={() => navigate('/decks/new')}
+                  style={{
+                    padding: 18,
+                    border: '1px dashed #3A2E1C',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 12,
+                    minHeight: 190,
+                    cursor: 'pointer',
+                    transition: 'border-color 200ms',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
+                  <CardIcon size={40} style={{ color: '#C29A0F', opacity: 0.6 }} />
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 10,
+                      letterSpacing: '0.14em',
+                      color: '#A99C86',
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                    }}>
+                    Dresser un deck
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Loading */}
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+            {activeTab === 'mydecks' && decks.length === 0 && !loading && (
+              <div
+                style={{
+                  marginTop: 40,
+                  textAlign: 'center',
+                  padding: '60px 20px',
+                  border: '1px dashed #3A2E1C',
+                  color: '#A99C86',
+                }}>
+                <p style={{ fontSize: 16, marginBottom: 16 }}>Aucun deck pour le moment.</p>
+                <button
+                  onClick={() => navigate('/decks/new')}
+                  style={{
+                    padding: '10px 24px',
+                    background: '#F5C518',
+                    color: '#0B0906',
+                    border: 0,
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  Fonder mon premier deck
+                </button>
               </div>
-            ) : (
-              <>
-                {/* Wishlist Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {wishlist.map((item) => {
-                    const deck = item.deck;
-                    const { mainCount, extraCount } = getWishlistDeckCardCount(item);
-                    return (
-                      <div
-                        key={item.id}
-                        className="cyber-tile overflow-hidden transition-transform hover:-translate-y-1"
-                        style={{
-                          background: 'var(--panel)',
-                          border: '1px solid var(--violet)',
-                        }}
-                      >
-                        {/* Deck Cover */}
-                        <div
-                          className="h-48 relative"
-                          style={{
-                            background:
-                              'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(255,46,136,0.15))',
-                          }}
-                        >
-                          {deck.cover_image ? (
-                            <img
-                              src={deck.cover_image}
-                              alt={deck.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <span className="text-white text-4xl font-bold opacity-50">
-                                {deck.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <span className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded flex items-center">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
-                            Wishlist
-                          </span>
-                        </div>
+            )}
 
-                        {/* Deck Info */}
-                        <div className="p-4">
-                          <h3 className="font-bold text-xl text-gray-800 mb-1">{deck.name}</h3>
-                          <p className="text-sm text-gray-500 mb-3">
-                            par <span className="text-purple-600 font-medium">{deck.user?.username || 'Inconnu'}</span>
-                          </p>
-
-                          <div className="space-y-2 text-sm text-gray-600 mb-4">
-                            <div className="flex justify-between">
-                              <span>Deck Principal :</span>
-                              <span className="font-semibold">{mainCount} cartes</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Extra Deck :</span>
-                              <span className="font-semibold">{extraCount} cartes</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Banlist :</span>
-                              <span className={deck.respect_banlist ? 'text-green-600' : 'text-orange-600'}>
-                                {deck.respect_banlist ? 'Conforme' : 'Ignoree'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Stats */}
-                          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                            <span className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                              </svg>
-                              {deck.likes_count || 0}
-                            </span>
-                            <span className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                              </svg>
-                              {deck.comments_count || 0}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              Ajoute le {new Date(item.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => navigate(`/decks/${deck.id}`)}
-                              className="flex-1"
-                            >
-                              Voir le deck
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleRemoveFromWishlist(deck.id)}
-                              title="Retirer de la wishlist"
-                            >
-                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Empty state */}
-                {wishlist.length === 0 && (
-                  <div
-                    className="text-center py-12 cyber-panel"
-                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
-                  >
-                    <svg
-                      className="mx-auto h-16 w-16 text-purple-300 mb-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Votre wishlist est vide</h3>
-                    <p className="text-gray-600 mb-4">
-                      Parcourez les decks publics et ajoutez ceux qui vous interessent a votre wishlist !
-                    </p>
-                    <Button
-                      variant="secondary"
-                      size="lg"
-                      onClick={() => navigate('/social')}
-                    >
-                      Decouvrir des decks
-                    </Button>
-                  </div>
-                )}
-              </>
+            {activeTab === 'wishlist' && wishlist.length === 0 && !loading && (
+              <div
+                style={{
+                  marginTop: 40,
+                  textAlign: 'center',
+                  padding: '60px 20px',
+                  border: '1px dashed #3A2E1C',
+                  color: '#A99C86',
+                }}>
+                <p style={{ fontSize: 16, marginBottom: 16 }}>Ta wishlist est vide.</p>
+                <button
+                  onClick={() => navigate('/social')}
+                  style={{
+                    padding: '10px 24px',
+                    background: 'transparent',
+                    border: '1px solid #A855F7',
+                    color: '#C084FC',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                  }}>
+                  Découvrir des decks
+                </button>
+              </div>
             )}
           </>
         )}
