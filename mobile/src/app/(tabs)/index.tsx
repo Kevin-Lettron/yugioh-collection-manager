@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+// useAuth n'est plus utilisé ici — l'avatar nav vers /profile où le logout se fait.
 import { collectionApi } from '@/services/collectionApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import type { CollectionStats, UserCard } from '@/types';
@@ -46,7 +46,6 @@ type QuickFilter = {
 export default function CollectionScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
-  const { logout } = useAuth();
 
   const [cards, setCards] = useState<UserCard[]>([]);
   const [total, setTotal] = useState(0);
@@ -143,12 +142,8 @@ export default function CollectionScreen() {
     });
   };
 
-  const handleAvatarPress = () => {
-    Alert.alert('Compte', undefined, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => logout() },
-    ]);
-  };
+  // Avatar géré par défaut par AppHeader → nav vers /(tabs)/profile.
+  // (avant : ouvrait une alerte déconnexion, à faire depuis la page profil).
 
   const renderCard = ({ item }: { item: UserCard }) => (
     <View style={styles.cardCell}>
@@ -277,7 +272,7 @@ export default function CollectionScreen() {
     <View style={styles.root}>
       <AppBackground />
       <SafeAreaView style={styles.container} edges={['top']}>
-        <AppHeader onPressAvatar={handleAvatarPress} />
+        <AppHeader />
 
         {loading && cards.length === 0 ? (
           <View style={styles.emptyState}>

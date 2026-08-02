@@ -87,7 +87,7 @@ export default function ProfileScreen() {
       <View style={styles.root}>
         <AppBackground />
         <SafeAreaView style={styles.container} edges={['top']}>
-          <AppHeader onPressAvatar={handleLogout} />
+          <AppHeader onPressAvatar={() => router.push('/settings' as any)} />
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.gold} />
           </View>
@@ -173,9 +173,7 @@ export default function ProfileScreen() {
             <View style={styles.followRow}>
               <TouchableOpacity
                 style={styles.followItem}
-                onPress={() =>
-                  Alert.alert('— À venir —', 'La liste détaillée des abonnés arrive bientôt.')
-                }>
+                onPress={() => router.push('/followers?tab=followers' as any)}>
                 <Text style={styles.followValue}>
                   {followerCount === null ? '—' : followerCount}
                 </Text>
@@ -184,13 +182,27 @@ export default function ProfileScreen() {
               <View style={styles.followSep} />
               <TouchableOpacity
                 style={styles.followItem}
-                onPress={() =>
-                  Alert.alert('— À venir —', 'La liste détaillée des abonnements arrive bientôt.')
-                }>
+                onPress={() => router.push('/followers?tab=following' as any)}>
                 <Text style={styles.followValue}>
                   {followingCount === null ? '—' : followingCount}
                 </Text>
                 <Text style={styles.followLabel}>Abonnements</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* CTA rangée : Modifier mon compte + Rechercher */}
+            <View style={styles.accountRow}>
+              <TouchableOpacity
+                style={styles.accountBtn}
+                onPress={() => router.push('/settings' as any)}
+                activeOpacity={0.8}>
+                <Text style={styles.accountBtnText}>⚙  Modifier mon compte</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.accountBtnAlt}
+                onPress={() => router.push('/users/search' as any)}
+                activeOpacity={0.8}>
+                <Text style={styles.accountBtnAltText}>🔍  Rechercher un duelliste</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -512,5 +524,39 @@ const makeStyles = (t: Theme) =>
       textTransform: 'uppercase',
       color: t.colors.textMuted,
       fontWeight: '700',
+    },
+
+    // ─── Account CTA ─────────────────────────────
+    accountRow: {
+      marginTop: 18,
+      gap: 8,
+    },
+    accountBtn: {
+      padding: 12,
+      backgroundColor: t.colors.bgElev,
+      borderWidth: 1,
+      borderColor: t.colors.gold,
+      alignItems: 'center',
+    },
+    accountBtnText: {
+      color: t.colors.gold,
+      fontWeight: '700',
+      fontSize: 12,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    accountBtnAlt: {
+      padding: 12,
+      backgroundColor: t.colors.bgElev,
+      borderWidth: 1,
+      borderColor: t.colors.violet,
+      alignItems: 'center',
+    },
+    accountBtnAltText: {
+      color: t.colors.violet,
+      fontWeight: '700',
+      fontSize: 12,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
     },
   });
