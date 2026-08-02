@@ -59,6 +59,20 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <TabIcon name="decks" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="social"
+        options={{
+          title: 'Social',
+          tabBarIcon: ({ color }) => <TabIcon name="social" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color }) => <TabIcon name="profile" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

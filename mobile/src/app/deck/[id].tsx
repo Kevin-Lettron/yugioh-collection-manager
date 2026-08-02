@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { deckApi } from '@/services/deckApi';
+import { socialApi } from '@/services/socialApi';
 import type { Deck, DeckCard, DeckComment, DeckStats } from '@/types';
 import { API_URL } from '@/config';
 import { useThemedStyles } from '@/theme/useThemedStyles';
@@ -57,6 +58,13 @@ export default function DeckViewScreen() {
   const [postingComment, setPostingComment] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('arena');
 
+  // Wishlist (« copier deck ») + follow author — état local optimistic, resynchro
+  // depuis /social/wishlist et /social/following à chaque fetchAll.
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+
   const fetchAll = useCallback(async () => {
     try {
       const [res, c] = await Promise.all([
@@ -66,6 +74,26 @@ export default function DeckViewScreen() {
       setDeck(res.deck);
       setStats(res.stats || null);
       setComments(c);
+
+      // Enrichissement social — le back n'ajoute pas is_wishlisted / is_following
+      // aux réponses /decks/:id ; on croise avec les listes /social/wishlist et
+      // /social/following. Les échecs sont silencieux (user pas connecté, etc.).
+      if (user) {
+        try {
+          const wl = await socialApi.getWishlist();
+          setWishlisted(wl.some((w) => w.deck_id === deckId));
+        } catch {
+          /* wishlist indisponible : on garde l'état par défaut */
+        }
+        if (res.deck.user_id && res.deck.user_id !== user.id) {
+          try {
+            const following = await socialApi.getFollowing();
+            setIsFollowing(following.some((f) => f.id === res.deck.user_id));
+          } catch {
+            /* follow indisponible */
+          }
+        }
+      }
     } catch (err: any) {
       Alert.alert('Erreur', err?.response?.data?.error || 'Deck introuvable');
       router.back();
@@ -73,7 +101,7 @@ export default function DeckViewScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [deckId, router]);
+  }, [deckId, router, user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -148,6 +176,46 @@ export default function DeckViewScreen() {
         },
       },
     ]);
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!deck || wishlistBusy) return;
+    if (!user) {
+      Alert.alert('Connexion requise', 'Connecte-toi pour copier ce deck dans ta wishlist.');
+      return;
+    }
+    setWishlistBusy(true);
+    const was = wishlisted;
+    setWishlisted(!was); // optimistic
+    try {
+      if (was) await socialApi.unwishlist(deck.id);
+      else await socialApi.wishlist(deck.id);
+    } catch (err: any) {
+      setWishlisted(was);
+      Alert.alert('Erreur', err?.response?.data?.error || 'Copie échouée');
+    } finally {
+      setWishlistBusy(false);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!deck?.user_id || followBusy) return;
+    if (!user) {
+      Alert.alert('Connexion requise', "Connecte-toi pour suivre l'auteur.");
+      return;
+    }
+    setFollowBusy(true);
+    const was = isFollowing;
+    setIsFollowing(!was); // optimistic
+    try {
+      if (was) await socialApi.unfollow(deck.user_id);
+      else await socialApi.follow(deck.user_id);
+    } catch (err: any) {
+      setIsFollowing(was);
+      Alert.alert('Erreur', err?.response?.data?.error || 'Action échouée');
+    } finally {
+      setFollowBusy(false);
+    }
   };
 
   const mainCount = useMemo(
@@ -278,20 +346,34 @@ export default function DeckViewScreen() {
               />
             )}
 
-            {/* CTA Copier + toggle secondaire */}
-            <View style={styles.ctaRow}>
-              <View style={{ flex: 1 }}>
-                <CyberButton
-                  label="Copier ce deck"
-                  variant="primary"
-                  block
-                  cutColor={colors.bg}
-                  onPress={() =>
-                    Alert.alert('— À venir —', 'La copie de deck arrive bientôt.')
-                  }
-                />
+            {/* CTA Copier (wishlist) + Suivre l'auteur si !isOwner */}
+            {!isOwner && (
+              <View style={styles.ctaRow}>
+                <View style={{ flex: 1 }}>
+                  <CyberButton
+                    label={wishlisted ? 'Ajouté ✓' : 'Copier ce deck'}
+                    variant="primary"
+                    block
+                    cutColor={colors.bg}
+                    loading={wishlistBusy}
+                    disabled={wishlisted}
+                    onPress={handleWishlistToggle}
+                  />
+                </View>
+                {deck.user_id && deck.user_id !== user?.id && (
+                  <View style={{ flex: 1 }}>
+                    <CyberButton
+                      label={isFollowing ? 'Suivi' : "Suivre l'auteur"}
+                      variant="secondary"
+                      block
+                      cutColor={colors.bg}
+                      loading={followBusy}
+                      onPress={handleFollowToggle}
+                    />
+                  </View>
+                )}
               </View>
-            </View>
+            )}
 
             {isOwner && (
               <View style={{ marginTop: spacing[3] }}>
