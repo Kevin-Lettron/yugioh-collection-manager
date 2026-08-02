@@ -275,3 +275,112 @@ export interface PaginatedResponse<T> {
   limit: number;
   total_pages: number;
 }
+
+// ─── Duel types ─────────────────────────────────────────────────────────
+
+export type DuelStatus = 'pending' | 'active' | 'finished' | 'cancelled';
+export type DuelPhase = 'draw' | 'main1' | 'battle' | 'main2' | 'end';
+export type DuelZone =
+  | 'monster'
+  | 'spelltrap'
+  | 'field'
+  | 'hand'
+  | 'deck'
+  | 'graveyard'
+  | 'banished';
+
+/**
+ * Une carte posee sur le plateau. faceDown = set / non revelee.
+ * defenseMode s'applique aux monstres (attack vs defense position).
+ */
+export interface BoardCard {
+  card: DeckCard;
+  faceDown: boolean;
+  defenseMode?: boolean;
+}
+
+/**
+ * Etat de plateau d'un joueur.
+ * - hand / deck / graveyard / banished : piles de DeckCard (chaque copie est atomique
+ *   apres expansion des quantity).
+ * - monsters / spellTraps : 5 slots fixes ordonnes.
+ * - field : slot terrain unique.
+ */
+export interface PlayerBoardState {
+  hand: DeckCard[];
+  deck: DeckCard[];
+  monsters: (BoardCard | null)[];
+  spellTraps: (BoardCard | null)[];
+  field: BoardCard | null;
+  graveyard: DeckCard[];
+  banished: DeckCard[];
+}
+
+export interface DuelChatMessage {
+  user_id: number;
+  username?: string;
+  message: string;
+  at: string;
+}
+
+export interface Duel {
+  id: number;
+  challenger_id: number;
+  opponent_id: number;
+  challenger?: Partial<User>;
+  opponent?: Partial<User>;
+  challenger_deck_id?: number | null;
+  opponent_deck_id?: number | null;
+  status: DuelStatus;
+  winner_id?: number | null;
+  first_player_id?: number | null;
+  current_turn_player_id?: number | null;
+  current_phase?: DuelPhase | null;
+  turn_number: number;
+  challenger_lp: number;
+  opponent_lp: number;
+  challenger_state?: PlayerBoardState | null;
+  opponent_state?: PlayerBoardState | null;
+  chat_log?: DuelChatMessage[];
+  created_at: Date;
+  updated_at: Date;
+  finished_at?: Date | null;
+}
+
+export type DuelActionType =
+  | 'draw'
+  | 'place'
+  | 'flip'
+  | 'discard'
+  | 'sendToGraveyard'
+  | 'banish'
+  | 'attack'
+  | 'advance_phase'
+  | 'end_turn'
+  | 'surrender'
+  | 'chat';
+
+/**
+ * Payload libre — chaque type d'action definit sa propre forme.
+ * Le back valide au moment du traitement.
+ *
+ * Formes attendues (payload) :
+ *  - draw:            { count?: number }                             (default 1)
+ *  - place:           { fromHandIndex: number; zone: 'monster'|'spelltrap'|'field';
+ *                       slotIndex?: number; faceDown?: boolean; defenseMode?: boolean }
+ *  - flip:            { zone: 'monster'|'spelltrap'|'field'; slotIndex?: number;
+ *                       defenseMode?: boolean }
+ *  - discard:         { fromHandIndex: number }
+ *  - sendToGraveyard: { zone: 'monster'|'spelltrap'|'field'|'hand'; slotIndex?: number }
+ *  - banish:          { zone: 'monster'|'spelltrap'|'field'|'hand'|'graveyard'; slotIndex?: number }
+ *  - attack:          { attackerSlot: number;
+ *                       targetSlot: number | null }  // null = attaque directe
+ *  - advance_phase:   {}
+ *  - end_turn:        {}
+ *  - surrender:       {}
+ *  - chat:            { message: string }
+ */
+export interface DuelAction {
+  type: DuelActionType;
+  payload: any;
+}

@@ -244,3 +244,82 @@ export interface AIStatus {
   max: number;
   used: number;
 }
+
+// ─── Duel types ────────────────────────────────────────
+// Duplication mobile de shared/types/index.ts — sync a la main.
+
+export type DuelStatus = 'pending' | 'active' | 'finished' | 'cancelled';
+export type DuelPhase = 'draw' | 'main1' | 'battle' | 'main2' | 'end';
+export type DuelZone =
+  | 'monster'
+  | 'spelltrap'
+  | 'field'
+  | 'hand'
+  | 'deck'
+  | 'graveyard'
+  | 'banished';
+
+export interface BoardCard {
+  card: DeckCard;
+  faceDown: boolean;
+  defenseMode?: boolean;
+}
+
+export interface PlayerBoardState {
+  hand: DeckCard[];
+  deck: DeckCard[];
+  monsters: (BoardCard | null)[];
+  spellTraps: (BoardCard | null)[];
+  field: BoardCard | null;
+  graveyard: DeckCard[];
+  banished: DeckCard[];
+}
+
+export interface DuelChatMessage {
+  user_id: number;
+  username?: string;
+  message: string;
+  at: string;
+}
+
+export interface Duel {
+  id: number;
+  challenger_id: number;
+  opponent_id: number;
+  challenger?: DeckUser;
+  opponent?: DeckUser;
+  challenger_deck_id?: number | null;
+  opponent_deck_id?: number | null;
+  status: DuelStatus;
+  winner_id?: number | null;
+  first_player_id?: number | null;
+  current_turn_player_id?: number | null;
+  current_phase?: DuelPhase | null;
+  turn_number: number;
+  challenger_lp: number;
+  opponent_lp: number;
+  challenger_state?: PlayerBoardState | null;
+  opponent_state?: PlayerBoardState | null;
+  chat_log?: DuelChatMessage[];
+  created_at: string;
+  updated_at: string;
+  finished_at?: string | null;
+}
+
+export type DuelActionType =
+  | 'draw'
+  | 'place'
+  | 'flip'
+  | 'discard'
+  | 'sendToGraveyard'
+  | 'banish'
+  | 'attack'
+  | 'advance_phase'
+  | 'end_turn'
+  | 'surrender'
+  | 'chat';
+
+export interface DuelAction {
+  type: DuelActionType;
+  payload: any;
+}

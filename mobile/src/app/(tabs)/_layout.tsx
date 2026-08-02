@@ -5,6 +5,10 @@ import { useAppTheme } from '@/theme/ThemeContext';
 const ICONS = {
   collection: require('@/assets/images/tabIcons/tab-collection.png'),
   decks: require('@/assets/images/tabIcons/tab-decks.png'),
+  // TODO(mobile): remplacer par un vrai visuel « 2 epees croisees » ou « VS ».
+  // Actuellement on reutilise tab-decks.png comme placeholder (voir AGENTS.md
+  // + rapport de portage duels : aucun outil de generation PNG cote agent).
+  duels: require('@/assets/images/tabIcons/tab-decks.png'),
   social: require('@/assets/images/tabIcons/tab-social.png'),
   profile: require('@/assets/images/tabIcons/tab-profile.png'),
 } as const;
@@ -57,6 +61,13 @@ export default function TabsLayout() {
         options={{
           title: 'Decks',
           tabBarIcon: ({ color }) => <TabIcon name="decks" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="duels"
+        options={{
+          title: 'Duels',
+          tabBarIcon: ({ color }) => <TabIcon name="duels" color={color} />,
         }}
       />
       <Tabs.Screen

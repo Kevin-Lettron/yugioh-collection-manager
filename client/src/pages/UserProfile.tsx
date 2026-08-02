@@ -9,6 +9,7 @@ import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
 import { GlyphEye } from '../components/decor/Glyphs';
 import { CardIcon } from '../components/decor/Icons';
+import ChallengeModal from '../components/ChallengeModal';
 
 const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
 const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
@@ -30,6 +31,7 @@ const UserProfile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [stats, setStats] = useState({ followersCount: 0, followingCount: 0 });
+  const [challengeOpen, setChallengeOpen] = useState(false);
 
   const isOwn = currentUser && parseInt(userId || '0') === currentUser.id;
 
@@ -308,6 +310,37 @@ const UserProfile = () => {
                   </button>
                 )
               )}
+              {!isOwn && (
+                <button
+                  onClick={() => setChallengeOpen(true)}
+                  style={{
+                    height: 44,
+                    padding: '0 22px',
+                    background: 'rgba(168,85,247,.12)',
+                    border: '1px solid #A855F7',
+                    color: '#C084FC',
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    clipPath: CUT_SM,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(168,85,247,.22)';
+                    e.currentTarget.style.boxShadow = '0 0 22px rgba(168,85,247,.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(168,85,247,.12)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}>
+                  Défier en duel
+                </button>
+              )}
             </div>
           </div>
 
@@ -466,6 +499,15 @@ const UserProfile = () => {
           )}
         </div>
       </div>
+
+      {profileUser && (
+        <ChallengeModal
+          open={challengeOpen}
+          onClose={() => setChallengeOpen(false)}
+          opponent={{ id: profileUser.id, username: profileUser.username }}
+          onSuccess={() => navigate('/duels')}
+        />
+      )}
     </div>
   );
 };

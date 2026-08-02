@@ -137,6 +137,7 @@ const AppNavbar = () => {
   const navLinks = [
     { to: '/collection', label: 'Collection' },
     { to: '/decks', label: 'Decks' },
+    { to: '/duels', label: 'Duels' },
     { to: '/social', label: 'Social' },
     ...(isAdmin ? [{ to: '/admin', label: '⚙️ Admin' }] : []),
   ];

@@ -17,6 +17,8 @@ import type { Deck } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { AppBackground } from '@/components/decor/AppBackground';
+import ChallengeModal from '@/components/ChallengeModal';
+import CyberButton from '@/components/CyberButton';
 
 /**
  * User profile screen (autre user) — même syntaxe visuelle que profile.tsx :
@@ -40,6 +42,7 @@ export default function UserProfileScreen() {
   const [followBusy, setFollowBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [challengeOpen, setChallengeOpen] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!targetId || Number.isNaN(targetId)) return;
@@ -176,6 +179,25 @@ export default function UserProfileScreen() {
               </TouchableOpacity>
             )}
 
+            {/* CTA Defier en duel — pas visible si c'est notre propre profil */}
+            {!isMe && (
+              <View style={styles.ctaDuelWrap}>
+                <CyberButton
+                  label="Defier en duel"
+                  variant="secondary"
+                  block
+                  cutColor={colors.bg}
+                  onPress={() => {
+                    if (!me) {
+                      Alert.alert('Connexion requise', 'Connecte-toi pour defier ce duelliste.');
+                      return;
+                    }
+                    setChallengeOpen(true);
+                  }}
+                />
+              </View>
+            )}
+
             {/* Stats grid 3 col */}
             <View style={styles.statsGrid}>
               <View style={styles.statCell}>
@@ -234,6 +256,13 @@ export default function UserProfileScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <ChallengeModal
+        visible={challengeOpen}
+        targetUsername={username}
+        targetUserId={targetId}
+        onClose={() => setChallengeOpen(false)}
+      />
     </View>
   );
 }
@@ -336,6 +365,10 @@ const makeStyles = (t: Theme) =>
       textTransform: 'uppercase',
       color: t.colors.gold,
       fontWeight: '700',
+    },
+
+    ctaDuelWrap: {
+      marginTop: 10,
     },
 
     statsGrid: {

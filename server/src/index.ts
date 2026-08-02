@@ -100,6 +100,23 @@ io.on('connection', (socket) => {
     loggers.socket.connection(socket.id, userId);
   });
 
+  // Duel rooms — un joueur peut rejoindre la room d'un duel dont il est
+  // participant. La verification "participe au duel ?" est faite cote HTTP
+  // (GET /duels/:id) qui 403 si l'user n'y est pas. Rejoindre la room ici
+  // ne donne acces qu'aux broadcasts d'actions (le state complet arrive
+  // dans le payload — on considere que les 2 joueurs ont le droit de tout voir).
+  socket.on('duel:join', (payload: { duelId?: number }) => {
+    const duelId = Number(payload?.duelId);
+    if (!Number.isInteger(duelId) || duelId <= 0) return;
+    socket.join(`duel:${duelId}`);
+  });
+
+  socket.on('duel:leave', (payload: { duelId?: number }) => {
+    const duelId = Number(payload?.duelId);
+    if (!Number.isInteger(duelId) || duelId <= 0) return;
+    socket.leave(`duel:${duelId}`);
+  });
+
   socket.on('disconnect', () => {
     loggers.socket.disconnect(socket.id, userId);
   });
@@ -125,6 +142,7 @@ import commentRoutes from './routes/commentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import debugRoutes from './routes/debugRoutes';
 import adminRoutes from './routes/adminRoutes';
+import duelRoutes from './routes/duelRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
@@ -134,6 +152,7 @@ app.use('/api/reactions', reactionRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/duels', duelRoutes);
 
 // Debug routes (dev only — writes arbitrary client events to server logs)
 if (process.env.NODE_ENV !== 'production') {

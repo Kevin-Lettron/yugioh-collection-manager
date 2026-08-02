@@ -19,6 +19,8 @@ import UserProfile from './pages/UserProfile';
 import Social from './pages/Social';
 import Followers from './pages/Followers';
 import Admin from './pages/Admin';
+import Duels from './pages/Duels';
+import DuelRoom from './pages/DuelRoom';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -131,6 +133,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Admin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/duels"
+        element={
+          <ProtectedRoute>
+            <Duels />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/duel/:id"
+        element={
+          <ProtectedRoute>
+            <DuelRoom />
           </ProtectedRoute>
         }
       />
