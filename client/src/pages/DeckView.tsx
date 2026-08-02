@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Deck, DeckComment } from '../../../shared/types';
+import { Deck, DeckComment, DeckStats } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
@@ -29,6 +29,7 @@ const DeckView = () => {
   const navigate = useNavigate();
 
   const [deck, setDeck] = useState<Deck | null>(null);
+  const [stats, setStats] = useState<DeckStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<DeckComment[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -52,6 +53,7 @@ const DeckView = () => {
     try {
       const response = await api.get(`/decks/${deckId}`);
       setDeck(response.data.deck);
+      setStats(response.data.stats || null);
     } catch (error) {
       console.error(error);
       toast.error('Impossible de charger le deck');
@@ -195,8 +197,20 @@ const DeckView = () => {
   const deckMeta = [
     { label: 'Archétype', value: (deck as any).archetype || '— À venir' },
     { label: 'Format', value: 'TCG Advanced' },
-    { label: 'Copié', value: '— À venir' },
-    { label: 'Valeur du deck', value: '— À venir' },
+    {
+      label: 'Copié',
+      value: stats && stats.copies_count > 0 ? `${stats.copies_count} fois` : '— À venir',
+    },
+    {
+      label: 'Valeur du deck',
+      value: stats
+        ? stats.total_value_eur.toLocaleString('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+          })
+        : '— À venir',
+    },
   ];
 
   return (
@@ -862,26 +876,41 @@ const DeckView = () => {
                 color: '#A99C86',
                 textTransform: 'uppercase',
               }}>
-              <span>Répartition du deck principal — À venir</span>
+              <span>Répartition du deck principal</span>
               <span style={{ color: '#F5C518', fontVariantNumeric: 'tabular-nums' }}>{mainCount} / 40</span>
             </div>
             <div style={{ marginTop: 10, height: 10, display: 'flex', gap: 2 }}>
-              <div style={{ flex: 22, background: 'linear-gradient(90deg,#C29A0F,#F5C518)' }} />
-              <div style={{ flex: 12, background: 'linear-gradient(90deg,#7C3AED,#A855F7)' }} />
-              <div style={{ flex: 6, background: 'linear-gradient(90deg,#0E7490,#22D3EE)' }} />
+              <div
+                style={{
+                  flex: stats?.main_by_type.monster ?? 22,
+                  background: 'linear-gradient(90deg,#C29A0F,#F5C518)',
+                }}
+              />
+              <div
+                style={{
+                  flex: stats?.main_by_type.spell ?? 12,
+                  background: 'linear-gradient(90deg,#7C3AED,#A855F7)',
+                }}
+              />
+              <div
+                style={{
+                  flex: stats?.main_by_type.trap ?? 6,
+                  background: 'linear-gradient(90deg,#0E7490,#22D3EE)',
+                }}
+              />
             </div>
             <div style={{ marginTop: 10, display: 'flex', gap: 20, fontSize: 13, color: '#A99C86', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 9, height: 9, background: '#F5C518' }} />
-                Monstres — À venir
+                Monstres {stats ? stats.main_by_type.monster : '—'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 9, height: 9, background: '#A855F7' }} />
-                Magies — À venir
+                Magies {stats ? stats.main_by_type.spell : '—'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 9, height: 9, background: '#22D3EE' }} />
-                Pièges — À venir
+                Pièges {stats ? stats.main_by_type.trap : '—'}
               </span>
             </div>
           </div>

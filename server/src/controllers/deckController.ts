@@ -6,6 +6,7 @@ import { DeckModel } from '../models/deckModel';
 import { CardModel } from '../models/cardModel';
 import { UserCardModel } from '../models/userCardModel';
 import { buildDeckWithAI, getApiCallCount, getMaxApiCalls, getRemainingCalls } from '../services/claudeService';
+import { computeDeckStats } from '../utils/prices';
 
 export class DeckController {
   /**
@@ -95,7 +96,8 @@ export class DeckController {
         throw new ForbiddenError('You do not have permission to view this deck');
       }
 
-      res.json({ deck });
+      const stats = computeDeckStats(deck);
+      res.json({ deck, stats });
     } catch (error) {
       next(error);
     }
@@ -447,7 +449,8 @@ export class DeckController {
         throw new NotFoundError('Shared deck not found or link has expired');
       }
 
-      res.json({ deck });
+      const stats = computeDeckStats(deck);
+      res.json({ deck, stats });
     } catch (error) {
       next(error);
     }

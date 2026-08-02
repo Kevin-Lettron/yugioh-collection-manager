@@ -312,6 +312,20 @@ export class CollectionController {
   }
 
   /**
+   * Agrégats de la collection (total cartes, ultra/secret rares, valeur EUR, répartition).
+   * Endpoint séparé de /cards car il calcule sur TOUTES les cartes, hors pagination.
+   */
+  static async getCollectionStats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new ValidationError('Not authenticated');
+      const stats = await UserCardModel.getCollectionStats(req.user.id);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Return the current scan quota for the user.
    */
   static async getScanStatus(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

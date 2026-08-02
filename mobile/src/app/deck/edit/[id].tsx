@@ -51,8 +51,8 @@ export default function DeckEditorScreen() {
 
   const refresh = useCallback(async () => {
     try {
-      const d = await deckApi.get(deckId);
-      setDeck(d);
+      const res = await deckApi.get(deckId);
+      setDeck(res.deck);
     } catch (err: any) {
       Alert.alert('Erreur', err?.response?.data?.error || 'Deck introuvable');
       router.back();

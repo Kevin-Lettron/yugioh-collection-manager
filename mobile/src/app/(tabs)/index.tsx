@@ -17,7 +17,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { collectionApi } from '@/services/collectionApi';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { UserCard } from '@/types';
+import type { CollectionStats, UserCard } from '@/types';
 import AddCardModal from '@/components/AddCardModal';
 import CardDetailModal from '@/components/CardDetailModal';
 import FiltersModal, { type CollectionFilterValues } from '@/components/FiltersModal';
@@ -63,6 +63,7 @@ export default function CollectionScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
   const [activeChip, setActiveChip] = useState<string>('all');
+  const [stats, setStats] = useState<CollectionStats | null>(null);
 
   const activeFilterCount =
     (filters.type ? 1 : 0) + (filters.attribute ? 1 : 0) + (filters.rarity ? 1 : 0);
@@ -73,12 +74,12 @@ export default function CollectionScreen() {
   const chips: QuickFilter[] = useMemo(
     () => [
       { key: 'all', label: 'Toutes', count: total, filter: {} },
-      { key: 'monsters', label: 'Monstres', count: null, filter: { type: 'Effect Monster' } },
-      { key: 'spells', label: 'Magies', count: null, filter: { type: 'Spell Card' } },
-      { key: 'traps', label: 'Pièges', count: null, filter: { type: 'Trap Card' } },
-      { key: 'extra', label: 'Extra Deck', count: null, filter: { type: 'Fusion Monster' } },
+      { key: 'monsters', label: 'Monstres', count: stats?.by_type.monster ?? null, filter: { type: 'Effect Monster' } },
+      { key: 'spells', label: 'Magies', count: stats?.by_type.spell ?? null, filter: { type: 'Spell Card' } },
+      { key: 'traps', label: 'Pièges', count: stats?.by_type.trap ?? null, filter: { type: 'Trap Card' } },
+      { key: 'extra', label: 'Extra Deck', count: stats?.by_type.extra ?? null, filter: { type: 'Fusion Monster' } },
     ],
-    [total]
+    [total, stats]
   );
 
   const fetchPage = useCallback(
@@ -112,6 +113,7 @@ export default function CollectionScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchPage(1, true);
+      collectionApi.stats().then(setStats).catch(() => {});
     }, [fetchPage])
   );
 
@@ -129,6 +131,7 @@ export default function CollectionScreen() {
   const handleAdded = useCallback(() => {
     setShowAdd(false);
     fetchPage(1, true);
+    collectionApi.stats().then(setStats).catch(() => {});
   }, [fetchPage]);
 
   const applyChip = (chip: QuickFilter) => {
@@ -178,12 +181,22 @@ export default function CollectionScreen() {
           <View style={styles.statCell}>
             <View style={styles.statAccent} />
             <Text style={styles.statLabel}>Ultra rares +</Text>
-            <Text style={styles.statValueGold}>— À venir</Text>
+            <Text style={styles.statValueGold}>
+              {stats ? stats.ultra_rares_count.toLocaleString('fr-FR') : '—'}
+            </Text>
           </View>
           <View style={styles.statCell}>
             <View style={styles.statAccent} />
             <Text style={styles.statLabel}>Valeur estimée</Text>
-            <Text style={styles.statValue}>— À venir</Text>
+            <Text style={styles.statValue}>
+              {stats
+                ? stats.total_value_eur.toLocaleString('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    maximumFractionDigits: 0,
+                  })
+                : '—'}
+            </Text>
           </View>
         </View>
       </View>

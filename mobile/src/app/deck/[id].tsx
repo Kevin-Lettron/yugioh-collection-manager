@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { deckApi } from '@/services/deckApi';
-import type { Deck, DeckCard, DeckComment } from '@/types';
+import type { Deck, DeckCard, DeckComment, DeckStats } from '@/types';
 import { API_URL } from '@/config';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
@@ -48,6 +48,7 @@ export default function DeckViewScreen() {
   const { user } = useAuth();
 
   const [deck, setDeck] = useState<Deck | null>(null);
+  const [stats, setStats] = useState<DeckStats | null>(null);
   const [comments, setComments] = useState<DeckComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,11 +59,12 @@ export default function DeckViewScreen() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [d, c] = await Promise.all([
+      const [res, c] = await Promise.all([
         deckApi.get(deckId),
         deckApi.listComments(deckId).catch(() => [] as DeckComment[]),
       ]);
-      setDeck(d);
+      setDeck(res.deck);
+      setStats(res.stats || null);
       setComments(c);
     } catch (err: any) {
       Alert.alert('Erreur', err?.response?.data?.error || 'Deck introuvable');
@@ -270,6 +272,7 @@ export default function DeckViewScreen() {
                 mainCount={mainCount}
                 extraCount={extraCount}
                 deck={deck}
+                stats={stats}
                 colors={colors}
                 styles={styles}
               />
@@ -512,12 +515,14 @@ function ListBlock({
   mainCount,
   extraCount,
   deck,
+  stats,
   colors,
   styles,
 }: {
   mainCount: number;
   extraCount: number;
   deck: Deck;
+  stats: DeckStats | null;
   colors: ReturnType<typeof useAppTheme>['colors'];
   styles: ReturnType<typeof makeStyles>;
 }) {
@@ -535,22 +540,28 @@ function ListBlock({
           <Text style={styles.repartitionValue}>{mainCount} / 40</Text>
         </View>
         <View style={styles.repartitionBar}>
-          <View style={[styles.repartitionSeg, { flex: 22, backgroundColor: colors.gold }]} />
-          <View style={[styles.repartitionSeg, { flex: 12, backgroundColor: colors.violet }]} />
-          <View style={[styles.repartitionSeg, { flex: 6, backgroundColor: colors.cyan }]} />
+          <View
+            style={[styles.repartitionSeg, { flex: stats?.main_by_type.monster ?? 22, backgroundColor: colors.gold }]}
+          />
+          <View
+            style={[styles.repartitionSeg, { flex: stats?.main_by_type.spell ?? 12, backgroundColor: colors.violet }]}
+          />
+          <View
+            style={[styles.repartitionSeg, { flex: stats?.main_by_type.trap ?? 6, backgroundColor: colors.cyan }]}
+          />
         </View>
         <View style={styles.repartitionLegend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.gold }]} />
-            <Text style={styles.legendText}>Monstres — À venir</Text>
+            <Text style={styles.legendText}>Monstres {stats ? stats.main_by_type.monster : '—'}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.violet }]} />
-            <Text style={styles.legendText}>Magies —</Text>
+            <Text style={styles.legendText}>Magies {stats ? stats.main_by_type.spell : '—'}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.cyan }]} />
-            <Text style={styles.legendText}>Pièges —</Text>
+            <Text style={styles.legendText}>Pièges {stats ? stats.main_by_type.trap : '—'}</Text>
           </View>
         </View>
       </View>

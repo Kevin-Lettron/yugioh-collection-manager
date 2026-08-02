@@ -29,7 +29,7 @@ export interface Card {
   archetype?: string;
   card_sets?: CardSet[];
   card_images?: CardImage[];
-  card_prices?: any;
+  card_prices?: CardPrices[];
   banlist_info?: BanlistInfo;
   linkval?: number;
   linkmarkers?: string[];
@@ -57,6 +57,39 @@ export interface BanlistInfo {
   ban_tcg?: 'Banned' | 'Limited' | 'Semi-Limited';
   ban_ocg?: 'Banned' | 'Limited' | 'Semi-Limited';
   ban_goat?: 'Banned' | 'Limited' | 'Semi-Limited';
+}
+
+/**
+ * YGOProDeck renvoie les prix comme un tableau à 1 élément (chaînes de caractères en USD,
+ * sauf Cardmarket qui est en EUR — c'est notre référence "Near Mint" marché européen).
+ */
+export interface CardPrices {
+  cardmarket_price?: string;
+  tcgplayer_price?: string;
+  ebay_price?: string;
+  amazon_price?: string;
+  coolstuffinc_price?: string;
+}
+
+/** Stats agrégées d'une collection user, calculées côté serveur pour éviter N requêtes. */
+export interface CollectionStats {
+  total_cards: number;
+  unique_cards: number;
+  ultra_rares_count: number;
+  secret_rares_count: number;
+  total_value_eur: number;
+  by_type: { monster: number; spell: number; trap: number; extra: number };
+  recent_added_30d: number;
+}
+
+/** Stats agrégées d'un deck. */
+export interface DeckStats {
+  main_count: number;
+  extra_count: number;
+  side_count: number;
+  main_by_type: { monster: number; spell: number; trap: number };
+  total_value_eur: number;
+  copies_count: number;
 }
 
 export type CardLanguage = 'EN' | 'FR' | 'DE' | 'IT' | 'PT' | 'SP' | 'JP' | 'KR';

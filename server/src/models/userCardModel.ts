@@ -1,5 +1,6 @@
 import { query } from '../config/database';
-import { UserCard, CollectionFilters, PaginatedResponse } from '../../../shared/types';
+import { UserCard, CollectionFilters, PaginatedResponse, CollectionStats } from '../../../shared/types';
+import { cardmarketPriceEUR, isUltraRare, isSecretRare } from '../utils/prices';
 
 export class UserCardModel {
   /**
@@ -254,6 +255,61 @@ export class UserCardModel {
     );
 
     return result.rows.length > 0;
+  }
+
+  /**
+   * Agrège les stats de la collection en un seul passage.
+   * On récupère seulement les colonnes utiles (rarity, frame_type, card_prices, quantity, created_at)
+   * pour éviter de tirer les descriptions/images pour rien.
+   */
+  static async getCollectionStats(userId: number): Promise<CollectionStats> {
+    const result = await query(
+      `SELECT uc.rarity, uc.quantity, uc.created_at,
+              c.frame_type, c.type, c.card_prices
+       FROM user_cards uc
+       JOIN cards c ON uc.card_id = c.id
+       WHERE uc.user_id = $1`,
+      [userId]
+    );
+
+    const stats: CollectionStats = {
+      total_cards: 0,
+      unique_cards: result.rows.length,
+      ultra_rares_count: 0,
+      secret_rares_count: 0,
+      total_value_eur: 0,
+      by_type: { monster: 0, spell: 0, trap: 0, extra: 0 },
+      recent_added_30d: 0,
+    };
+
+    const now = Date.now();
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const extraTypes = new Set(['fusion', 'synchro', 'xyz', 'link']);
+
+    for (const row of result.rows) {
+      const qty = Number(row.quantity) || 0;
+      stats.total_cards += qty;
+
+      if (isUltraRare(row.rarity)) stats.ultra_rares_count += qty;
+      if (isSecretRare(row.rarity)) stats.secret_rares_count += qty;
+
+      const p = cardmarketPriceEUR(row.card_prices);
+      if (p) stats.total_value_eur += p * qty;
+
+      const frame = (row.frame_type || '').toLowerCase();
+      const type = (row.type || '').toLowerCase();
+      if (extraTypes.has(frame)) stats.by_type.extra += qty;
+      else if (type.includes('spell')) stats.by_type.spell += qty;
+      else if (type.includes('trap')) stats.by_type.trap += qty;
+      else stats.by_type.monster += qty;
+
+      if (row.created_at && now - new Date(row.created_at).getTime() <= THIRTY_DAYS_MS) {
+        stats.recent_added_30d += qty;
+      }
+    }
+
+    stats.total_value_eur = Math.round(stats.total_value_eur * 100) / 100;
+    return stats;
   }
 
   /**

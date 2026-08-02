@@ -58,6 +58,11 @@ const Collection = () => {
   const [page, setPage] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
   const [uniqueCards, setUniqueCards] = useState(0);
+  const [collectionStats, setCollectionStats] = useState<{
+    ultra_rares_count: number;
+    total_value_eur: number;
+    recent_added_30d: number;
+  } | null>(null);
 
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
@@ -86,6 +91,10 @@ const Collection = () => {
   useEffect(() => {
     fetchCards(page);
   }, [page, debouncedSearch, type, rarity]);
+
+  useEffect(() => {
+    api.get('/collection/stats').then((r) => setCollectionStats(r.data)).catch(() => {});
+  }, []);
 
   const fetchCards = async (pageNum: number) => {
     setLoading(true);
@@ -176,6 +185,7 @@ const Collection = () => {
       resetAddModal();
       setPage(1);
       fetchCards(1);
+      api.get('/collection/stats').then((r) => setCollectionStats(r.data)).catch(() => {});
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Échec de l'ajout");
     }
@@ -200,6 +210,7 @@ const Collection = () => {
       toast.success('Carte retirée');
       setCards((prev) => prev.filter((c) => c.id !== cardId));
       setTotalCards((prev) => prev - 1);
+      api.get('/collection/stats').then((r) => setCollectionStats(r.data)).catch(() => {});
     } catch (error) {
       console.error(error);
     }
@@ -209,7 +220,9 @@ const Collection = () => {
     {
       label: 'Cartes totales',
       value: totalCards.toLocaleString('fr-FR'),
-      trend: '— À venir',
+      trend: collectionStats && collectionStats.recent_added_30d > 0
+        ? `+${collectionStats.recent_added_30d} ce mois`
+        : '',
       accent: '#F5C518',
     },
     {
@@ -220,13 +233,21 @@ const Collection = () => {
     },
     {
       label: 'Ultra rares +',
-      value: '— À venir',
+      value: collectionStats
+        ? collectionStats.ultra_rares_count.toLocaleString('fr-FR')
+        : '—',
       trend: '',
       accent: '#F5EFE0',
     },
     {
       label: 'Valeur estimée',
-      value: '— À venir',
+      value: collectionStats
+        ? collectionStats.total_value_eur.toLocaleString('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+          })
+        : '—',
       trend: '',
       accent: '#F5EFE0',
     },

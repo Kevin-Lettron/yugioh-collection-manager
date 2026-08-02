@@ -3,6 +3,7 @@ import type {
   AIStatus,
   Deck,
   DeckComment,
+  DeckStats,
   DeckValidation,
 } from '@/types';
 
@@ -18,7 +19,14 @@ export const deckApi = {
       )
       .then((r) => r.data),
 
-  get: (id: number) => api.get<Deck>(`/decks/${id}`).then((r) => r.data),
+  /**
+   * Retourne le deck + stats agrégées (main/extra count, répartition, valeur EUR).
+   * Le back renvoie { deck, stats } depuis la refonte prix (ef89385+).
+   */
+  get: (id: number) =>
+    api
+      .get<{ deck: Deck; stats?: DeckStats }>(`/decks/${id}`)
+      .then((r) => r.data),
 
   create: (payload: { name: string; is_public: boolean; respect_banlist: boolean }) =>
     api.post<Deck>('/decks', payload).then((r) => r.data),
@@ -58,7 +66,9 @@ export const deckApi = {
     api.delete(`/decks/${id}/share`).then((r) => r.data),
 
   getShared: (shareToken: string) =>
-    api.get<Deck>(`/decks/shared/${shareToken}`).then((r) => r.data),
+    api
+      .get<{ deck: Deck; stats?: DeckStats }>(`/decks/shared/${shareToken}`)
+      .then((r) => r.data),
 
   // ── Reactions
   like: (id: number) => api.post(`/reactions/decks/${id}/like`).then((r) => r.data),

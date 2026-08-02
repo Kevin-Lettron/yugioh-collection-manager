@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Deck } from '../../../shared/types';
+import { Deck, DeckStats } from '../../../shared/types';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppBackground from '../components/decor/AppBackground';
@@ -24,6 +24,7 @@ const DeckShare = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [deck, setDeck] = useState<Deck | null>(null);
+  const [stats, setStats] = useState<DeckStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
@@ -36,6 +37,7 @@ const DeckShare = () => {
     try {
       const response = await api.get(`/decks/shared/${shareToken}`);
       setDeck(response.data.deck);
+      setStats(response.data.stats || null);
     } catch (err: any) {
       if (err.response?.status === 404) setError('Ce lien est invalide ou expiré.');
       else setError('Impossible de charger le deck.');
@@ -456,8 +458,20 @@ const DeckShare = () => {
               {[
                 { label: 'Archétype', value: (deck as any).archetype || '— À venir' },
                 { label: 'Format', value: 'TCG Advanced' },
-                { label: 'Copié', value: '— À venir' },
-                { label: 'Valeur du deck', value: '— À venir' },
+                {
+                  label: 'Copié',
+                  value: stats && stats.copies_count > 0 ? `${stats.copies_count} fois` : '— À venir',
+                },
+                {
+                  label: 'Valeur du deck',
+                  value: stats
+                    ? stats.total_value_eur.toLocaleString('fr-FR', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        maximumFractionDigits: 0,
+                      })
+                    : '— À venir',
+                },
               ].map((m) => (
                 <div
                   key={m.label}

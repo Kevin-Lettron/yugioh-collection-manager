@@ -3,6 +3,7 @@ import type {
   Card,
   CardLanguage,
   CollectionFilters,
+  CollectionStats,
   PaginatedResponse,
   ScanMode,
   ScanResult,
@@ -80,4 +81,6 @@ export const collectionApi = {
     api
       .get<{ remaining: number; max: number; used: number }>('/collection/scan/status')
       .then((r) => r.data),
+
+  stats: () => api.get<CollectionStats>('/collection/stats').then((r) => r.data),
 };
