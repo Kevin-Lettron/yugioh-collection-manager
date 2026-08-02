@@ -576,7 +576,37 @@ body {
     0 0 30px rgba(34, 211, 238, 0.35);
 }
 
-/* Nappe holo pour Secret Rare */
+/* ─── Prismatic / Starlight / Ghost — arc-en-ciel plein pot ────────── */
+.card-tile--prismatic .card-art {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 0 18px rgba(255, 46, 136, 0.55),
+    0 0 28px rgba(168, 85, 247, 0.5),
+    0 0 38px rgba(34, 211, 238, 0.45),
+    0 12px 22px rgba(0, 0, 0, 0.5);
+  animation: san-prism-breath 3.4s ease-in-out infinite;
+}
+
+@keyframes san-prism-breath {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+      0 0 18px rgba(255, 46, 136, 0.55),
+      0 0 28px rgba(168, 85, 247, 0.5),
+      0 0 38px rgba(34, 211, 238, 0.45),
+      0 12px 22px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+      0 0 26px rgba(34, 211, 238, 0.65),
+      0 0 36px rgba(245, 197, 24, 0.55),
+      0 0 48px rgba(255, 46, 136, 0.55),
+      0 14px 26px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Nappe holo pour Secret Rare (classique, subtile) */
 .card-tile__holo {
   position: absolute;
   inset: 0;
@@ -587,6 +617,49 @@ body {
   mix-blend-mode: overlay;
   animation: san-holo 4s linear infinite;
   pointer-events: none;
+}
+
+/* Nappe arc-en-ciel pour Prismatic/Starlight — conic saturée qui tourne,
+   mix-blend color-dodge donne l'éclat métallique typique des holos réels. */
+.card-tile__rainbow {
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(from 0deg,
+    #ff2e88, #ffa500, #f5c518, #00ff88,
+    #22d3ee, #a855f7, #ff2e88);
+  filter: blur(14px) saturate(1.4);
+  opacity: 0.55;
+  mix-blend-mode: color-dodge;
+  animation: san-prism-rotate 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes san-prism-rotate {
+  from { transform: rotate(0deg)   scale(1.15); }
+  to   { transform: rotate(360deg) scale(1.15); }
+}
+
+/* Bande diagonale scintillante qui balaie la carte (effet foil physique). */
+.card-tile__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.55) 55%,
+    transparent 70%);
+  mix-blend-mode: screen;
+  animation: san-prism-sweep 2.8s linear infinite;
+  pointer-events: none;
+  transform: translateX(-100%);
+}
+
+@keyframes san-prism-sweep {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translateX(120%);  opacity: 0; }
 }
 
 /* Glow qui suit la souris */
@@ -660,7 +733,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .card-tile,
   .card-tile--ultra .card-art,
-  .card-tile__holo { animation: none !important; }
+  .card-tile--prismatic .card-art,
+  .card-tile__holo,
+  .card-tile__rainbow,
+  .card-tile__shimmer { animation: none !important; }
   .card-tile:hover .card-tile__inner { transform: none; }
 }
 

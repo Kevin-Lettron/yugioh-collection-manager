@@ -71,6 +71,10 @@ const DeckEditor = () => {
   const [selectedCardDetail, setSelectedCardDetail] = useState<UserCard | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  // Disponibilite par carte : { [cards.id]: { owned, used_in_decks, available } }
+  // `available` = possede toutes editions confondues MOINS utilise dans les autres decks.
+  // Le deck en cours est exclu du calcul back (?exclude_deck=id).
+  const [availability, setAvailability] = useState<Record<number, { owned: number; used_in_decks: number; available: number }>>({});
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -106,6 +110,29 @@ const DeckEditor = () => {
   useEffect(() => {
     validateDeck();
   }, [mainDeck, extraDeck, respectBanlist]);
+
+  /**
+   * Charge la disponibilite (owned - used dans autres decks).
+   * Refresh optimistic :
+   *   - PENDANT l'edition, le badge "restant/possede" bouge en temps reel via
+   *     getRemaining() = availability.available - getInDeckCount() ; nul besoin
+   *     de refetch tant qu'on modifie mainDeck/extraDeck local.
+   *   - Refetch necessaire APRES un save (les autres decks sont potentiellement
+   *     impactes cote back) ou apres un build IA (add en masse).
+   */
+  const refreshAvailability = useCallback(async () => {
+    const params = deckId ? { exclude_deck: deckId } : {};
+    try {
+      const r = await api.get('/collection/availability', { params });
+      setAvailability(r.data || {});
+    } catch {
+      /* silencieux : perte de badge = pas bloquant */
+    }
+  }, [deckId]);
+
+  useEffect(() => {
+    refreshAvailability();
+  }, [refreshAvailability]);
 
   const fetchDeck = async () => {
     try {
@@ -182,6 +209,27 @@ const DeckEditor = () => {
     [mainDeck, extraDeck]
   );
 
+  /** Combien de fois cette carte est deja dans le deck en cours (toutes copies confondues). */
+  const getInDeckCount = useCallback(
+    (cardDbId: number): number =>
+      [...mainDeck, ...extraDeck].filter((dc) => dc.card_id === cardDbId).reduce((s, dc) => s + dc.quantity, 0),
+    [mainDeck, extraDeck]
+  );
+
+  /**
+   * Combien de copies restent AJOUTABLES pour cette carte dans ce deck.
+   * = available (owned - used ailleurs) - deja_dans_ce_deck.
+   * Retourne 0 si la carte n'est pas dans availability (pas de donnee = pas possede).
+   */
+  const getRemaining = useCallback(
+    (cardDbId: number): number => {
+      const a = availability[cardDbId];
+      if (!a) return 0;
+      return Math.max(0, a.available - getInDeckCount(cardDbId));
+    },
+    [availability, getInDeckCount]
+  );
+
   const validateDeck = async () => {
     const errs: string[] = [];
     const mainCount = mainDeck.reduce((s, c) => s + c.quantity, 0);
@@ -227,6 +275,17 @@ const DeckEditor = () => {
     const cnt = getCardCountByName(card.name);
     if (cnt >= 3) {
       toast.error(`Déjà 3 copies de « ${card.name} »`);
+      return;
+    }
+    // Blocage collection : on ne peut pas mettre plus d'exemplaires que
+    // ce que la collection contient (moins ceux deja dans d'autres decks).
+    const rem = getRemaining(card.id);
+    if (rem <= 0) {
+      const a = availability[card.id];
+      const detail = a
+        ? `${a.owned} possédé${a.owned > 1 ? 's' : ''}, ${a.used_in_decks} déjà dans d'autres decks`
+        : 'pas dans ta collection';
+      toast.error(`Plus d'exemplaires de « ${card.name} » (${detail})`);
       return;
     }
     const existing = target.find((dc) => dc.card_id === card.id);
@@ -322,6 +381,9 @@ const DeckEditor = () => {
       setShowAIModal(false);
       setAiPrompt('');
       toast.success('Deck généré par l’IA');
+      // L'IA peut piocher des cartes qu'on n'a pas encore ajoutees a d'autres
+      // decks — refresh pour recalibrer les badges "restant" du pool.
+      refreshAvailability();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erreur IA');
     } finally {
@@ -641,13 +703,20 @@ const DeckEditor = () => {
                 gap: 18,
               }}
               className="max-lg:!grid-cols-4 max-sm:!grid-cols-3">
-              {poolCards.map((uc) => (
+              {poolCards.map((uc) => {
+                const cardDbId = uc.card?.id;
+                const avail = cardDbId ? availability[cardDbId] : undefined;
+                const rem = cardDbId ? getRemaining(cardDbId) : 0;
+                const owned = avail?.owned ?? uc.quantity ?? 0;
+                const canAdd = rem > 0;
+                return (
                 <div
                   key={uc.id}
                   style={{
                     position: 'relative',
                     cursor: 'pointer',
                     transition: 'transform 240ms cubic-bezier(.2,.8,.2,1)',
+                    opacity: canAdd ? 1 : 0.55,
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-6px)')}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
@@ -673,7 +742,34 @@ const DeckEditor = () => {
                     ) : (
                       <CardIcon size={40} className="text-blue-600" />
                     )}
+
+                    {/* Badge disponibles/possedes (top-left) */}
+                    <div
+                      title={
+                        avail
+                          ? `${avail.owned} possédé${avail.owned > 1 ? 's' : ''}, ${avail.used_in_decks} dans d'autres decks, ${rem} restant${rem > 1 ? 's' : ''} pour ce deck`
+                          : 'Disponibilité inconnue'
+                      }
+                      style={{
+                        position: 'absolute',
+                        top: 7,
+                        left: 7,
+                        padding: '3px 7px',
+                        background: canAdd ? 'rgba(11,9,6,.92)' : 'rgba(180,20,40,.85)',
+                        border: `1px solid ${canAdd ? '#F5C518' : '#FF2E88'}`,
+                        color: canAdd ? '#F5C518' : '#F5EFE0',
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: 10,
+                        letterSpacing: '0.08em',
+                        fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                        clipPath: 'polygon(3px 0,100% 0,100% calc(100% - 3px),calc(100% - 3px) 100%,0 100%,0 3px)',
+                      }}>
+                      {rem}/{owned}
+                    </div>
+
                     <button
+                      disabled={!canAdd}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (uc.card) addCard(uc.card, uc);
@@ -684,15 +780,15 @@ const DeckEditor = () => {
                         right: 7,
                         width: 28,
                         height: 28,
-                        border: '1px solid #F5C518',
-                        background: 'rgba(11,9,6,.9)',
-                        color: '#F5C518',
+                        border: `1px solid ${canAdd ? '#F5C518' : '#3A2E1C'}`,
+                        background: canAdd ? 'rgba(11,9,6,.9)' : 'rgba(58,46,28,.5)',
+                        color: canAdd ? '#F5C518' : '#6B5A3E',
                         display: 'grid',
                         placeItems: 'center',
-                        cursor: 'pointer',
+                        cursor: canAdd ? 'pointer' : 'not-allowed',
                         clipPath: 'polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)',
                       }}
-                      aria-label="Ajouter">
+                      aria-label={canAdd ? 'Ajouter' : 'Plus d\'exemplaires disponibles'}>
                       <AddIcon size={14} />
                     </button>
                   </div>
@@ -709,7 +805,8 @@ const DeckEditor = () => {
                     {uc.card?.name}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             {poolLoading && (
               <div className="text-center py-6">

@@ -25,6 +25,7 @@ router.get('/scan/diagnose', CollectionController.diagnoseScan);
 
 // Collection routes
 router.get('/stats', CollectionController.getCollectionStats);
+router.get('/availability', CollectionController.getAvailability);
 router.post('/cards/add', CollectionController.addCardByCode);
 router.get('/cards', CollectionController.getUserCollection);
 router.get('/cards/:id', CollectionController.getCardDetail);

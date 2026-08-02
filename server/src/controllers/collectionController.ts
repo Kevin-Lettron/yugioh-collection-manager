@@ -333,6 +333,24 @@ export class CollectionController {
   }
 
   /**
+   * Disponibilité par carte : combien possédé, combien utilisé dans les
+   * autres decks, combien reste pour ajouter au deck en cours.
+   * `?exclude_deck=<id>` retire ce deck du calcul "used_in_decks".
+   */
+  static async getAvailability(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new ValidationError('Not authenticated');
+      const rawExclude = req.query.exclude_deck;
+      const excludeDeckId =
+        typeof rawExclude === 'string' && /^\d+$/.test(rawExclude) ? parseInt(rawExclude, 10) : undefined;
+      const availability = await UserCardModel.getAvailability(req.user.id, excludeDeckId);
+      res.json(availability);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Return the current scan quota for the user.
    */
   static async getScanStatus(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

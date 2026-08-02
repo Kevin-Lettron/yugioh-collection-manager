@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserCard, CollectionFilters, Card, CardLanguage } from '../../../shared/types';
@@ -64,6 +64,8 @@ const Collection = () => {
     rarities: string[];
     rarity_counts: Record<string, number>;
   } | null>(null);
+  const [rarityOpen, setRarityOpen] = useState(false);
+  const rarityRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
@@ -96,6 +98,17 @@ const Collection = () => {
   useEffect(() => {
     api.get('/collection/stats').then((r) => setCollectionStats(r.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!rarityOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (rarityRef.current && !rarityRef.current.contains(e.target as Node)) {
+        setRarityOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [rarityOpen]);
 
   const fetchCards = async (pageNum: number) => {
     setLoading(true);
@@ -517,39 +530,113 @@ const Collection = () => {
             );
           })}
 
-          <select
-            value={rarity}
-            onChange={(e) => applyRarity(e.target.value)}
-            style={{
-              padding: '9px 30px 9px 14px',
-              border: `1px solid ${rarity ? '#F5C518' : '#3A2E1C'}`,
-              background: rarity ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
-              color: rarity ? '#0B0906' : '#A99C86',
-              fontFamily: "'Orbitron', sans-serif",
-              fontSize: 11,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              fontWeight: rarity ? 700 : 500,
-              clipPath: CUT_CHIP,
-              boxShadow: rarity ? '0 0 12px rgba(245,197,24,.35)' : 'none',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              MozAppearance: 'none',
-              backgroundImage: rarity
-                ? "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%230B0906'/></svg>\")"
-                : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%23A99C86'/></svg>\")",
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center',
-              minWidth: 160,
-            }}>
-            <option value="">Toutes raretés</option>
-            {(collectionStats?.rarities || []).map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+          {/* Dropdown custom — le <select> natif Windows ne respecte pas
+              le gradient et le dark styling des <option> devient illisible. */}
+          <div ref={rarityRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setRarityOpen((o) => !o)}
+              style={{
+                padding: '9px 32px 9px 17px',
+                border: `1px solid ${rarity ? '#F5C518' : '#3A2E1C'}`,
+                background: rarity ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
+                color: rarity ? '#0B0906' : '#A99C86',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 11,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                fontWeight: rarity ? 700 : 500,
+                clipPath: CUT_CHIP,
+                boxShadow: rarity ? '0 0 12px rgba(245,197,24,.35)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                minWidth: 160,
+                whiteSpace: 'nowrap',
+              }}>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                {rarity || 'Toutes raretés'}
+              </span>
+              <span
+                style={{
+                  fontSize: 8,
+                  transform: rarityOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform .15s',
+                }}>
+                ▼
+              </span>
+            </button>
+
+            {rarityOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  minWidth: 220,
+                  maxHeight: 320,
+                  overflowY: 'auto',
+                  background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
+                  border: '1px solid #3A2E1C',
+                  boxShadow: '0 20px 40px rgba(0,0,0,.6),0 0 30px rgba(245,197,24,.1)',
+                  clipPath: 'polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))',
+                  zIndex: 60,
+                  padding: '6px 0',
+                }}>
+                {[{ value: '', label: 'Toutes raretés', count: undefined }, ...(collectionStats?.rarities || []).map((r) => ({ value: r, label: r, count: collectionStats?.rarity_counts?.[r] }))].map((opt) => {
+                  const active = rarity === opt.value;
+                  return (
+                    <button
+                      key={opt.value || '__all__'}
+                      type="button"
+                      onClick={() => {
+                        applyRarity(opt.value);
+                        setRarityOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 18px',
+                        border: 0,
+                        background: active ? 'rgba(245,197,24,.12)' : 'transparent',
+                        borderLeft: `3px solid ${active ? '#F5C518' : 'transparent'}`,
+                        color: active ? '#F5C518' : '#F5EFE0',
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: 11,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        fontWeight: active ? 700 : 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) e.currentTarget.style.background = 'rgba(245,197,24,.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) e.currentTarget.style.background = 'transparent';
+                      }}>
+                      <span>{opt.label}</span>
+                      {opt.count !== undefined && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: active ? '#F5C518' : '#A99C86',
+                            fontVariantNumeric: 'tabular-nums',
+                            opacity: 0.85,
+                          }}>
+                          {opt.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Cards grid 6 cols */}

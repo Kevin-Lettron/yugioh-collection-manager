@@ -258,6 +258,54 @@ export class UserCardModel {
   }
 
   /**
+   * Disponibilité par carte pour l'éditeur de deck.
+   * Pour chaque carte possédée par l'user, retourne :
+   *   - owned : total quantite (toutes editions/raretes confondues)
+   *   - used_in_decks : somme quantite dans les autres decks de l'user (excluant `excludeDeckId`)
+   *   - available : owned - used_in_decks (peut etre 0, jamais negatif)
+   *
+   * Cle du Record = cards.id (int DB, celui exposé dans DeckCard.card_id côté front).
+   */
+  static async getAvailability(
+    userId: number,
+    excludeDeckId?: number
+  ): Promise<Record<number, { owned: number; used_in_decks: number; available: number }>> {
+    const ownedRes = await query(
+      `SELECT card_id AS db_id, SUM(quantity)::int AS owned
+       FROM user_cards
+       WHERE user_id = $1
+       GROUP BY card_id`,
+      [userId]
+    );
+
+    const usedRes = await query(
+      `SELECT dc.card_id AS db_id, SUM(dc.quantity)::int AS used
+       FROM deck_cards dc
+       JOIN decks d ON d.id = dc.deck_id
+       WHERE d.user_id = $1
+         AND ($2::int IS NULL OR d.id != $2)
+       GROUP BY dc.card_id`,
+      [userId, excludeDeckId ?? null]
+    );
+
+    const usedMap = new Map<number, number>();
+    for (const row of usedRes.rows) usedMap.set(Number(row.db_id), Number(row.used));
+
+    const out: Record<number, { owned: number; used_in_decks: number; available: number }> = {};
+    for (const row of ownedRes.rows) {
+      const dbId = Number(row.db_id);
+      const owned = Number(row.owned) || 0;
+      const used = usedMap.get(dbId) || 0;
+      out[dbId] = {
+        owned,
+        used_in_decks: used,
+        available: Math.max(0, owned - used),
+      };
+    }
+    return out;
+  }
+
+  /**
    * Agrège les stats de la collection en un seul passage.
    * On récupère seulement les colonnes utiles (rarity, frame_type, card_prices, quantity, created_at)
    * pour éviter de tirer les descriptions/images pour rien.
