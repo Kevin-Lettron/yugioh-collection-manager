@@ -259,19 +259,26 @@ export class CollectionController {
         throw new ValidationError('Format non supporté (JPEG, PNG, WebP ou GIF uniquement)');
       }
 
-      const mediaType = (req.file.mimetype === 'image/jpg' ? 'image/jpeg' : req.file.mimetype) as
+      const rawMediaType = (req.file.mimetype === 'image/jpg' ? 'image/jpeg' : req.file.mimetype) as
         | 'image/jpeg'
         | 'image/png'
         | 'image/webp'
         | 'image/gif';
 
-      const base64 = req.file.buffer.toString('base64');
+      // Preprocess (sharp) : autoOrient + resize 1600 + normalize + sharpen.
+      // Le code de set fait quelques pixels de haut — sans ça Claude confond
+      // souvent les caractères similaires (0/O, 1/I) sur photo iPhone floue.
+      const { preprocessCardImage } = await import('../utils/imagePreprocess');
+      const { buffer: processedBuf, mediaType } = await preprocessCardImage(req.file.buffer, rawMediaType);
+
+      const base64 = processedBuf.toString('base64');
       const description = typeof req.body?.description === 'string' ? req.body.description : undefined;
       // 'code' = gros plan sur le seul code de set, 'card' (défaut) = carte entière
       const mode = parseScanMode(req.body?.mode);
 
       loggers.external.request('Claude Vision', '/scan', {
-        size: req.file.size,
+        sizeIn: req.file.size,
+        sizeOut: processedBuf.length,
         mode,
         hasDescription: !!description,
       });
