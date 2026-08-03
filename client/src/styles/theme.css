@@ -37,6 +37,18 @@
   --grid: rgba(245, 197, 24, 0.055);
   --glow: 0 0 24px rgba(245, 197, 24, 0.25);
 
+  /* Nuances introduites par la refonte v2, qui étaient codées en dur dans les
+     styles inline des pages — d'où un thème clair inopérant. */
+  --bg-sunken: #0f0c07;
+  --panel-3: #2a2216;
+  --border-soft: #2a2216;
+  --text-dim: #6e6250;
+  --violet-soft: #c084fc;
+  /* Ombre portée : franche sur fond sombre, discrète sur fond clair. */
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-card-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+  --sheen: rgba(255, 255, 255, 0.05);
+
   /* Surfaces — `white` devient le panneau, pas du blanc */
   --c-white: 26 21 16;
 
@@ -157,6 +169,18 @@
   --on-gold: #ffffff;
   --grid: rgba(138, 109, 11, 0.07);
   --glow: 0 0 20px rgba(138, 109, 11, 0.18);
+
+  /* Pendants clairs des nuances v2. L'échelle s'inverse : `sunken` est plus
+     clair que le fond en sombre, plus foncé que le fond en clair. */
+  --bg-sunken: #ece5d5;
+  --panel-3: #e8e0cc;
+  --border-soft: #e6dcc3;
+  --text-dim: #8b7d63;
+  --violet-soft: #6428c4;
+  /* Sur fond clair, une ombre noire à 40 % fait une tache : on descend à 12 %. */
+  --shadow-card: 0 2px 8px rgba(26, 18, 6, 0.12);
+  --shadow-card-lg: 0 8px 18px rgba(26, 18, 6, 0.16);
+  --sheen: rgba(26, 18, 6, 0.04);
 
   --c-white: 255 255 255;
 
@@ -591,25 +615,25 @@ button[style*="isolation"]:not(:disabled):hover::before {
 
 /* Halos par rareté */
 .card-tile--common .card-art {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 0 1px var(--sheen), var(--shadow-card);
 }
 .card-tile--rare .card-art {
   box-shadow:
     inset 0 0 0 1px rgba(59, 130, 246, 0.4),
     0 0 20px rgba(59, 130, 246, 0.18),
-    0 8px 14px rgba(0, 0, 0, 0.4);
+    var(--shadow-card-lg);
 }
 .card-tile--super .card-art {
   box-shadow:
     inset 0 0 0 1px rgba(168, 85, 247, 0.5),
     0 0 25px rgba(168, 85, 247, 0.28),
-    0 10px 16px rgba(0, 0, 0, 0.4);
+    var(--shadow-card-lg);
 }
 .card-tile--ultra .card-art {
   box-shadow:
     inset 0 0 0 1px var(--gold),
     0 0 30px rgba(245, 197, 24, 0.4),
-    0 10px 20px rgba(0, 0, 0, 0.4);
+    var(--shadow-card-lg);
   animation: san-breath 3s ease-in-out infinite;
 }
 .card-tile--secret .card-art {
@@ -626,7 +650,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
     0 0 18px rgba(255, 46, 136, 0.55),
     0 0 28px rgba(168, 85, 247, 0.5),
     0 0 38px rgba(34, 211, 238, 0.45),
-    0 12px 22px rgba(0, 0, 0, 0.5);
+    var(--shadow-card-lg);
   animation: san-prism-breath 3.4s ease-in-out infinite;
 }
 
@@ -637,7 +661,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
       0 0 18px rgba(255, 46, 136, 0.55),
       0 0 28px rgba(168, 85, 247, 0.5),
       0 0 38px rgba(34, 211, 238, 0.45),
-      0 12px 22px rgba(0, 0, 0, 0.5);
+      var(--shadow-card-lg);
   }
   50% {
     box-shadow:
@@ -645,7 +669,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
       0 0 26px rgba(34, 211, 238, 0.65),
       0 0 36px rgba(245, 197, 24, 0.55),
       0 0 48px rgba(255, 46, 136, 0.55),
-      0 14px 26px rgba(0, 0, 0, 0.55);
+      var(--shadow-card-lg);
   }
 }
 

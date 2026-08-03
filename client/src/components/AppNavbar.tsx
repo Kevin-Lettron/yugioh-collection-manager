@@ -134,12 +134,20 @@ const AppNavbar = () => {
   const isActivePath = (path: string) => location.pathname === path;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'moderator';
+
+  // Admin n'est PAS dans cette liste : sur grand écran, AdminTopbar occupe déjà
+  // toute la largeur au-dessus de la navbar, un second point d'entrée ferait
+  // doublon. Il est réinjecté dans le menu mobile, où la topbar est réduite à
+  // une icône et n'expose pas les sous-sections.
   const navLinks = [
     { to: '/collection', label: 'Collection' },
     { to: '/decks', label: 'Decks' },
     { to: '/social', label: 'Social' },
-    ...(isAdmin ? [{ to: '/admin', label: '⚙️ Admin' }] : []),
   ];
+
+  const mobileNavLinks = isAdmin
+    ? [...navLinks, { to: '/admin', label: '⚙️ Admin' }]
+    : navLinks;
 
   return (
     <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-300">
@@ -405,7 +413,7 @@ const AppNavbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {navLinks.map(link => (
+            {mobileNavLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}

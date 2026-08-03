@@ -453,7 +453,7 @@ const DeckEditor = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
         <div
           className="animate-spin"
           style={{
@@ -461,7 +461,7 @@ const DeckEditor = () => {
             height: 40,
             borderRadius: '50%',
             border: '3px solid rgba(245,197,24,.3)',
-            borderTopColor: '#F5C518',
+            borderTopColor: 'var(--gold)',
           }}
         />
       </div>
@@ -472,9 +472,9 @@ const DeckEditor = () => {
   const extraCount = extraDeck.reduce((s, c) => s + c.quantity, 0);
   const chips: Array<string> = ['Monstres', 'Magies', 'Pièges'];
   const counters = [
-    { label: 'Main', value: `${mainCount}/40`, bg: 'rgba(245,197,24,.1)', bord: 'rgba(245,197,24,.45)', color: '#F5C518' },
-    { label: 'Extra', value: `${extraCount}/15`, bg: 'rgba(168,85,247,.1)', bord: 'rgba(168,85,247,.45)', color: '#C084FC' },
-    { label: 'Side', value: `${sideDeckSize}/15`, bg: 'rgba(34,211,238,.08)', bord: 'rgba(34,211,238,.4)', color: '#22D3EE' },
+    { label: 'Main', value: `${mainCount}/40`, bg: 'rgba(245,197,24,.1)', bord: 'rgba(245,197,24,.45)', color: 'var(--gold)' },
+    { label: 'Extra', value: `${extraCount}/15`, bg: 'rgba(168,85,247,.1)', bord: 'rgba(168,85,247,.45)', color: 'var(--violet-soft)' },
+    { label: 'Side', value: `${sideDeckSize}/15`, bg: 'rgba(34,211,238,.08)', bord: 'rgba(34,211,238,.4)', color: 'var(--cyan)' },
   ];
 
   // 40 slots grid
@@ -490,7 +490,7 @@ const DeckEditor = () => {
   });
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
@@ -505,7 +505,7 @@ const DeckEditor = () => {
                 fontStyle: 'italic',
                 fontSize: 11,
                 letterSpacing: '0.3em',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 textTransform: 'uppercase',
               }}>
               — Atelier —
@@ -518,7 +518,7 @@ const DeckEditor = () => {
                 fontWeight: 900,
                 letterSpacing: '0.02em',
                 textTransform: 'uppercase',
-                color: '#F5EFE0',
+                color: 'var(--text)',
               }}>
               {isEditing ? deckName || 'Modifier le deck' : 'Nouveau deck'}
             </h1>
@@ -532,9 +532,9 @@ const DeckEditor = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 9,
-                border: '1px solid #A855F7',
+                border: '1px solid var(--violet)',
                 background: 'rgba(168,85,247,.12)',
-                color: '#C084FC',
+                color: 'var(--violet-soft)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontSize: 11,
                 fontWeight: 700,
@@ -555,7 +555,7 @@ const DeckEditor = () => {
                 isolation: 'isolate',
                 border: 0,
                 background: 'transparent',
-                color: '#0B0906',
+                color: 'var(--bg)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 fontSize: 12,
@@ -568,7 +568,7 @@ const DeckEditor = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#A855F7',
+                  background: 'var(--violet)',
                   transform: 'translate(5px,0)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
@@ -578,7 +578,7 @@ const DeckEditor = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#F5C518',
+                  background: 'var(--gold)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
                 }}
@@ -599,20 +599,20 @@ const DeckEditor = () => {
               flex: '1 1 260px',
               height: 44,
               padding: '0 16px',
-              background: '#1A1510',
-              border: '1px solid #3A2E1C',
-              borderLeft: '3px solid #F5C518',
-              color: '#F5EFE0',
+              background: 'var(--panel)',
+              border: '1px solid var(--border)',
+              borderLeft: '3px solid var(--gold)',
+              color: 'var(--text)',
               fontFamily: "'Rajdhani', sans-serif",
               fontSize: 15,
               outline: 'none',
             }}
           />
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#A99C86', fontSize: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 12 }}>
             <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
             Public
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#A99C86', fontSize: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 12 }}>
             <input type="checkbox" checked={respectBanlist} onChange={(e) => setRespectBanlist(e.target.checked)} />
             Respecter la banlist
           </label>
@@ -625,7 +625,7 @@ const DeckEditor = () => {
               padding: 14,
               background: 'rgba(255,77,109,.08)',
               border: '1px solid rgba(255,77,109,.4)',
-              color: '#FF4D6D',
+              color: 'var(--danger)',
               fontSize: 13,
             }}>
             {validationErrors.map((e, i) => (
@@ -654,7 +654,7 @@ const DeckEditor = () => {
                     left: 14,
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#F5C518',
+                    color: 'var(--gold)',
                     pointerEvents: 'none',
                   }}>
                   <SearchIcon size={16} />
@@ -667,10 +667,10 @@ const DeckEditor = () => {
                     width: '100%',
                     height: 46,
                     padding: '0 16px 0 42px',
-                    background: '#1A1510',
-                    border: '1px solid #3A2E1C',
-                    borderLeft: '3px solid #F5C518',
-                    color: '#F5EFE0',
+                    background: 'var(--panel)',
+                    border: '1px solid var(--border)',
+                    borderLeft: '3px solid var(--gold)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 15,
                     outline: 'none',
@@ -685,9 +685,9 @@ const DeckEditor = () => {
                 style={{
                   height: 46,
                   padding: '0 16px',
-                  border: `1px solid ${onlyAvailable ? '#F5C518' : '#3A2E1C'}`,
-                  background: onlyAvailable ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
-                  color: onlyAvailable ? '#0B0906' : '#A99C86',
+                  border: `1px solid ${onlyAvailable ? 'var(--gold)' : 'var(--border)'}`,
+                  background: onlyAvailable ? 'linear-gradient(135deg,var(--gold),var(--gold-dim))' : 'var(--panel)',
+                  color: onlyAvailable ? 'var(--bg)' : 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 10,
                   letterSpacing: '0.14em',
@@ -708,9 +708,9 @@ const DeckEditor = () => {
                     style={{
                       height: 46,
                       padding: '0 16px',
-                      border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
-                      background: on ? 'rgba(245,197,24,.1)' : '#1A1510',
-                      color: on ? '#F5C518' : '#A99C86',
+                      border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`,
+                      background: on ? 'rgba(245,197,24,.1)' : 'var(--panel)',
+                      color: on ? 'var(--gold)' : 'var(--text-muted)',
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 10,
                       letterSpacing: '0.14em',
@@ -763,8 +763,8 @@ const DeckEditor = () => {
                       placeItems: 'center',
                       width: '100%',
                       aspectRatio: '59 / 86',
-                      background: 'linear-gradient(135deg,#221B12,#14100A)',
-                      border: '1px solid #3A2E1C',
+                      background: 'linear-gradient(135deg,var(--panel-2),var(--bg-elev))',
+                      border: '1px solid var(--border)',
                       clipPath: 'polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)',
                     }}>
                     {uc.card?.card_images?.[0]?.image_url_small ? (
@@ -790,8 +790,8 @@ const DeckEditor = () => {
                         left: 7,
                         padding: '3px 7px',
                         background: canAdd ? 'rgba(11,9,6,.92)' : 'rgba(180,20,40,.85)',
-                        border: `1px solid ${canAdd ? '#F5C518' : '#FF2E88'}`,
-                        color: canAdd ? '#F5C518' : '#F5EFE0',
+                        border: `1px solid ${canAdd ? 'var(--gold)' : 'var(--magenta)'}`,
+                        color: canAdd ? 'var(--gold)' : 'var(--text)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 10,
                         letterSpacing: '0.08em',
@@ -814,9 +814,9 @@ const DeckEditor = () => {
                         right: 7,
                         width: 28,
                         height: 28,
-                        border: `1px solid ${canAdd ? '#F5C518' : '#3A2E1C'}`,
+                        border: `1px solid ${canAdd ? 'var(--gold)' : 'var(--border)'}`,
                         background: canAdd ? 'rgba(11,9,6,.9)' : 'rgba(58,46,28,.5)',
-                        color: canAdd ? '#F5C518' : '#6B5A3E',
+                        color: canAdd ? 'var(--gold)' : 'var(--text-dim)',
                         display: 'grid',
                         placeItems: 'center',
                         cursor: canAdd ? 'pointer' : 'not-allowed',
@@ -831,7 +831,7 @@ const DeckEditor = () => {
                       marginTop: 7,
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 10,
-                      color: '#A99C86',
+                      color: 'var(--text-muted)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -852,9 +852,9 @@ const DeckEditor = () => {
                       gridColumn: '1 / -1',
                       padding: '40px 20px',
                       textAlign: 'center',
-                      background: 'linear-gradient(135deg,#1A1510,#14100A)',
-                      border: '1px dashed #3A2E1C',
-                      color: '#A99C86',
+                      background: 'linear-gradient(135deg,var(--panel),var(--bg-elev))',
+                      border: '1px dashed var(--border)',
+                      color: 'var(--text-muted)',
                       fontSize: 13,
                       fontFamily: "'Rajdhani', sans-serif",
                     }}>
@@ -865,9 +865,9 @@ const DeckEditor = () => {
                       style={{
                         marginTop: 12,
                         padding: '8px 18px',
-                        border: '1px solid #F5C518',
+                        border: '1px solid var(--gold)',
                         background: 'transparent',
-                        color: '#F5C518',
+                        color: 'var(--gold)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 10,
                         letterSpacing: '0.12em',
@@ -888,7 +888,7 @@ const DeckEditor = () => {
                     height: 24,
                     borderRadius: '50%',
                     border: '2px solid rgba(245,197,24,.3)',
-                    borderTopColor: '#F5C518',
+                    borderTopColor: 'var(--gold)',
                   }}
                 />
               </div>
@@ -902,8 +902,8 @@ const DeckEditor = () => {
               position: 'sticky',
               top: 84,
               padding: 22,
-              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+              border: '1px solid var(--border)',
               clipPath: CUT_PANEL,
             }}
             className="max-xl:!static">
@@ -952,12 +952,12 @@ const DeckEditor = () => {
                   fontSize: 10,
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                 }}>
                 Deck principal
               </span>
-              <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
-              <span style={{ fontSize: 11, color: '#6E6250' }}>clic = retirer</span>
+              <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>clic = retirer</span>
             </div>
 
             {/* 40 slots grid 8 cols */}
@@ -982,7 +982,7 @@ const DeckEditor = () => {
                       placeItems: 'center',
                       cursor: filled ? 'pointer' : 'default',
                       background: filled
-                        ? 'linear-gradient(150deg,#2A2216,#14100A)'
+                        ? 'linear-gradient(150deg,var(--border-soft),var(--bg-elev))'
                         : 'rgba(255,255,255,.015)',
                       border: filled
                         ? '1px solid rgba(245,197,24,.4)'
@@ -1014,8 +1014,8 @@ const DeckEditor = () => {
                 gap: 10,
                 alignItems: 'flex-start',
               }}>
-              <GlyphEye style={{ width: 16, height: 16, color: '#22D3EE', flex: 'none', marginTop: 2 }} />
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: '#A99C86' }}>
+              <GlyphEye style={{ width: 16, height: 16, color: 'var(--cyan)', flex: 'none', marginTop: 2 }} />
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--text-muted)' }}>
                 Ratio conseillé : 22 monstres / 12 magies / 6 pièges. Tu es à {mainCount} cartes.
               </p>
             </div>
@@ -1030,11 +1030,11 @@ const DeckEditor = () => {
                       fontSize: 10,
                       letterSpacing: '0.16em',
                       textTransform: 'uppercase',
-                      color: '#C084FC',
+                      color: 'var(--violet-soft)',
                     }}>
                     Extra deck
                   </span>
-                  <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+                  <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
                 </div>
                 <div
                   style={{
@@ -1053,7 +1053,7 @@ const DeckEditor = () => {
                           display: 'grid',
                           placeItems: 'center',
                           cursor: 'pointer',
-                          background: 'linear-gradient(150deg,#2A2216,#14100A)',
+                          background: 'linear-gradient(150deg,var(--border-soft),var(--bg-elev))',
                           border: '1px solid rgba(168,85,247,.4)',
                           overflow: 'hidden',
                         }}>
@@ -1064,7 +1064,7 @@ const DeckEditor = () => {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
-                          <CardIcon size={14} style={{ color: '#C084FC' }} />
+                          <CardIcon size={14} style={{ color: 'var(--violet-soft)' }} />
                         )}
                       </div>
                     ))
@@ -1095,7 +1095,7 @@ const DeckEditor = () => {
                       fontSize: 10,
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
-                      color: '#C084FC',
+                      color: 'var(--violet-soft)',
                     }}>
                     Suggestions IA
                   </span>
@@ -1104,14 +1104,14 @@ const DeckEditor = () => {
                       setAiSuggestions([]);
                       setAiExplanation('');
                     }}
-                    style={{ background: 'transparent', border: 0, color: '#A99C86', cursor: 'pointer', fontSize: 16 }}>
+                    style={{ background: 'transparent', border: 0, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>
                     ×
                   </button>
                 </div>
-                {aiExplanation && <p style={{ margin: '0 0 8px', fontSize: 13, color: '#A99C86' }}>{aiExplanation}</p>}
+                {aiExplanation && <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-muted)' }}>{aiExplanation}</p>}
                 {aiSuggestions.map((s, i) => (
-                  <div key={i} style={{ marginTop: 6, fontSize: 12, color: '#A99C86' }}>
-                    • <span style={{ color: '#F5EFE0' }}>{s.cardName}</span> — {s.reason}
+                  <div key={i} style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                    • <span style={{ color: 'var(--text)' }}>{s.cardName}</span> — {s.reason}
                   </div>
                 ))}
               </div>
@@ -1125,8 +1125,8 @@ const DeckEditor = () => {
             style={{
               marginTop: 20,
               padding: 16,
-              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+              border: '1px solid var(--border)',
               clipPath: CUT_PANEL,
             }}>
             <div
@@ -1135,12 +1135,12 @@ const DeckEditor = () => {
                 fontSize: 11,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 marginBottom: 10,
               }}>
               Résultats rapides
             </div>
-            {searching && <div style={{ color: '#A99C86', fontSize: 13 }}>Recherche…</div>}
+            {searching && <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Recherche…</div>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {searchResults.map((c) => {
                 const cnt = getCardCountByName(c.name);
@@ -1154,8 +1154,8 @@ const DeckEditor = () => {
                       alignItems: 'center',
                       gap: 12,
                       padding: '8px 10px',
-                      background: '#14100A',
-                      border: '1px solid #3A2E1C',
+                      background: 'var(--bg-elev)',
+                      border: '1px solid var(--border)',
                       cursor: can ? 'pointer' : 'not-allowed',
                       opacity: can ? 1 : 0.4,
                     }}>
@@ -1167,16 +1167,16 @@ const DeckEditor = () => {
                         style={{
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 12,
-                          color: '#F5EFE0',
+                          color: 'var(--text)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                         }}>
                         {c.name}
                       </div>
-                      <div style={{ fontSize: 11, color: '#A99C86' }}>{c.type}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.type}</div>
                     </div>
-                    <span style={{ color: '#F5C518', fontSize: 11 }}>{cnt}/3</span>
+                    <span style={{ color: 'var(--gold)', fontSize: 11 }}>{cnt}/3</span>
                   </div>
                 );
               })}
@@ -1205,8 +1205,8 @@ const DeckEditor = () => {
               width: '100%',
               maxWidth: 520,
               padding: 32,
-              background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(160deg,var(--panel),var(--bg))',
+              border: '1px solid var(--border)',
               clipPath: 'polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px))',
             }}>
             <div
@@ -1215,7 +1215,7 @@ const DeckEditor = () => {
                 fontStyle: 'italic',
                 fontSize: 11,
                 letterSpacing: '0.3em',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 textTransform: 'uppercase',
               }}>
               — Oracle IA —
@@ -1227,7 +1227,7 @@ const DeckEditor = () => {
                 fontSize: 24,
                 fontWeight: 900,
                 letterSpacing: '0.02em',
-                color: '#F5EFE0',
+                color: 'var(--text)',
                 textTransform: 'uppercase',
               }}>
               Décris ton deck
@@ -1240,10 +1240,10 @@ const DeckEditor = () => {
                 width: '100%',
                 minHeight: 120,
                 padding: 14,
-                background: '#14100A',
-                border: '1px solid #3A2E1C',
-                borderLeft: '2px solid #A855F7',
-                color: '#F5EFE0',
+                background: 'var(--bg-elev)',
+                border: '1px solid var(--border)',
+                borderLeft: '2px solid var(--violet)',
+                color: 'var(--text)',
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 14,
                 outline: 'none',
@@ -1256,9 +1256,9 @@ const DeckEditor = () => {
                 style={{
                   flex: 1,
                   height: 44,
-                  background: '#14100A',
-                  color: '#A99C86',
-                  border: '1px solid #3A2E1C',
+                  background: 'var(--bg-elev)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   letterSpacing: '0.12em',
@@ -1274,7 +1274,7 @@ const DeckEditor = () => {
                 style={{
                   flex: 1,
                   height: 44,
-                  background: '#A855F7',
+                  background: 'var(--violet)',
                   color: '#fff',
                   border: 0,
                   fontFamily: "'Orbitron', sans-serif",
@@ -1322,26 +1322,26 @@ const DeckEditor = () => {
                 alt=""
                 style={{
                   width: 280,
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   boxShadow: '0 40px 90px rgba(0,0,0,.75),0 0 60px rgba(245,197,24,.25)',
                 }}
               />
             )}
-            <div style={{ maxWidth: 380, color: '#F5EFE0' }}>
+            <div style={{ maxWidth: 380, color: 'var(--text)' }}>
               <div
                 style={{
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 22,
                   fontWeight: 900,
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                 }}>
                 {selectedCardDetail.card.name}
               </div>
-              <div style={{ marginTop: 8, color: '#A99C86', fontSize: 13 }}>
+              <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 13 }}>
                 {selectedCardDetail.set_code} · {selectedCardDetail.rarity}
               </div>
               {selectedCardDetail.card.description && (
-                <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.5, color: '#A99C86' }}>
+                <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.5, color: 'var(--text-muted)' }}>
                   {selectedCardDetail.card.description.slice(0, 400)}
                   {selectedCardDetail.card.description.length > 400 ? '...' : ''}
                 </p>
@@ -1354,8 +1354,8 @@ const DeckEditor = () => {
                 style={{
                   marginTop: 16,
                   padding: '10px 18px',
-                  background: '#F5C518',
-                  color: '#0B0906',
+                  background: 'var(--gold)',
+                  color: 'var(--bg)',
                   border: 0,
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,

@@ -65,7 +65,7 @@ const DeckShare = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
         <div
           className="animate-spin"
           style={{
@@ -73,7 +73,7 @@ const DeckShare = () => {
             height: 40,
             borderRadius: '50%',
             border: '3px solid rgba(245,197,24,.3)',
-            borderTopColor: '#F5C518',
+            borderTopColor: 'var(--gold)',
           }}
         />
       </div>
@@ -82,14 +82,14 @@ const DeckShare = () => {
 
   if (error || !deck) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906', padding: 32 }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)', padding: 32 }}>
         <div
           style={{
             maxWidth: 460,
             textAlign: 'center',
             padding: '40px 32px',
-            background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
-            border: '1px solid #3A2E1C',
+            background: 'linear-gradient(160deg,var(--panel),var(--bg))',
+            border: '1px solid var(--border)',
             clipPath: 'polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px))',
           }}>
           <MillenniumMark size={56} className="text-blue-600" />
@@ -99,18 +99,18 @@ const DeckShare = () => {
               fontFamily: "'Orbitron', sans-serif",
               fontSize: 24,
               fontWeight: 900,
-              color: '#F5EFE0',
+              color: 'var(--text)',
               textTransform: 'uppercase',
             }}>
             Lien invalide
           </h2>
-          <p style={{ color: '#A99C86', fontSize: 14, marginBottom: 20 }}>{error}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>{error}</p>
           <button
             onClick={() => navigate('/login')}
             style={{
               padding: '10px 22px',
-              background: '#F5C518',
-              color: '#0B0906',
+              background: 'var(--gold)',
+              color: 'var(--bg)',
               border: 0,
               fontFamily: "'Orbitron', sans-serif",
               fontSize: 12,
@@ -131,7 +131,7 @@ const DeckShare = () => {
   const extraCount = deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
 
@@ -149,7 +149,7 @@ const DeckShare = () => {
           background: 'linear-gradient(180deg,rgba(11,9,6,.92),rgba(11,9,6,.68))',
           backdropFilter: 'blur(16px) saturate(180%)',
           WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-          borderBottom: '1px solid #3A2E1C',
+          borderBottom: '1px solid var(--border)',
         }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <MillenniumMark size={28} className="text-blue-600" />
@@ -160,9 +160,9 @@ const DeckShare = () => {
               fontSize: 14,
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: '#F5EFE0',
+              color: 'var(--text)',
             }}>
-            Keit<span style={{ color: '#F5C518' }}>land</span>
+            Keit<span style={{ color: 'var(--gold)' }}>land</span>
           </span>
         </div>
         <span style={{ flex: 1 }} />
@@ -172,7 +172,7 @@ const DeckShare = () => {
             fontStyle: 'italic',
             fontSize: 11,
             letterSpacing: '0.2em',
-            color: '#A99C86',
+            color: 'var(--text-muted)',
             textTransform: 'uppercase',
           }}>
           — Vitrine publique —
@@ -200,7 +200,7 @@ const DeckShare = () => {
                 fontStyle: 'italic',
                 fontSize: 11,
                 letterSpacing: '0.3em',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 textTransform: 'uppercase',
               }}>
               — Vitrine ouverte —
@@ -213,16 +213,16 @@ const DeckShare = () => {
                 fontWeight: 900,
                 letterSpacing: '0.02em',
                 textTransform: 'uppercase',
-                color: '#F5EFE0',
+                color: 'var(--text)',
                 lineHeight: 1,
               }}>
               {deck.name}
             </h1>
-            <div style={{ marginTop: 8, fontSize: 15, color: '#A99C86' }}>
+            <div style={{ marginTop: 8, fontSize: 15, color: 'var(--text-muted)' }}>
               par{' '}
-              <span style={{ color: '#A855F7' }}>@{deck.user?.username}</span>{' '}
+              <span style={{ color: 'var(--violet)' }}>@{deck.user?.username}</span>{' '}
               ·{' '}
-              <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: '#F5C518' }}>
+              <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>
                 {mainCount} · {extraCount} · 0
               </span>
             </div>
@@ -234,8 +234,8 @@ const DeckShare = () => {
               marginTop: 26,
               position: 'relative',
               padding: '44px 40px 34px',
-              background: 'linear-gradient(180deg,#14100A,#0B0906)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(180deg,var(--bg-elev),var(--bg))',
+              border: '1px solid var(--border)',
               overflow: 'hidden',
               clipPath: CUT_ARENA,
             }}>
@@ -276,7 +276,7 @@ const DeckShare = () => {
                       display: 'grid',
                       placeItems: 'center',
                       background:
-                        i < 3 ? 'linear-gradient(150deg,#2A2216,#14100A)' : 'rgba(255,255,255,.02)',
+                        i < 3 ? 'linear-gradient(150deg,var(--border-soft),var(--bg-elev))' : 'rgba(255,255,255,.02)',
                       border: i < 3 ? '1px solid rgba(245,197,24,.55)' : '1px dashed rgba(245,197,24,.22)',
                       boxShadow: i < 3 ? '0 0 20px -4px rgba(245,197,24,.55)' : undefined,
                     }}>
@@ -286,7 +286,7 @@ const DeckShare = () => {
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 9,
                           letterSpacing: '0.12em',
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                           opacity: 0.75,
                         }}>
                         MONSTRE
@@ -306,7 +306,7 @@ const DeckShare = () => {
                       placeItems: 'center',
                       background:
                         i < 2 || i === 3
-                          ? 'linear-gradient(150deg,#2A2216,#14100A)'
+                          ? 'linear-gradient(150deg,var(--border-soft),var(--bg-elev))'
                           : 'rgba(255,255,255,.02)',
                       border:
                         i < 2
@@ -321,7 +321,7 @@ const DeckShare = () => {
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 9,
                           letterSpacing: '0.12em',
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                           opacity: 0.75,
                         }}>
                         {i < 2 ? 'MAGIE' : 'PIÈGE'}
@@ -341,11 +341,11 @@ const DeckShare = () => {
                 fontSize: 12,
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: '#F5C518',
+                color: 'var(--gold)',
               }}>
               Cartes clés
             </span>
-            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
           </div>
           <div
             style={{
@@ -376,11 +376,11 @@ const DeckShare = () => {
                     fontSize: 12,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: '#C084FC',
+                    color: 'var(--violet-soft)',
                   }}>
                   Extra deck
                 </span>
-                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
               </div>
               <div
                 style={{
@@ -409,8 +409,8 @@ const DeckShare = () => {
           <div
             style={{
               padding: 22,
-              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+              border: '1px solid var(--border)',
               clipPath: CUT_PANEL,
             }}>
             <button
@@ -423,7 +423,7 @@ const DeckShare = () => {
                 isolation: 'isolate',
                 border: 0,
                 background: 'transparent',
-                color: '#0B0906',
+                color: 'var(--bg)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 fontSize: 12,
@@ -436,7 +436,7 @@ const DeckShare = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#A855F7',
+                  background: 'var(--violet)',
                   transform: 'translate(5px,0)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
@@ -446,7 +446,7 @@ const DeckShare = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#F5C518',
+                  background: 'var(--gold)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
                 }}
@@ -479,14 +479,14 @@ const DeckShare = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     fontSize: 14,
-                    color: '#A99C86',
+                    color: 'var(--text-muted)',
                     paddingBottom: 8,
                     borderBottom: '1px solid rgba(58,46,28,.6)',
                   }}>
                   <span>{m.label}</span>
                   <span
                     style={{
-                      color: '#F5EFE0',
+                      color: 'var(--text)',
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 12,
                       fontVariantNumeric: 'tabular-nums',
@@ -502,8 +502,8 @@ const DeckShare = () => {
             <div
               style={{
                 padding: 22,
-                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                border: '1px solid #C29A0F',
+                background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                border: '1px solid var(--gold-dim)',
                 clipPath: CUT_PANEL,
                 boxShadow: '0 0 24px rgba(245,197,24,.25)',
               }}>
@@ -515,12 +515,12 @@ const DeckShare = () => {
                     fontSize: 11,
                     letterSpacing: '0.16em',
                     textTransform: 'uppercase',
-                    color: '#F5C518',
+                    color: 'var(--gold)',
                   }}>
                   Rejoins-nous
                 </span>
               </div>
-              <p style={{ margin: '0 0 14px', fontSize: 13, lineHeight: 1.5, color: '#A99C86' }}>
+              <p style={{ margin: '0 0 14px', fontSize: 13, lineHeight: 1.5, color: 'var(--text-muted)' }}>
                 Compte gratuit. Ta collection reste la tienne, exportable à tout moment.
               </p>
               <button
@@ -529,8 +529,8 @@ const DeckShare = () => {
                   width: '100%',
                   height: 44,
                   background: 'transparent',
-                  color: '#F5EFE0',
-                  border: '1px solid #F5C518',
+                  color: 'var(--text)',
+                  border: '1px solid var(--gold)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontWeight: 700,
                   fontSize: 11,

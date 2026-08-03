@@ -22,6 +22,8 @@ export interface Palette {
   gold: string;
   goldDim: string;
   violet: string;
+  /** Violet clair — compteurs Extra Deck, accents secondaires */
+  violetSoft: string;
   cyan: string;
   magenta: string;
   success: string;
@@ -55,6 +57,7 @@ export const darkPalette: Palette = {
   gold: '#F5C518',
   goldDim: '#C29A0F',
   violet: '#A855F7',
+  violetSoft: '#C084FC',
   cyan: '#22D3EE',
   magenta: '#FF2E88',
   success: '#34D399',
@@ -84,6 +87,7 @@ export const lightPalette: Palette = {
   gold: '#8A6D0B',
   goldDim: '#6B5408',
   violet: '#7C3AED',
+  violetSoft: '#6428C4',
   cyan: '#0E7490',
   magenta: '#C2185B',
   success: '#047857',

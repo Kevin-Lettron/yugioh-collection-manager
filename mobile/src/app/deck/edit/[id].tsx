@@ -232,8 +232,8 @@ export default function DeckEditorScreen() {
                   backgroundColor: 'rgba(168,85,247,0.1)',
                 },
               ]}>
-              <Text style={[styles.counterLabel, { color: '#C084FC' }]}>Extra</Text>
-              <Text style={[styles.counterVal, { color: '#C084FC' }]}>{extraCount}/15</Text>
+              <Text style={[styles.counterLabel, { color: colors.violetSoft }]}>Extra</Text>
+              <Text style={[styles.counterVal, { color: colors.violetSoft }]}>{extraCount}/15</Text>
             </View>
             <View
               style={[

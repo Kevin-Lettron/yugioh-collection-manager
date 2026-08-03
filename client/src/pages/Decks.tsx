@@ -99,16 +99,16 @@ const Decks = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
 
       <div style={{ position: 'relative', zIndex: 20, padding: '46px 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid #3A2E1C' }}>
+        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid var(--border)' }}>
           <GlyphPyramid
-            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: '#F5C518', opacity: 0.07 }}
+            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: 'var(--gold)', opacity: 0.07 }}
           />
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
             <div>
@@ -118,7 +118,7 @@ const Decks = () => {
                   fontStyle: 'italic',
                   fontSize: 12,
                   letterSpacing: '0.32em',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                   textTransform: 'uppercase',
                 }}>
                 — Grimoires du Sanctuaire —
@@ -132,7 +132,7 @@ const Decks = () => {
                   lineHeight: 0.96,
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
-                  background: 'linear-gradient(180deg,#F5EFE0 25%,#C29A0F 100%)',
+                  background: 'linear-gradient(180deg,var(--text) 25%,var(--gold-dim) 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                   color: 'transparent',
@@ -140,7 +140,7 @@ const Decks = () => {
                 }}>
                 Mes Decks
               </h1>
-              <p style={{ margin: '10px 0 0', fontSize: 16, color: '#A99C86' }}>
+              <p style={{ margin: '10px 0 0', fontSize: 16, color: 'var(--text-muted)' }}>
                 {activeTab === 'mydecks'
                   ? `${decks.length} grimoire${decks.length > 1 ? 's' : ''} en préparation`
                   : `${wishlist.length} deck${wishlist.length > 1 ? 's' : ''} en tête`}
@@ -155,7 +155,7 @@ const Decks = () => {
                 isolation: 'isolate',
                 border: 0,
                 background: 'transparent',
-                color: '#0B0906',
+                color: 'var(--bg)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 fontSize: 12,
@@ -167,7 +167,7 @@ const Decks = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#A855F7',
+                  background: 'var(--violet)',
                   transform: 'translate(5px,0)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
@@ -177,7 +177,7 @@ const Decks = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#F5C518',
+                  background: 'var(--gold)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
                 }}
@@ -200,9 +200,9 @@ const Decks = () => {
                   style={{
                     height: 44,
                     padding: '0 22px',
-                    border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
+                    border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`,
                     background: on ? 'rgba(245,197,24,.14)' : 'transparent',
-                    color: on ? '#F5C518' : '#A99C86',
+                    color: on ? 'var(--gold)' : 'var(--text-muted)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     letterSpacing: '0.14em',
@@ -226,9 +226,9 @@ const Decks = () => {
               onChange={(e) => setRespectBanlist(e.target.value)}
               style={{
                 padding: '10px 14px',
-                background: '#1A1510',
-                border: '1px solid #3A2E1C',
-                color: '#F5EFE0',
+                background: 'var(--panel)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 13,
                 letterSpacing: '0.06em',
@@ -242,9 +242,9 @@ const Decks = () => {
               onChange={(e) => setIsPublic(e.target.value)}
               style={{
                 padding: '10px 14px',
-                background: '#1A1510',
-                border: '1px solid #3A2E1C',
-                color: '#F5EFE0',
+                background: 'var(--panel)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 13,
                 letterSpacing: '0.06em',
@@ -265,7 +265,7 @@ const Decks = () => {
                 height: 40,
                 borderRadius: '50%',
                 border: '3px solid rgba(245,197,24,.3)',
-                borderTopColor: '#F5C518',
+                borderTopColor: 'var(--gold)',
               }}
             />
           </div>
@@ -289,19 +289,19 @@ const Decks = () => {
                     onClick={() => navigate(`/decks/${deck.id}`)}
                     style={{
                       padding: 18,
-                      background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                      border: '1px solid #3A2E1C',
+                      background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                      border: '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
                       clipPath: CUT_TILE,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-6px)';
-                      e.currentTarget.style.borderColor = '#C29A0F';
+                      e.currentTarget.style.borderColor = 'var(--gold-dim)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.borderColor = '#3A2E1C';
+                      e.currentTarget.style.borderColor = 'var(--border)';
                     }}>
                     <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
                       <div
@@ -309,7 +309,7 @@ const Decks = () => {
                           width: 52,
                           height: 74,
                           border: '1px solid rgba(245,197,24,.42)',
-                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                           transform: 'rotate(-7deg)',
                           display: 'grid',
                           placeItems: 'center',
@@ -321,13 +321,13 @@ const Decks = () => {
                           width: 52,
                           height: 74,
                           border: '1px solid rgba(168,85,247,.42)',
-                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                           marginLeft: -18,
                           transform: 'rotate(7deg)',
                           display: 'grid',
                           placeItems: 'center',
                         }}>
-                        <CardIcon size={20} style={{ color: '#A855F7' }} />
+                        <CardIcon size={20} style={{ color: 'var(--violet)' }} />
                       </div>
                     </div>
                     <div
@@ -336,7 +336,7 @@ const Decks = () => {
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 12,
                         fontWeight: 700,
-                        color: '#F5EFE0',
+                        color: 'var(--text)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -349,21 +349,21 @@ const Decks = () => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         fontSize: 12,
-                        color: '#A99C86',
+                        color: 'var(--text-muted)',
                       }}>
                       <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                         {c.main} · {c.extra} · {c.side}
                       </span>
-                      <span style={{ color: '#FF2E88' }}>♥ {deck.likes_count || 0}</span>
+                      <span style={{ color: 'var(--magenta)' }}>♥ {deck.likes_count || 0}</span>
                     </div>
                     {isWishlist && (
                       <div
                         style={{
                           marginTop: 6,
                           fontSize: 11,
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                         }}>
-                        par <span style={{ color: '#A855F7' }}>@{deck.user?.username}</span>
+                        par <span style={{ color: 'var(--violet)' }}>@{deck.user?.username}</span>
                       </div>
                     )}
                     <div
@@ -382,9 +382,9 @@ const Decks = () => {
                             style={{
                               flex: 1,
                               padding: '6px 10px',
-                              background: '#14100A',
-                              border: '1px solid #3A2E1C',
-                              color: '#F5C518',
+                              background: 'var(--bg-elev)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--gold)',
                               fontFamily: "'Orbitron', sans-serif",
                               fontSize: 9,
                               letterSpacing: '0.12em',
@@ -402,8 +402,8 @@ const Decks = () => {
                             style={{
                               padding: '6px 10px',
                               background: 'transparent',
-                              border: '1px solid #FF4D6D',
-                              color: '#FF4D6D',
+                              border: '1px solid var(--danger)',
+                              color: 'var(--danger)',
                               fontFamily: "'Orbitron', sans-serif",
                               fontSize: 9,
                               letterSpacing: '0.12em',
@@ -424,8 +424,8 @@ const Decks = () => {
                             flex: 1,
                             padding: '6px 10px',
                             background: 'transparent',
-                            border: '1px solid #FF4D6D',
-                            color: '#FF4D6D',
+                            border: '1px solid var(--danger)',
+                            color: 'var(--danger)',
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 9,
                             letterSpacing: '0.12em',
@@ -447,7 +447,7 @@ const Decks = () => {
                   onClick={() => navigate('/decks/new')}
                   style={{
                     padding: 18,
-                    border: '1px dashed #3A2E1C',
+                    border: '1px dashed var(--border)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -457,15 +457,15 @@ const Decks = () => {
                     cursor: 'pointer',
                     transition: 'border-color 200ms',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
-                  <CardIcon size={40} style={{ color: '#C29A0F', opacity: 0.6 }} />
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--gold-dim)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                  <CardIcon size={40} style={{ color: 'var(--gold-dim)', opacity: 0.6 }} />
                   <span
                     style={{
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 10,
                       letterSpacing: '0.14em',
-                      color: '#A99C86',
+                      color: 'var(--text-muted)',
                       textTransform: 'uppercase',
                       textAlign: 'center',
                     }}>
@@ -481,16 +481,16 @@ const Decks = () => {
                   marginTop: 40,
                   textAlign: 'center',
                   padding: '60px 20px',
-                  border: '1px dashed #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px dashed var(--border)',
+                  color: 'var(--text-muted)',
                 }}>
                 <p style={{ fontSize: 16, marginBottom: 16 }}>Aucun deck pour le moment.</p>
                 <button
                   onClick={() => navigate('/decks/new')}
                   style={{
                     padding: '10px 24px',
-                    background: '#F5C518',
-                    color: '#0B0906',
+                    background: 'var(--gold)',
+                    color: 'var(--bg)',
                     border: 0,
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 12,
@@ -511,8 +511,8 @@ const Decks = () => {
                   marginTop: 40,
                   textAlign: 'center',
                   padding: '60px 20px',
-                  border: '1px dashed #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px dashed var(--border)',
+                  color: 'var(--text-muted)',
                 }}>
                 <p style={{ fontSize: 16, marginBottom: 16 }}>Ta wishlist est vide.</p>
                 <button
@@ -520,8 +520,8 @@ const Decks = () => {
                   style={{
                     padding: '10px 24px',
                     background: 'transparent',
-                    border: '1px solid #A855F7',
-                    color: '#C084FC',
+                    border: '1px solid var(--violet)',
+                    color: 'var(--violet-soft)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 12,
                     letterSpacing: '0.12em',

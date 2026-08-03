@@ -17,7 +17,7 @@ import { collectionApi } from '@/services/collectionApi';
 import { socialApi } from '@/services/socialApi';
 import type { CollectionStats, Deck } from '@/types';
 import { useThemedStyles } from '@/theme/useThemedStyles';
-import { useAppTheme, type Theme } from '@/theme/ThemeContext';
+import { useAppTheme, useTheme, type Theme } from '@/theme/ThemeContext';
 import { AppBackground } from '@/components/decor/AppBackground';
 import { AppHeader } from '@/components/decor/AppHeader';
 import { ScanFAB } from '@/components/decor/ScanFAB';
@@ -33,6 +33,7 @@ import { spacing } from '@/theme/palette';
 export default function ProfileScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const { user, logout } = useAuth();
 
@@ -203,6 +204,20 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/users/search' as any)}
                 activeOpacity={0.8}>
                 <Text style={styles.accountBtnAltText}>🔍  Rechercher un duelliste</Text>
+              </TouchableOpacity>
+              {/* Bascule de thème : la refonte v2 avait fait disparaître le seul
+                  point d'entrée, qui vivait dans l'ancien en-tête de collection. */}
+              <TouchableOpacity
+                style={styles.accountBtnAlt}
+                onPress={toggleTheme}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  theme.name === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'
+                }>
+                <Text style={styles.accountBtnAltText}>
+                  {theme.name === 'dark' ? '☀  Thème clair' : '☾  Thème sombre'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

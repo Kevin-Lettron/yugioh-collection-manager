@@ -6,6 +6,7 @@ import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
 import { GlyphEye } from '../components/decor/Glyphs';
 import { MillenniumMark } from '../components/decor/Icons';
+import PasswordField from '../components/PasswordField';
 
 const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
 const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
@@ -50,7 +51,7 @@ const Login = () => {
         display: 'grid',
         placeItems: 'center',
         padding: '60px 16px',
-        background: '#0B0906',
+        background: 'var(--bg)',
         overflow: 'hidden',
       }}>
       <AppBackground />
@@ -95,8 +96,8 @@ const Login = () => {
           width: '100%',
           maxWidth: 470,
           padding: '44px 46px 40px',
-          background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
-          border: '1px solid #3A2E1C',
+          background: 'linear-gradient(160deg,var(--panel),var(--bg))',
+          border: '1px solid var(--border)',
           boxShadow: '0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(245,197,24,.08)',
           clipPath: CUT_PANEL,
         }}>
@@ -113,7 +114,7 @@ const Login = () => {
               fontStyle: 'italic',
               fontSize: 11,
               letterSpacing: '0.3em',
-              color: '#F5C518',
+              color: 'var(--gold)',
               textTransform: 'uppercase',
             }}>
             — Retour au sanctuaire —
@@ -126,7 +127,7 @@ const Login = () => {
               fontWeight: 900,
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
-              color: '#F5EFE0',
+              color: 'var(--text)',
             }}>
             Entrer
           </h1>
@@ -141,7 +142,7 @@ const Login = () => {
                 fontFamily: "'Orbitron', sans-serif",
                 fontSize: 9,
                 letterSpacing: '0.2em',
-                color: '#A99C86',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
               }}>
               Courriel ou pseudo
@@ -155,10 +156,10 @@ const Login = () => {
               style={{
                 width: '100%',
                 padding: '14px 16px',
-                background: '#14100A',
-                border: '1px solid #3A2E1C',
-                borderLeft: '2px solid #F5C518',
-                color: '#F5EFE0',
+                background: 'var(--bg-elev)',
+                border: '1px solid var(--border)',
+                borderLeft: '2px solid var(--gold)',
+                color: 'var(--text)',
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 16,
                 outline: 'none',
@@ -173,29 +174,16 @@ const Login = () => {
                 fontFamily: "'Orbitron', sans-serif",
                 fontSize: 9,
                 letterSpacing: '0.2em',
-                color: '#A99C86',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
               }}>
               Sceau
             </span>
-            <input
-              type="password"
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              onChange={setPassword}
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                background: '#14100A',
-                border: '1px solid #3A2E1C',
-                borderLeft: '2px solid #F5C518',
-                color: '#F5EFE0',
-                fontFamily: "'Rajdhani', sans-serif",
-                fontSize: 16,
-                outline: 'none',
-                clipPath: CUT_INPUT,
-              }}
+              autoComplete="current-password"
             />
           </label>
 
@@ -210,7 +198,7 @@ const Login = () => {
               isolation: 'isolate',
               border: 0,
               background: 'transparent',
-              color: '#0B0906',
+              color: 'var(--bg)',
               fontFamily: "'Orbitron', sans-serif",
               fontWeight: 700,
               fontSize: 13,
@@ -223,7 +211,7 @@ const Login = () => {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: '#A855F7',
+                background: 'var(--violet)',
                 transform: 'translate(5px,0)',
                 clipPath: CUT_BTN,
                 zIndex: -1,
@@ -233,7 +221,7 @@ const Login = () => {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: '#F5C518',
+                background: 'var(--gold)',
                 clipPath: CUT_BTN,
                 zIndex: -1,
               }}
@@ -252,15 +240,15 @@ const Login = () => {
               style={{
                 flex: 1,
                 height: 1,
-                background: 'linear-gradient(90deg,transparent,#3A2E1C)',
+                background: 'linear-gradient(90deg,transparent,var(--border))',
               }}
             />
-            <GlyphEye style={{ width: 18, height: 18, color: '#C29A0F' }} />
+            <GlyphEye style={{ width: 18, height: 18, color: 'var(--gold-dim)' }} />
             <span
               style={{
                 flex: 1,
                 height: 1,
-                background: 'linear-gradient(90deg,#3A2E1C,transparent)',
+                background: 'linear-gradient(90deg,var(--border),transparent)',
               }}
             />
           </div>
@@ -270,9 +258,9 @@ const Login = () => {
             style={{
               width: '100%',
               height: 48,
-              border: '1px solid #3A2E1C',
-              background: '#14100A',
-              color: '#A99C86',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-elev)',
+              color: 'var(--text-muted)',
               fontFamily: "'Orbitron', sans-serif",
               fontWeight: 600,
               fontSize: 11,
@@ -289,11 +277,11 @@ const Login = () => {
         </form>
 
         <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <span style={{ color: '#A99C86', fontSize: 13 }}>Nouveau gardien ? </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nouveau gardien ? </span>
           <Link
             to="/register"
             style={{
-              color: '#F5C518',
+              color: 'var(--gold)',
               textDecoration: 'none',
               fontFamily: "'Orbitron', sans-serif",
               fontSize: 11,

@@ -148,7 +148,7 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
         <div
           className="animate-spin"
           style={{
@@ -156,7 +156,7 @@ const Profile = () => {
             height: 40,
             borderRadius: '50%',
             border: '3px solid rgba(245,197,24,.3)',
-            borderTopColor: '#F5C518',
+            borderTopColor: 'var(--gold)',
           }}
         />
       </div>
@@ -173,7 +173,7 @@ const Profile = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
@@ -185,7 +185,7 @@ const Profile = () => {
             position: 'relative',
             height: 180,
             background: 'linear-gradient(120deg,rgba(168,85,247,.24),rgba(245,197,24,.1))',
-            borderBottom: '1px solid #3A2E1C',
+            borderBottom: '1px solid var(--border)',
             overflow: 'hidden',
           }}>
           <div
@@ -198,7 +198,7 @@ const Profile = () => {
             }}
           />
           <GlyphEye
-            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: '#F5C518', opacity: 0.12 }}
+            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: 'var(--gold)', opacity: 0.12 }}
           />
         </div>
 
@@ -213,7 +213,7 @@ const Profile = () => {
                   width: 120,
                   height: 120,
                   objectFit: 'cover',
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   clipPath: HEX,
                   boxShadow: '0 0 40px rgba(245,197,24,.3)',
                 }}
@@ -223,14 +223,14 @@ const Profile = () => {
                 style={{
                   width: 120,
                   height: 120,
-                  background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
-                  color: '#0B0906',
+                  background: 'linear-gradient(135deg,var(--violet),var(--gold-dim))',
+                  color: 'var(--bg)',
                   display: 'grid',
                   placeItems: 'center',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 38,
                   fontWeight: 900,
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   clipPath: HEX,
                   boxShadow: '0 0 40px rgba(245,197,24,.3)',
                 }}>
@@ -245,11 +245,11 @@ const Profile = () => {
                   fontWeight: 900,
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                 }}>
                 @{username}
               </div>
-              <div style={{ marginTop: 6, fontSize: 15, color: '#A99C86' }}>
+              <div style={{ marginTop: 6, fontSize: 15, color: 'var(--text-muted)' }}>
                 Gardien du sanctuaire · depuis {new Date(user.created_at).getFullYear()}
               </div>
             </div>
@@ -260,8 +260,8 @@ const Profile = () => {
                   alignItems: 'center',
                   gap: 6,
                   padding: '6px 12px',
-                  border: '1px solid #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 9,
                   letterSpacing: '0.14em',
@@ -272,8 +272,8 @@ const Profile = () => {
               <span
                 style={{
                   padding: '6px 12px',
-                  border: '1px solid #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 9,
                   letterSpacing: '0.14em',
@@ -290,8 +290,8 @@ const Profile = () => {
                 style={{
                   padding: '6px 12px',
                   background: 'transparent',
-                  border: '1px solid #F5C518',
-                  color: '#F5C518',
+                  border: '1px solid var(--gold)',
+                  color: 'var(--gold)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 10,
                   letterSpacing: '0.12em',
@@ -320,8 +320,8 @@ const Profile = () => {
               display: 'grid',
               gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
               gap: 1,
-              background: '#3A2E1C',
-              border: '1px solid #3A2E1C',
+              background: 'var(--border)',
+              border: '1px solid var(--border)',
               clipPath: CUT_STATS,
             }}
             className="max-md:!grid-cols-2">
@@ -330,7 +330,7 @@ const Profile = () => {
                 key={s.label}
                 style={{
                   padding: '18px 22px',
-                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
@@ -340,7 +340,7 @@ const Profile = () => {
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 9,
                     letterSpacing: '0.2em',
-                    color: '#A99C86',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                   }}>
                   {s.label}
@@ -350,7 +350,7 @@ const Profile = () => {
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 26,
                     fontWeight: 700,
-                    color: '#F5EFE0',
+                    color: 'var(--text)',
                     fontVariantNumeric: 'tabular-nums',
                   }}>
                   {s.value}
@@ -366,8 +366,8 @@ const Profile = () => {
               style={{
                 marginTop: 30,
                 padding: 22,
-                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                border: '1px solid #3A2E1C',
+                background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                border: '1px solid var(--border)',
                 clipPath: 'polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px))',
                 display: 'flex',
                 flexDirection: 'column',
@@ -379,7 +379,7 @@ const Profile = () => {
                   fontSize: 12,
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                 }}>
                 Éditer le profil
               </div>
@@ -390,10 +390,10 @@ const Profile = () => {
                 placeholder="Pseudo"
                 style={{
                   padding: '12px 14px',
-                  background: '#14100A',
-                  border: '1px solid #3A2E1C',
-                  borderLeft: '2px solid #F5C518',
-                  color: '#F5EFE0',
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--border)',
+                  borderLeft: '2px solid var(--gold)',
+                  color: 'var(--text)',
                   fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 14,
                   outline: 'none',
@@ -405,9 +405,9 @@ const Profile = () => {
                 disabled
                 style={{
                   padding: '12px 14px',
-                  background: '#0F0C07',
-                  border: '1px solid #3A2E1C',
-                  color: '#6E6250',
+                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-dim)',
                   fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 14,
                 }}
@@ -419,9 +419,9 @@ const Profile = () => {
                 placeholder="Nouveau sceau (facultatif)"
                 style={{
                   padding: '12px 14px',
-                  background: '#14100A',
-                  border: '1px solid #3A2E1C',
-                  color: '#F5EFE0',
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
                   fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 14,
                   outline: 'none',
@@ -435,9 +435,9 @@ const Profile = () => {
                   placeholder="Confirmer le sceau"
                   style={{
                     padding: '12px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                     outline: 'none',
@@ -451,9 +451,9 @@ const Profile = () => {
                   style={{
                     flex: 1,
                     height: 44,
-                    background: '#14100A',
-                    color: '#A99C86',
-                    border: '1px solid #3A2E1C',
+                    background: 'var(--bg-elev)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     letterSpacing: '0.12em',
@@ -469,8 +469,8 @@ const Profile = () => {
                   style={{
                     flex: 1,
                     height: 44,
-                    background: '#F5C518',
-                    color: '#0B0906',
+                    background: 'var(--gold)',
+                    color: 'var(--bg)',
                     border: 0,
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
@@ -500,11 +500,11 @@ const Profile = () => {
                 fontSize: 12,
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: '#F5C518',
+                color: 'var(--gold)',
               }}>
               Mes decks publics
             </span>
-            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
           </div>
           <div
             style={{
@@ -525,19 +525,19 @@ const Profile = () => {
                   <div
                     style={{
                       padding: 18,
-                      background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                      border: '1px solid #3A2E1C',
+                      background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                      border: '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
                       clipPath: CUT_TILE,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-6px)';
-                      e.currentTarget.style.borderColor = '#C29A0F';
+                      e.currentTarget.style.borderColor = 'var(--gold-dim)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.borderColor = '#3A2E1C';
+                      e.currentTarget.style.borderColor = 'var(--border)';
                     }}>
                     <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
                       <div
@@ -545,7 +545,7 @@ const Profile = () => {
                           width: 52,
                           height: 74,
                           border: '1px solid rgba(245,197,24,.42)',
-                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                           transform: 'rotate(-7deg)',
                           display: 'grid',
                           placeItems: 'center',
@@ -557,13 +557,13 @@ const Profile = () => {
                           width: 52,
                           height: 74,
                           border: '1px solid rgba(168,85,247,.42)',
-                          background: 'linear-gradient(150deg,#221B12,#14100A)',
+                          background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                           marginLeft: -18,
                           transform: 'rotate(7deg)',
                           display: 'grid',
                           placeItems: 'center',
                         }}>
-                        <CardIcon size={20} style={{ color: '#A855F7' }} />
+                        <CardIcon size={20} style={{ color: 'var(--violet)' }} />
                       </div>
                     </div>
                     <div
@@ -572,7 +572,7 @@ const Profile = () => {
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 12,
                         fontWeight: 700,
-                        color: '#F5EFE0',
+                        color: 'var(--text)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -585,12 +585,12 @@ const Profile = () => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         fontSize: 12,
-                        color: '#A99C86',
+                        color: 'var(--text-muted)',
                       }}>
                       <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                         {main} · {extra} · 0
                       </span>
-                      <span style={{ color: '#FF2E88' }}>♥ {d.likes_count || 0}</span>
+                      <span style={{ color: 'var(--magenta)' }}>♥ {d.likes_count || 0}</span>
                     </div>
                   </div>
                 </Link>
@@ -600,7 +600,7 @@ const Profile = () => {
               onClick={() => navigate('/decks/new')}
               style={{
                 padding: 18,
-                border: '1px dashed #3A2E1C',
+                border: '1px dashed var(--border)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -610,15 +610,15 @@ const Profile = () => {
                 cursor: 'pointer',
                 transition: 'border-color 200ms',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
-              <CardIcon size={40} style={{ color: '#C29A0F', opacity: 0.6 }} />
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--gold-dim)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}>
+              <CardIcon size={40} style={{ color: 'var(--gold-dim)', opacity: 0.6 }} />
               <span
                 style={{
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 10,
                   letterSpacing: '0.14em',
-                  color: '#A99C86',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   textAlign: 'center',
                 }}>

@@ -26,9 +26,9 @@ const HERO_CARDS = [
       transform: 'rotate(-7deg)',
       animation: 'san-float 12s ease-in-out infinite',
     },
-    ring: 'inset 0 0 0 1px #F5C518',
+    ring: 'inset 0 0 0 1px var(--gold)',
     glow: '0 0 26px rgba(245,197,24,.42)',
-    plinthColor: '#F5C518',
+    plinthColor: 'var(--gold)',
   },
   {
     wrap: {
@@ -39,9 +39,9 @@ const HERO_CARDS = [
       zIndex: 2,
       animation: 'san-float 12s ease-in-out -4s infinite',
     },
-    ring: 'inset 0 0 0 1px #FF2E88',
+    ring: 'inset 0 0 0 1px var(--magenta)',
     glow: '0 0 16px rgba(255,46,136,.45),0 0 26px rgba(34,211,238,.32)',
-    plinthColor: '#FF6FAC',
+    plinthColor: 'var(--magenta)',
   },
   {
     wrap: {
@@ -54,7 +54,7 @@ const HERO_CARDS = [
     },
     ring: 'inset 0 0 0 1px rgba(168,85,247,.55)',
     glow: '0 0 18px rgba(168,85,247,.3)',
-    plinthColor: '#C084FC',
+    plinthColor: 'var(--violet-soft)',
   },
 ];
 
@@ -89,8 +89,8 @@ const cardArt = (ring: string, glow: string): React.CSSProperties => ({
   placeItems: 'center',
   width: '100%',
   aspectRatio: '59 / 86',
-  background: 'linear-gradient(135deg,#221B12,#14100A)',
-  border: '1px solid #3A2E1C',
+  background: 'linear-gradient(135deg,var(--panel-2),var(--bg-elev))',
+  border: '1px solid var(--border)',
   clipPath: 'polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)',
   boxShadow: `${ring},${glow},${glow},0 18px 26px -12px rgba(0,0,0,.9)`,
   transform: 'translateY(-5px)',
@@ -106,7 +106,7 @@ const plinth = (color: string): React.CSSProperties => ({
 
 const Home = () => {
   return (
-    <div className="min-h-screen relative overflow-x-hidden" style={{ background: '#0B0906' }}>
+    <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
 
@@ -122,7 +122,7 @@ const Home = () => {
           background: 'linear-gradient(180deg,rgba(11,9,6,.92),rgba(11,9,6,.68))',
           backdropFilter: 'blur(16px) saturate(180%)',
           WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-          borderBottom: '1px solid #3A2E1C',
+          borderBottom: '1px solid var(--border)',
         }}>
         <Link to="/" className="flex items-center gap-2.5" style={{ textDecoration: 'none' }}>
           <MillenniumMark size={30} className="text-blue-600" title="Keitland" />
@@ -133,9 +133,9 @@ const Home = () => {
               fontSize: 14,
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: '#F5EFE0',
+              color: 'var(--text)',
             }}>
-            Keit<span style={{ color: '#F5C518' }}>land</span>
+            Keit<span style={{ color: 'var(--gold)' }}>land</span>
           </span>
         </Link>
         <span style={{ flex: 1 }} />
@@ -145,9 +145,9 @@ const Home = () => {
               style={{
                 height: 40,
                 padding: '0 22px',
-                border: '1px solid #F5C518',
+                border: '1px solid var(--gold)',
                 background: 'transparent',
-                color: '#F5EFE0',
+                color: 'var(--text)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 fontSize: 11,
@@ -168,7 +168,7 @@ const Home = () => {
                 isolation: 'isolate',
                 border: 0,
                 background: 'transparent',
-                color: '#0B0906',
+                color: 'var(--bg)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 fontSize: 12,
@@ -180,7 +180,7 @@ const Home = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#A855F7',
+                  background: 'var(--violet)',
                   transform: 'translate(5px,0)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
@@ -190,7 +190,7 @@ const Home = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: '#F5C518',
+                  background: 'var(--gold)',
                   clipPath: CUT_BTN,
                   zIndex: -1,
                 }}
@@ -223,7 +223,7 @@ const Home = () => {
                 fontStyle: 'italic',
                 fontSize: 13,
                 letterSpacing: '0.34em',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 textTransform: 'uppercase',
               }}>
               — Sanctuaire du Millénium —
@@ -237,7 +237,7 @@ const Home = () => {
                 lineHeight: 0.94,
                 letterSpacing: '0.01em',
                 textTransform: 'uppercase',
-                background: 'linear-gradient(180deg,#F5EFE0 20%,#C29A0F 100%)',
+                background: 'linear-gradient(180deg,var(--text) 20%,var(--gold-dim) 100%)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
@@ -253,7 +253,7 @@ const Home = () => {
                 maxWidth: 520,
                 fontSize: 19,
                 lineHeight: 1.55,
-                color: '#A99C86',
+                color: 'var(--text-muted)',
                 textWrap: 'pretty' as any,
               }}>
               Scanne tes cartes physiques, dresse tes decks, ouvre ta vitrine au reste du monde. Ce que
@@ -269,7 +269,7 @@ const Home = () => {
                     isolation: 'isolate',
                     border: 0,
                     background: 'transparent',
-                    color: '#0B0906',
+                    color: 'var(--bg)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontWeight: 700,
                     fontSize: 14,
@@ -281,7 +281,7 @@ const Home = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#A855F7',
+                      background: 'var(--violet)',
                       transform: 'translate(5px,0)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
@@ -291,7 +291,7 @@ const Home = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#F5C518',
+                      background: 'var(--gold)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
                     }}
@@ -304,9 +304,9 @@ const Home = () => {
                   style={{
                     height: 52,
                     padding: '0 26px',
-                    border: '1px solid #F5C518',
+                    border: '1px solid var(--gold)',
                     background: 'transparent',
-                    color: '#F5EFE0',
+                    color: 'var(--text)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontWeight: 700,
                     fontSize: 12,
@@ -327,7 +327,7 @@ const Home = () => {
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 26,
                       fontWeight: 700,
-                      color: '#F5C518',
+                      color: 'var(--gold)',
                       fontVariantNumeric: 'tabular-nums',
                     }}>
                     {s.value}
@@ -339,7 +339,7 @@ const Home = () => {
                       fontSize: 9,
                       letterSpacing: '0.2em',
                       textTransform: 'uppercase',
-                      color: '#A99C86',
+                      color: 'var(--text-muted)',
                     }}>
                     {s.label}
                   </div>
@@ -400,7 +400,7 @@ const Home = () => {
                       position: 'absolute',
                       inset: 0,
                       background:
-                        'repeating-linear-gradient(45deg,transparent 0 10px,rgba(168,85,247,.05) 10px 11px),linear-gradient(150deg,#221B12,#14100A)',
+                        'repeating-linear-gradient(45deg,transparent 0 10px,rgba(168,85,247,.05) 10px 11px),linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                     }}
                   />
                   <CardIcon size={40} className="relative" />
@@ -428,14 +428,14 @@ const Home = () => {
               key={f.title}
               style={{
                 padding: '26px 26px 28px',
-                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                border: '1px solid #3A2E1C',
+                background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                border: '1px solid var(--border)',
                 clipPath: CUT_TILE,
                 transition: 'border-color 200ms',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C29A0F')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#3A2E1C')}>
-              <div style={{ color: '#F5C518' }}>{f.icon}</div>
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--gold-dim)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}>
+              <div style={{ color: 'var(--gold)' }}>{f.icon}</div>
               <div
                 style={{
                   marginTop: 16,
@@ -444,7 +444,7 @@ const Home = () => {
                   fontWeight: 700,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                 }}>
                 {f.title}
               </div>
@@ -453,7 +453,7 @@ const Home = () => {
                   margin: '10px 0 0',
                   fontSize: 15,
                   lineHeight: 1.55,
-                  color: '#A99C86',
+                  color: 'var(--text-muted)',
                   textWrap: 'pretty' as any,
                 }}>
                 {f.body}
@@ -472,14 +472,14 @@ const Home = () => {
           <div
             style={{
               padding: '30px 34px',
-              background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-              border: '1px dashed #3A2E1C',
+              background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+              border: '1px dashed var(--border)',
               clipPath: CUT_TILE,
               display: 'flex',
               alignItems: 'center',
               gap: 20,
             }}>
-            <GlyphEye style={{ width: 40, height: 40, color: '#C29A0F', flex: 'none' }} />
+            <GlyphEye style={{ width: 40, height: 40, color: 'var(--gold-dim)', flex: 'none' }} />
             <div>
               <div
                 style={{
@@ -487,11 +487,11 @@ const Home = () => {
                   fontSize: 11,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                 }}>
                 Voix du sanctuaire — À venir
               </div>
-              <p style={{ margin: '6px 0 0', color: '#A99C86', fontSize: 14, lineHeight: 1.5 }}>
+              <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 }}>
                 Trois témoignages de duellistes seront affichés dès qu’on aura recueilli les retours des
                 premiers gardiens.
               </p>
@@ -512,7 +512,7 @@ const Home = () => {
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: 16,
-          borderTop: '1px solid #3A2E1C',
+          borderTop: '1px solid var(--border)',
         }}>
         <div
           style={{
@@ -523,9 +523,9 @@ const Home = () => {
             fontStyle: 'italic',
             fontSize: 13,
             letterSpacing: '0.14em',
-            color: '#A99C86',
+            color: 'var(--text-muted)',
           }}>
-          <GlyphPyramid style={{ width: 22, height: 22, color: '#C29A0F' }} />
+          <GlyphPyramid style={{ width: 22, height: 22, color: 'var(--gold-dim)' }} />
           Keitland · Le sanctuaire des duellistes · MMXXVI
         </div>
         <div style={{ display: 'flex', gap: 22 }}>
@@ -538,7 +538,7 @@ const Home = () => {
                 fontSize: 10,
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                color: '#A99C86',
+                color: 'var(--text-muted)',
                 textDecoration: 'none',
               }}>
               {l}
