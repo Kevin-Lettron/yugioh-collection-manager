@@ -179,7 +179,7 @@ côté, `<entry>` de l'autre).
 
 - [x] **Étape 1** — Migration, sources, récupération des flux — **faite le 2026-08-03**
 
-       appelle les trois flux, les analyse et affiche ce qu'ils
+      `npm run news:probe` appelle les trois flux, les analyse et affiche ce qu'ils
       donnent vraiment. Sortie :
 
       | Source | Articles | Résumé | Image | Catégories |
@@ -188,25 +188,26 @@ côté, `<entry>` de l'autre).
       | Pojo | 10 | 10/10 | 10/10 | General Topics (8), **yugioh (6)**, MTG Card of the Day (3) |
       | Reddit r/yugioh | 25 | 25/25 | 20/25 | yugioh (25) |
 
-      Fichiers : , ,
-      .
+      Fichiers : `007_news.sql`, `server/src/services/news/{types,fetcher,parser}.ts`,
+      `server/scripts/newsProbe.ts`.
 
       **Ce qu'on a appris en le faisant :**
 
       - **Les titres arrivent truffés d'entités HTML.** YGOrganization sert
-         là où il faut lire « Endymion ».  de
-        l'analyseur XML ne traite que les cinq entités **XML** ; les entités HTML
-        numériques passent au travers et se seraient affichées en clair dans
-        l'interface. D'où un décodeur maison, appliqué aux titres autant qu'aux résumés.
+        `&#8220;Endymion&#8221;` là où il faut lire « Endymion ». L'option
+        `processEntities` de l'analyseur XML ne traite que les cinq entités **XML** ;
+        les entités HTML numériques passent au travers et se seraient affichées en
+        clair dans l'interface. D'où un décodeur maison, appliqué aux titres autant
+        qu'aux résumés.
       - **Reddit sert de l'Atom**, YGOrganization et Pojo du RSS. Les deux formats ne se
-        ressemblent que de loin —  contre , un lien texte contre un
-        attribut . Il fallait bien les deux analyseurs.
+        ressemblent que de loin — `<item>` contre `<entry>`, un lien texte contre un
+        attribut `href`. Il fallait bien les deux analyseurs.
       - **Un flux à un seul article** rendrait un objet là où le code attend un tableau,
         et le premier article de la journée passerait à la trappe. Réglé par l'option
-         de l'analyseur.
+        `isArray` de l'analyseur.
       - Pojo confirme le besoin de filtrer : « The Lonely Mountain – The Hobbit MTG
-        Review » et « Wingspan Pocket – Game Review » dans les trois derniers articles.
-        Sa catégorie  (6 articles sur 10) sera le signal retenu.
+        Review » et « Wingspan Pocket – Game Review » dans ses trois derniers articles.
+        Sa catégorie `yugioh` (6 articles sur 10) sera le signal retenu.
 - [ ] **Étape 2** — Classification, déduplication, ingestion
 - [ ] **Étape 3** — API et abonnements
 - [ ] **Étape 4** — Calendrier des sorties
