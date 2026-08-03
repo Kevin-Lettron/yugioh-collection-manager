@@ -90,7 +90,10 @@ code source correspondant. Un duel joué depuis le navigateur, c'est exactement 
 
 Deux options :
 
-| | A — publier Keitland sous AGPL | B — isoler le moteur |
+**Décision rendue le 2026-08-03 : option A.** Le reste de cette section est conservé pour
+mémoire du raisonnement.
+
+| | A — publier Keitland sous AGPL *(retenu)* | B — isoler le moteur |
 |---|---|---|
 | Principe | Le dépôt entier passe sous AGPL-3.0 | Le moteur devient un service séparé (son propre process, sa propre licence AGPL), Keitland lui parle en HTTP |
 | Effort | Ajouter un `LICENSE` | +1 à 2 j de travail, un service de plus à déployer |
@@ -225,7 +228,15 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
 
 ## 7. Avancement
 
-- [ ] **Étape 0** — Arbitrage licence + `LICENSE` *(en attente de décision : option A ou B)*
+- [x] **Étape 0** — Arbitrage licence — **fait le 2026-08-03**
+
+      Décision : **option A**. Keitland passe sous AGPL-3.0. Le dépôt étant déjà public,
+      le changement est formel ; en échange, le moteur peut vivre directement dans le
+      serveur Express, sans le service séparé qu'imposait l'option B.
+
+      Le `README` annonçait « licence MIT » sans qu'aucun fichier `LICENSE` ne l'appuie.
+      C'est corrigé : `LICENSE` à la racine + un tableau des composants tiers et de leurs
+      licences respectives.
 - [x] **Étape 1** — Socle local — **fait le 2026-08-03**
 
       `npm run duel:assets` récupère les données, `npm run duel:smoke` prouve que le

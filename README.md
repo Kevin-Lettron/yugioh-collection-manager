@@ -345,7 +345,26 @@ Error: Invalid or expired token
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT.
+Ce projet est sous **GNU Affero General Public License v3.0** — voir [LICENSE](LICENSE).
+
+Le choix n'est pas gratuit : le moteur de duel repose sur
+[ygopro-core](https://github.com/edo9300/ygopro-core) et sur les
+[scripts de cartes de Project Ignis](https://github.com/ProjectIgnis/CardScripts), tous
+deux sous AGPL-3.0. L'article 13 de cette licence s'applique dès qu'un utilisateur
+interagit avec le logiciel **à travers un réseau** — ce qui est exactement le cas d'un duel
+joué depuis le navigateur. Le code source doit donc rester accessible aux utilisateurs.
+
+Composants tiers et leurs licences :
+
+| Composant | Rôle | Licence |
+|---|---|---|
+| [ygopro-core](https://github.com/edo9300/ygopro-core) via [ocgcore-wasm](https://github.com/n1xx1/ocgcore-wasm) | moteur de règles | AGPL-3.0 (surcouche MIT) |
+| [CardScripts](https://github.com/ProjectIgnis/CardScripts) | scripts Lua des cartes | AGPL-3.0 |
+| [BabelCDB](https://github.com/ProjectIgnis/BabelCDB) | base `cards.cdb` | aucune licence déclarée — non redistribuée, téléchargée à l'installation |
+| [API YGOProDeck](https://ygoprodeck.com/api-guide/) | données et images des cartes | conditions de l'API |
+
+Les noms, textes et illustrations des cartes Yu-Gi-Oh! appartiennent à Konami. Ce projet
+n'en redistribue aucun : ils sont récupérés à l'exécution depuis leurs sources.
 
 ## 👤 Auteur
 
