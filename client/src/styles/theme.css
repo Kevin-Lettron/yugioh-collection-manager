@@ -765,9 +765,9 @@ button[style*="isolation"]:not(:disabled):hover::before {
   inset: 0;
   background: linear-gradient(115deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.45) 45%,
-    rgba(255, 255, 255, 0.72) 50%,
-    rgba(255, 255, 255, 0.45) 55%,
+    rgba(255, 255, 255, 0.38) 45%,
+    rgba(255, 255, 255, 0.61) 50%,
+    rgba(255, 255, 255, 0.38) 55%,
     transparent 70%);
   mix-blend-mode: screen;
   animation: san-prism-sweep 2.8s linear infinite;
