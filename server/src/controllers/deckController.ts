@@ -232,6 +232,56 @@ export class DeckController {
   }
 
   /**
+   * Remplace tout le contenu d'un deck en une requête.
+   *
+   * Remplace l'ancienne séquence côté client (DELETE puis un POST par carte),
+   * qui laissait un deck à moitié rempli dès qu'une carte était refusée.
+   */
+  static async replaceDeckCards(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Not authenticated');
+      }
+
+      const deckId = parseInt(req.params.id);
+      if (isNaN(deckId)) {
+        throw new ValidationError('Invalid deck ID');
+      }
+
+      const { cards } = req.body;
+      if (!Array.isArray(cards)) {
+        throw new ValidationError('`cards` doit être un tableau');
+      }
+
+      const entries = cards.map((c: any) => ({
+        card_id: parseInt(c.card_id),
+        quantity: parseInt(c.quantity),
+        is_extra_deck: c.is_extra_deck === true,
+      }));
+
+      if (entries.some((e) => isNaN(e.card_id) || isNaN(e.quantity))) {
+        throw new ValidationError('Entrée de carte invalide');
+      }
+
+      const result = await DeckModel.replaceCards(deckId, req.user.id, entries);
+
+      if (!result.success) {
+        // 400 + la liste complète : l'utilisateur voit tout ce qui bloque d'un
+        // coup, au lieu de corriger une carte à la fois.
+        res.status(400).json({
+          error: result.errors?.[0] || 'Sauvegarde refusée',
+          errors: result.errors,
+        });
+        return;
+      }
+
+      res.json({ message: 'Deck enregistré', count: entries.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Clear all cards from deck
    */
   static async clearDeckCards(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

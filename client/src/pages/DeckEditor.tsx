@@ -429,7 +429,6 @@ const DeckEditor = () => {
         savedDeckId = resp.data.deck.id.toString();
       }
       if (savedDeckId) {
-        await api.delete(`/decks/${savedDeckId}/cards`);
         const map = new Map<string, { card_id: number; quantity: number; is_extra_deck: boolean }>();
         const all = [
           ...mainDeck.map((d) => ({ ...d, is_extra_deck: false })),
@@ -441,14 +440,20 @@ const DeckEditor = () => {
           if (ex) ex.quantity += dc.quantity;
           else map.set(k, { card_id: dc.card_id, quantity: dc.quantity, is_extra_deck: dc.is_extra_deck });
         }
-        for (const cd of map.values()) {
-          await api.post(`/decks/${savedDeckId}/cards`, cd);
-        }
+        // Un seul appel, validé puis écrit dans une transaction côté serveur.
+        // L'ancienne boucle « DELETE puis un POST par carte » laissait le deck
+        // à moitié rempli dès qu'une carte était refusée.
+        await api.put(`/decks/${savedDeckId}/cards`, { cards: [...map.values()] });
       }
       toast.success(isEditing ? 'Deck mis à jour' : 'Deck scellé');
       navigate('/decks');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Sauvegarde impossible');
+      // Le serveur renvoie la liste complète des refus, en nommant les cartes.
+      const data = error.response?.data;
+      const detail: string | undefined = Array.isArray(data?.errors)
+        ? data.errors.slice(0, 3).join(' · ')
+        : data?.error || data?.message;
+      toast.error(detail || 'Sauvegarde impossible');
     } finally {
       setSaving(false);
     }

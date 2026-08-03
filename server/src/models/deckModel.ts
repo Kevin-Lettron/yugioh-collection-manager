@@ -1,6 +1,7 @@
 import { query, getClient } from '../config/database';
 import { Deck, DeckCard, DeckFilters, PaginatedResponse, Card } from '../../../shared/types';
 import { YGOProDeckService } from '../services/ygoprodeckService';
+import { CardModel } from './cardModel';
 
 export class DeckModel {
   /**
@@ -632,6 +633,101 @@ export class DeckModel {
     await query(`UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [deckId]);
 
     return true;
+  }
+
+  /**
+   * Remplace d'un bloc le contenu d'un deck : valide TOUT, puis écrit dans une
+   * transaction — ou n'écrit rien.
+   *
+   * L'ancien parcours du client était : créer le deck, vider les cartes, puis
+   * les reposter une par une. Un refus au milieu de la boucle laissait un deck
+   * créé et à moitié rempli, avec un simple « Sauvegarde impossible » à l'écran.
+   *
+   * Les erreurs nomment la carte fautive : « Dragon Rose Noire doit aller dans
+   * l'Extra Deck » est exploitable, « Extra Deck monsters must be added to
+   * Extra Deck » ne l'est pas.
+   */
+  static async replaceCards(
+    deckId: number,
+    userId: number,
+    entries: { card_id: number; quantity: number; is_extra_deck: boolean }[]
+  ): Promise<{ success: boolean; errors?: string[] }> {
+    const deckResult = await query(`SELECT id FROM decks WHERE id = $1 AND user_id = $2`, [
+      deckId,
+      userId,
+    ]);
+    if (deckResult.rows.length === 0) {
+      return { success: false, errors: ['Deck introuvable ou non autorisé'] };
+    }
+
+    // ── Validation complète avant la moindre écriture ──────────────────────
+    const errors: string[] = [];
+    let mainCount = 0;
+    let extraCount = 0;
+    const copiesByCard = new Map<number, number>();
+
+    for (const entry of entries) {
+      const card = await CardModel.findById(entry.card_id);
+      if (!card) {
+        errors.push(`Carte #${entry.card_id} introuvable`);
+        continue;
+      }
+
+      const label = card.name || `Carte #${entry.card_id}`;
+      const belongsToExtra = YGOProDeckService.isExtraDeckCard(card.frame_type || '');
+
+      if (entry.is_extra_deck && !belongsToExtra) {
+        errors.push(`« ${label} » n'est pas une carte d'Extra Deck`);
+      } else if (!entry.is_extra_deck && belongsToExtra) {
+        errors.push(`« ${label} » (${card.type}) doit aller dans l'Extra Deck`);
+      }
+
+      if (entry.quantity < 1) {
+        errors.push(`« ${label} » : quantité invalide`);
+      }
+
+      const copies = (copiesByCard.get(entry.card_id) || 0) + entry.quantity;
+      copiesByCard.set(entry.card_id, copies);
+      if (copies > 3) {
+        errors.push(`« ${label} » : ${copies} exemplaires, maximum 3`);
+      }
+
+      if (entry.is_extra_deck) extraCount += entry.quantity;
+      else mainCount += entry.quantity;
+    }
+
+    if (mainCount > 60) errors.push(`Main Deck : ${mainCount} cartes, maximum 60`);
+    if (extraCount > 15) errors.push(`Extra Deck : ${extraCount} cartes, maximum 15`);
+
+    if (errors.length > 0) {
+      // On sort AVANT d'avoir touché à la base : le deck reste dans son état
+      // précédent, intact.
+      return { success: false, errors };
+    }
+
+    // ── Écriture atomique ──────────────────────────────────────────────────
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query(`DELETE FROM deck_cards WHERE deck_id = $1`, [deckId]);
+
+      for (const entry of entries) {
+        await client.query(
+          `INSERT INTO deck_cards (deck_id, card_id, quantity, is_extra_deck)
+           VALUES ($1, $2, $3, $4)`,
+          [deckId, entry.card_id, entry.quantity, entry.is_extra_deck]
+        );
+      }
+
+      await client.query(`UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [deckId]);
+      await client.query('COMMIT');
+      return { success: true };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   /**
