@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Card, UserCard } from '../../../shared/types';
+import { isExtraDeckCard } from '../../../shared/cards';
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -63,12 +64,9 @@ interface NormalizedAIDeckResponse {
   explanation: string;
 }
 
-// Extra deck card types
-const EXTRA_DECK_TYPES = ['Fusion Monster', 'Synchro Monster', 'XYZ Monster', 'Link Monster'];
-
-function isExtraDeckCard(type: string): boolean {
-  return EXTRA_DECK_TYPES.includes(type);
-}
+// La classification vit dans shared/cards.ts. Une liste fermée de libellés
+// exacts ratait « Synchro Tuner Monster » et compagnie : l'IA plaçait alors ces
+// cartes dans le Main Deck, et le deck était refusé à la sauvegarde.
 
 interface CardInfo {
   id: number;
@@ -113,7 +111,7 @@ export async function buildDeckWithAI(
         description: uc.card.description,
         archetype: uc.card.archetype,
         availableQuantity: uc.quantity,
-        isExtraDeck: isExtraDeckCard(uc.card.type),
+        isExtraDeck: isExtraDeckCard(uc.card),
       });
     }
   }

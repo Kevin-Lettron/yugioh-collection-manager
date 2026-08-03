@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Deck, Card, DeckCard, UserCard, CollectionFilters } from '../../../shared/types';
+import { isExtraDeckCard } from '../../../shared/cards';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
@@ -30,7 +31,6 @@ interface DeckCardWithCollection extends DeckCard {
   collectionQuantity?: number;
 }
 
-const EXTRA_DECK_TYPES = ['Fusion Monster', 'Synchro Monster', 'XYZ Monster', 'Link Monster'];
 
 const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
 const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
@@ -267,7 +267,10 @@ const DeckEditor = () => {
     setValidationErrors(errs);
   };
 
-  const isExtra = (card: Card): boolean => EXTRA_DECK_TYPES.includes(card.type);
+  // Classification partagée avec le serveur : une liste fermée de libellés
+  // exacts ratait « Synchro Tuner Monster » et consorts, et le deck devenait
+  // insauvegardable. Voir shared/cards.ts.
+  const isExtra = (card: Card): boolean => isExtraDeckCard(card);
 
   const addCard = (card: Card, userCard?: UserCard) => {
     const ex = isExtra(card);
