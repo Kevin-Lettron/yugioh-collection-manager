@@ -33,6 +33,9 @@ const PAGE_SIZE = 30;
 const NUM_COLUMNS = 2;
 const EMPTY_FILTERS: CollectionFilterValues = { type: '', attribute: '', rarity: '' };
 
+/** Cellule fantôme qui complète la dernière ligne de la grille (voir paddedCards). */
+const SPACER = { id: -1 } as UserCard;
+
 const SEARCH_ICON = require('@/assets/images/ui/i-search.png');
 const FILTER_ICON = require('@/assets/images/ui/i-filter.png');
 
@@ -145,7 +148,19 @@ export default function CollectionScreen() {
   // Avatar géré par défaut par AppHeader → nav vers /(tabs)/profile.
   // (avant : ouvrait une alerte déconnexion, à faire depuis la page profil).
 
-  const renderCard = ({ item }: { item: UserCard }) => (
+  // Une carte seule sur la dernière ligne s'étirait sur toute la largeur : avec
+  // `flex: 1`, elle occupe l'espace laissé libre par la case manquante. On
+  // complète donc la liste par une cellule vide, qui absorbe cet espace et
+  // laisse la carte exactement à la taille des autres.
+  const paddedCards = useMemo(
+    () => (cards.length % NUM_COLUMNS === 0 ? cards : [...cards, SPACER]),
+    [cards]
+  );
+
+  const renderCard = ({ item }: { item: UserCard }) => {
+    if (item === SPACER) return <View style={styles.cardCell} />;
+
+    return (
     <View style={styles.cardCell}>
       <CardTile
         uri={
@@ -159,7 +174,8 @@ export default function CollectionScreen() {
         onPress={() => setSelectedCard(item)}
       />
     </View>
-  );
+    );
+  };
 
   const listHeader = (
     <View style={styles.contentPadding}>
@@ -280,8 +296,8 @@ export default function CollectionScreen() {
           </View>
         ) : (
           <FlatList
-            data={cards}
-            keyExtractor={(item) => String(item.id)}
+            data={paddedCards}
+            keyExtractor={(item) => (item === SPACER ? 'spacer' : String(item.id))}
             numColumns={NUM_COLUMNS}
             renderItem={renderCard}
             ListHeaderComponent={listHeader}

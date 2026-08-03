@@ -124,6 +124,7 @@ import reactionRoutes from './routes/reactionRoutes';
 import commentRoutes from './routes/commentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import debugRoutes from './routes/debugRoutes';
+import clientErrorRoutes from './routes/clientErrorRoutes';
 import adminRoutes from './routes/adminRoutes';
 
 app.use('/api/auth', authRoutes);
@@ -134,6 +135,10 @@ app.use('/api/reactions', reactionRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Crashs clients — monté aussi en production : un crash n'a de valeur que s'il
+// remonte depuis les appareils réels. Auth optionnelle, débit plafonné.
+app.use('/api/client-errors', clientErrorRoutes);
 
 // Debug routes (dev only — writes arbitrary client events to server logs)
 if (process.env.NODE_ENV !== 'production') {

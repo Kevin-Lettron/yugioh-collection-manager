@@ -19,6 +19,8 @@ export interface Palette {
   border: string;
   text: string;
   textMuted: string;
+  /** Texte très effacé — mentions légales, traces techniques */
+  textDim: string;
   gold: string;
   goldDim: string;
   violet: string;
@@ -54,6 +56,7 @@ export const darkPalette: Palette = {
   border: '#3A2E1C',
   text: '#F5EFE0',
   textMuted: '#A99C86',
+  textDim: '#6E6250',
   gold: '#F5C518',
   goldDim: '#C29A0F',
   violet: '#A855F7',
@@ -83,6 +86,7 @@ export const lightPalette: Palette = {
   border: '#DCCFB0',
   text: '#1A1206',
   textMuted: '#6B5E45',
+  textDim: '#8B7D63',
   // L'or néon tombe à 1,8:1 sur fond clair : illisible. D'où ce bronze.
   gold: '#8A6D0B',
   goldDim: '#6B5408',

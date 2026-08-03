@@ -7,6 +7,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { installCrashReporter } from '@/services/crashReporter';
+
+// Branché au chargement du module, avant tout rendu : une erreur pendant le
+// montage du premier écran doit déjà être captée.
+installCrashReporter();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,12 +81,16 @@ export default function RootLayout() {
     // SafeAreaProvider est requis par `useSafeAreaInsets` : sans lui, la barre
     // d'onglets ne connaît pas la hauteur de la barre système Android et se
     // retrouve dessous.
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <ThemedRoot />
-        </AuthProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    // ErrorBoundary est le plus à l'extérieur : il doit survivre à une erreur
+    // dans n'importe quel provider, y compris celui du thème.
+    <ErrorBoundary screen="root">
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ThemedRoot />
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

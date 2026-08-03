@@ -5,11 +5,25 @@ import type {
   DeckComment,
   DeckStats,
   DeckValidation,
+  PaginatedResponse,
 } from '@/types';
 
 export const deckApi = {
   // ── Deck CRUD
-  listMine: () => api.get<Deck[]>('/decks').then((r) => r.data),
+
+  /**
+   * `GET /decks` renvoie une réponse paginée `{ data, total, page, … }`, pas un
+   * tableau : le typage `Deck[]` était faux et les écrans recevaient l'enveloppe.
+   * `decks.filter(...)` levait alors « filter is not a function » pendant le
+   * rendu, ce qui faisait planter les onglets Decks et Profil.
+   *
+   * On tolère les deux formes : si un jour l'API renvoie un tableau nu, le code
+   * continue de fonctionner.
+   */
+  listMine: () =>
+    api
+      .get<PaginatedResponse<Deck> | Deck[]>('/decks')
+      .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data ?? [])),
 
   listPublic: (params: { page?: number; limit?: number; search?: string } = {}) =>
     api
