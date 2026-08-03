@@ -44,7 +44,7 @@ class FollowModel {
         const countResult = await (0, database_1.query)(`SELECT COUNT(*) as count FROM follows WHERE following_id = $1`, [userId]);
         const total = parseInt(countResult.rows[0].count);
         // Get followers with user details
-        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.follower_id = u.id
        WHERE f.following_id = $1
@@ -63,7 +63,7 @@ class FollowModel {
         const countResult = await (0, database_1.query)(`SELECT COUNT(*) as count FROM follows WHERE follower_id = $1`, [userId]);
         const total = parseInt(countResult.rows[0].count);
         // Get following with user details
-        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.following_id = u.id
        WHERE f.follower_id = $1
@@ -92,7 +92,7 @@ class FollowModel {
      * Get mutual followers (users who both follow each other)
      */
     static async getMutualFollowers(userId) {
-        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.email, u.profile_picture, u.created_at, u.updated_at
+        const result = await (0, database_1.query)(`SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at
        FROM users u
        WHERE u.id IN (
          SELECT f1.following_id

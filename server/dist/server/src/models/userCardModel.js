@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserCardModel = void 0;
 const database_1 = require("../config/database");
+const prices_1 = require("../utils/prices");
 class UserCardModel {
     /**
      * Add card to user's collection
@@ -19,11 +20,17 @@ class UserCardModel {
      * Get user's collection with filters and pagination
      */
     static async getUserCollection(userId, filters = {}) {
-        const { page = 1, limit = 50, search, type, frame_type, rarity, level, min_atk, max_atk, min_def, max_def, attribute, race, } = filters;
+        const { page = 1, limit = 50, search, type, frame_type, rarity, level, min_atk, max_atk, min_def, max_def, attribute, race, card_id, } = filters;
         const offset = (page - 1) * limit;
         const conditions = ['uc.user_id = $1'];
         const values = [userId];
         let paramCount = 2;
+        // Card ID filter (filter by cards.id - the database PK)
+        if (card_id !== undefined) {
+            conditions.push(`c.id = $${paramCount}`);
+            values.push(card_id);
+            paramCount++;
+        }
         // Search filter
         if (search) {
             conditions.push(`(c.name ILIKE $${paramCount} OR c.description ILIKE $${paramCount})`);
@@ -98,7 +105,7 @@ class UserCardModel {
         // Get paginated results with card data
         values.push(limit, offset);
         const result = await (0, database_1.query)(`SELECT uc.id, uc.user_id, uc.card_id as user_card_card_id, uc.set_code, uc.rarity, uc.language, uc.quantity, uc.created_at, uc.updated_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -122,7 +129,7 @@ class UserCardModel {
      */
     static async getUserCard(userId, cardId) {
         const result = await (0, database_1.query)(`SELECT uc.id, uc.user_id, uc.card_id as user_card_card_id, uc.set_code, uc.rarity, uc.language, uc.quantity, uc.created_at, uc.updated_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -167,6 +174,102 @@ class UserCardModel {
         return result.rows.length > 0;
     }
     /**
+     * Disponibilité par carte pour l'éditeur de deck.
+     * Pour chaque carte possédée par l'user, retourne :
+     *   - owned : total quantite (toutes editions/raretes confondues)
+     *   - used_in_decks : somme quantite dans les autres decks de l'user (excluant `excludeDeckId`)
+     *   - available : owned - used_in_decks (peut etre 0, jamais negatif)
+     *
+     * Cle du Record = cards.id (int DB, celui exposé dans DeckCard.card_id côté front).
+     */
+    static async getAvailability(userId, excludeDeckId) {
+        const ownedRes = await (0, database_1.query)(`SELECT card_id AS db_id, SUM(quantity)::int AS owned
+       FROM user_cards
+       WHERE user_id = $1
+       GROUP BY card_id`, [userId]);
+        const usedRes = await (0, database_1.query)(`SELECT dc.card_id AS db_id, SUM(dc.quantity)::int AS used
+       FROM deck_cards dc
+       JOIN decks d ON d.id = dc.deck_id
+       WHERE d.user_id = $1
+         AND ($2::int IS NULL OR d.id != $2)
+       GROUP BY dc.card_id`, [userId, excludeDeckId ?? null]);
+        const usedMap = new Map();
+        for (const row of usedRes.rows)
+            usedMap.set(Number(row.db_id), Number(row.used));
+        const out = {};
+        for (const row of ownedRes.rows) {
+            const dbId = Number(row.db_id);
+            const owned = Number(row.owned) || 0;
+            const used = usedMap.get(dbId) || 0;
+            out[dbId] = {
+                owned,
+                used_in_decks: used,
+                available: Math.max(0, owned - used),
+            };
+        }
+        return out;
+    }
+    /**
+     * Agrège les stats de la collection en un seul passage.
+     * On récupère seulement les colonnes utiles (rarity, frame_type, card_prices, quantity, created_at)
+     * pour éviter de tirer les descriptions/images pour rien.
+     */
+    static async getCollectionStats(userId) {
+        const result = await (0, database_1.query)(`SELECT uc.rarity, uc.quantity, uc.created_at,
+              c.frame_type, c.type, c.card_prices
+       FROM user_cards uc
+       JOIN cards c ON uc.card_id = c.id
+       WHERE uc.user_id = $1`, [userId]);
+        const stats = {
+            total_cards: 0,
+            unique_cards: result.rows.length,
+            ultra_rares_count: 0,
+            secret_rares_count: 0,
+            total_value_eur: 0,
+            by_type: { monster: 0, spell: 0, trap: 0, extra: 0 },
+            recent_added_30d: 0,
+            rarities: [],
+            rarity_counts: {},
+        };
+        const now = Date.now();
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+        const extraTypes = new Set(['fusion', 'synchro', 'xyz', 'link']);
+        // Compte par rareté pour trier par fréquence desc dans la liste déroulante.
+        const rarityCounts = new Map();
+        for (const row of result.rows) {
+            const qty = Number(row.quantity) || 0;
+            stats.total_cards += qty;
+            if (row.rarity) {
+                rarityCounts.set(row.rarity, (rarityCounts.get(row.rarity) || 0) + qty);
+            }
+            if ((0, prices_1.isUltraRare)(row.rarity))
+                stats.ultra_rares_count += qty;
+            if ((0, prices_1.isSecretRare)(row.rarity))
+                stats.secret_rares_count += qty;
+            const p = (0, prices_1.cardmarketPriceEUR)(row.card_prices);
+            if (p)
+                stats.total_value_eur += p * qty;
+            const frame = (row.frame_type || '').toLowerCase();
+            const type = (row.type || '').toLowerCase();
+            if (extraTypes.has(frame))
+                stats.by_type.extra += qty;
+            else if (type.includes('spell'))
+                stats.by_type.spell += qty;
+            else if (type.includes('trap'))
+                stats.by_type.trap += qty;
+            else
+                stats.by_type.monster += qty;
+            if (row.created_at && now - new Date(row.created_at).getTime() <= THIRTY_DAYS_MS) {
+                stats.recent_added_30d += qty;
+            }
+        }
+        const sortedRarities = Array.from(rarityCounts.entries()).sort((a, b) => b[1] - a[1]);
+        stats.rarities = sortedRarities.map(([r]) => r);
+        stats.rarity_counts = Object.fromEntries(sortedRarities);
+        stats.total_value_eur = Math.round(stats.total_value_eur * 100) / 100;
+        return stats;
+    }
+    /**
      * Parse user card with nested card data
      */
     static parseUserCard(row) {
@@ -183,10 +286,14 @@ class UserCardModel {
             card: {
                 id: row.card_db_id, // cards.id (number) - the database ID
                 card_id: row.card_api_id, // cards.card_id (string) - the YGOProDeck API ID
-                name: row.name,
+                name: row.name_fr || row.name,
+                name_fr: row.name_fr,
+                name_en: row.name,
                 type: row.type,
                 frame_type: row.frame_type,
-                description: row.description,
+                description: row.description_fr || row.description,
+                description_fr: row.description_fr,
+                description_en: row.description,
                 atk: row.atk,
                 def: row.def,
                 level: row.level,

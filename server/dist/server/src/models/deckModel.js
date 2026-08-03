@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeckModel = void 0;
 const database_1 = require("../config/database");
 const ygoprodeckService_1 = require("../services/ygoprodeckService");
+const cardModel_1 = require("./cardModel");
 class DeckModel {
     /**
      * Create a new deck
@@ -18,7 +19,7 @@ class DeckModel {
      */
     static async findById(deckId, requestingUserId) {
         const result = await (0, database_1.query)(`SELECT d.*,
-              u.id as user_id, u.username, u.email, u.profile_picture,
+              u.id as user_id, u.username, u.profile_picture,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
               (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count
@@ -30,7 +31,7 @@ class DeckModel {
         const deck = result.rows[0];
         // Get main deck and extra deck cards
         const cardsResult = await (0, database_1.query)(`SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -125,7 +126,7 @@ class DeckModel {
         const data = await Promise.all(result.rows.map(async (row) => {
             // Get main deck and extra deck cards
             const cardsResult = await (0, database_1.query)(`SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-                c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+                c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
                 c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
                 c.card_sets, c.card_images, c.card_prices, c.banlist_info,
                 c.linkval, c.linkmarkers, c.scale
@@ -198,7 +199,7 @@ class DeckModel {
         const total = parseInt(countResult.rows[0].count);
         // Get paginated results
         values.push(limit, offset);
-        const result = await (0, database_1.query)(`SELECT d.*, u.username, u.email, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
+        const result = await (0, database_1.query)(`SELECT d.*, u.username, u.profile_picture, u.created_at as user_created_at, u.updated_at as user_updated_at,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = true) as likes_count,
               (SELECT COUNT(*) FROM deck_reactions dr WHERE dr.deck_id = d.id AND dr.is_like = false) as dislikes_count,
               (SELECT COUNT(*) FROM deck_comments dc WHERE dc.deck_id = d.id) as comments_count,
@@ -282,46 +283,63 @@ class DeckModel {
         return result.rows.length > 0;
     }
     /**
-     * Generate or get share token for a deck
+     * Generate or get share token for a deck.
+     * Tokens now expire after 30 days — a leaked token stops working automatically.
+     * Regenerated (with new expiration) if the existing one has expired.
      */
     static async generateShareToken(deckId, userId) {
         // Verify deck ownership
-        const deckResult = await (0, database_1.query)(`SELECT id, share_token FROM decks WHERE id = $1 AND user_id = $2`, [deckId, userId]);
+        const deckResult = await (0, database_1.query)(`SELECT id, share_token, share_token_expires_at
+         FROM decks
+        WHERE id = $1 AND user_id = $2`, [deckId, userId]);
         if (deckResult.rows.length === 0) {
             return null;
         }
-        // If token already exists, return it
-        if (deckResult.rows[0].share_token) {
-            return deckResult.rows[0].share_token;
+        const existingToken = deckResult.rows[0].share_token;
+        const existingExpiry = deckResult.rows[0].share_token_expires_at;
+        const stillValid = existingToken && existingExpiry && new Date(existingExpiry) > new Date();
+        if (stillValid) {
+            return existingToken;
         }
-        // Generate new token
+        // Generate a fresh token with a 30-day expiration
         const crypto = require('crypto');
         const token = crypto.randomBytes(32).toString('hex');
-        await (0, database_1.query)(`UPDATE decks SET share_token = $1 WHERE id = $2`, [token, deckId]);
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await (0, database_1.query)(`UPDATE decks
+          SET share_token = $1,
+              share_token_expires_at = $2
+        WHERE id = $3`, [token, expiresAt, deckId]);
         return token;
     }
     /**
      * Remove share token (disable sharing)
      */
     static async removeShareToken(deckId, userId) {
-        const result = await (0, database_1.query)(`UPDATE decks SET share_token = NULL WHERE id = $1 AND user_id = $2 RETURNING id`, [deckId, userId]);
+        const result = await (0, database_1.query)(`UPDATE decks
+          SET share_token = NULL,
+              share_token_expires_at = NULL
+        WHERE id = $1 AND user_id = $2
+      RETURNING id`, [deckId, userId]);
         return result.rows.length > 0;
     }
     /**
-     * Get deck by share token (for guest access)
+     * Get deck by share token (for guest access).
+     * Expired tokens return null — same shape as "not found" so we don't leak that
+     * a token was valid in the past.
      */
     static async findByShareToken(shareToken) {
         const result = await (0, database_1.query)(`SELECT d.*,
               u.id as owner_user_id, u.username, u.profile_picture
        FROM decks d
        JOIN users u ON d.user_id = u.id
-       WHERE d.share_token = $1`, [shareToken]);
+       WHERE d.share_token = $1
+         AND (d.share_token_expires_at IS NULL OR d.share_token_expires_at > NOW())`, [shareToken]);
         if (result.rows.length === 0)
             return null;
         const deck = result.rows[0];
         // Get main deck and extra deck cards
         const cardsResult = await (0, database_1.query)(`SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
-              c.id as card_db_id, c.card_id as card_api_id, c.name, c.type, c.frame_type, c.description,
+              c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
               c.linkval, c.linkmarkers, c.scale
@@ -453,6 +471,88 @@ class DeckModel {
         return true;
     }
     /**
+     * Remplace d'un bloc le contenu d'un deck : valide TOUT, puis écrit dans une
+     * transaction — ou n'écrit rien.
+     *
+     * L'ancien parcours du client était : créer le deck, vider les cartes, puis
+     * les reposter une par une. Un refus au milieu de la boucle laissait un deck
+     * créé et à moitié rempli, avec un simple « Sauvegarde impossible » à l'écran.
+     *
+     * Les erreurs nomment la carte fautive : « Dragon Rose Noire doit aller dans
+     * l'Extra Deck » est exploitable, « Extra Deck monsters must be added to
+     * Extra Deck » ne l'est pas.
+     */
+    static async replaceCards(deckId, userId, entries) {
+        const deckResult = await (0, database_1.query)(`SELECT id FROM decks WHERE id = $1 AND user_id = $2`, [
+            deckId,
+            userId,
+        ]);
+        if (deckResult.rows.length === 0) {
+            return { success: false, errors: ['Deck introuvable ou non autorisé'] };
+        }
+        // ── Validation complète avant la moindre écriture ──────────────────────
+        const errors = [];
+        let mainCount = 0;
+        let extraCount = 0;
+        const copiesByCard = new Map();
+        for (const entry of entries) {
+            const card = await cardModel_1.CardModel.findById(entry.card_id);
+            if (!card) {
+                errors.push(`Carte #${entry.card_id} introuvable`);
+                continue;
+            }
+            const label = card.name || `Carte #${entry.card_id}`;
+            const belongsToExtra = ygoprodeckService_1.YGOProDeckService.isExtraDeckCard(card.frame_type || '');
+            if (entry.is_extra_deck && !belongsToExtra) {
+                errors.push(`« ${label} » n'est pas une carte d'Extra Deck`);
+            }
+            else if (!entry.is_extra_deck && belongsToExtra) {
+                errors.push(`« ${label} » (${card.type}) doit aller dans l'Extra Deck`);
+            }
+            if (entry.quantity < 1) {
+                errors.push(`« ${label} » : quantité invalide`);
+            }
+            const copies = (copiesByCard.get(entry.card_id) || 0) + entry.quantity;
+            copiesByCard.set(entry.card_id, copies);
+            if (copies > 3) {
+                errors.push(`« ${label} » : ${copies} exemplaires, maximum 3`);
+            }
+            if (entry.is_extra_deck)
+                extraCount += entry.quantity;
+            else
+                mainCount += entry.quantity;
+        }
+        if (mainCount > 60)
+            errors.push(`Main Deck : ${mainCount} cartes, maximum 60`);
+        if (extraCount > 15)
+            errors.push(`Extra Deck : ${extraCount} cartes, maximum 15`);
+        if (errors.length > 0) {
+            // On sort AVANT d'avoir touché à la base : le deck reste dans son état
+            // précédent, intact.
+            return { success: false, errors };
+        }
+        // ── Écriture atomique ──────────────────────────────────────────────────
+        const client = await (0, database_1.getClient)();
+        try {
+            await client.query('BEGIN');
+            await client.query(`DELETE FROM deck_cards WHERE deck_id = $1`, [deckId]);
+            for (const entry of entries) {
+                await client.query(`INSERT INTO deck_cards (deck_id, card_id, quantity, is_extra_deck)
+           VALUES ($1, $2, $3, $4)`, [deckId, entry.card_id, entry.quantity, entry.is_extra_deck]);
+            }
+            await client.query(`UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [deckId]);
+            await client.query('COMMIT');
+            return { success: true };
+        }
+        catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        }
+        finally {
+            client.release();
+        }
+    }
+    /**
      * Remove card from deck
      */
     static async removeCard(deckId, userId, deckCardId) {
@@ -559,10 +659,14 @@ class DeckModel {
             card: {
                 id: row.card_db_id, // cards.id (number) - the database ID
                 card_id: row.card_api_id, // cards.card_id (string) - the YGOProDeck API ID
-                name: row.name,
+                name: row.name_fr || row.name,
+                name_fr: row.name_fr,
+                name_en: row.name,
                 type: row.type,
                 frame_type: row.frame_type,
-                description: row.description,
+                description: row.description_fr || row.description,
+                description_fr: row.description_fr,
+                description_en: row.description,
                 atk: row.atk,
                 def: row.def,
                 level: row.level,

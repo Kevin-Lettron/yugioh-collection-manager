@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CollectionController = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
@@ -6,6 +39,7 @@ const logger_1 = require("../utils/logger");
 const userCardModel_1 = require("../models/userCardModel");
 const cardModel_1 = require("../models/cardModel");
 const ygoprodeckService_1 = require("../services/ygoprodeckService");
+const cardScanService_1 = require("../services/cardScanService");
 class CollectionController {
     /**
      * Search for a card by code (Card ID or Set Code)
@@ -105,7 +139,7 @@ class CollectionController {
             if (!req.user) {
                 throw new errorHandler_1.ValidationError('Not authenticated');
             }
-            const { page = 1, limit = 50, search, type, frame_type, rarity, level, min_atk, max_atk, min_def, max_def, attribute, race, } = req.query;
+            const { page = 1, limit = 50, search, type, frame_type, rarity, level, min_atk, max_atk, min_def, max_def, attribute, race, card_id, } = req.query;
             const filters = {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -120,6 +154,7 @@ class CollectionController {
                 max_def: max_def ? parseInt(max_def) : undefined,
                 attribute: attribute,
                 race: race,
+                card_id: card_id ? parseInt(card_id) : undefined,
             };
             const result = await userCardModel_1.UserCardModel.getUserCollection(req.user.id, filters);
             res.json(result);
@@ -168,6 +203,120 @@ class CollectionController {
             }
             logger_1.loggers.collection.cardRemoved(req.user.id, userCardId);
             res.json({ message: 'Card removed from collection' });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Scan a card photo with Claude Vision to detect its set code.
+     * Photo is processed in memory only, never stored on disk.
+     */
+    static async scanCard(req, res, next) {
+        try {
+            if (!req.user) {
+                throw new errorHandler_1.ValidationError('Not authenticated');
+            }
+            if (!req.file) {
+                throw new errorHandler_1.ValidationError('Photo manquante (champ "photo" requis)');
+            }
+            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+            if (!allowed.includes(req.file.mimetype)) {
+                throw new errorHandler_1.ValidationError('Format non supporté (JPEG, PNG, WebP ou GIF uniquement)');
+            }
+            const rawMediaType = (req.file.mimetype === 'image/jpg' ? 'image/jpeg' : req.file.mimetype);
+            // Preprocess (sharp) : autoOrient + resize 1600 + normalize + sharpen.
+            // Le code de set fait quelques pixels de haut — sans ça Claude confond
+            // souvent les caractères similaires (0/O, 1/I) sur photo iPhone floue.
+            const { preprocessCardImage } = await Promise.resolve().then(() => __importStar(require('../utils/imagePreprocess')));
+            const { buffer: processedBuf, mediaType } = await preprocessCardImage(req.file.buffer, rawMediaType);
+            const base64 = processedBuf.toString('base64');
+            const description = typeof req.body?.description === 'string' ? req.body.description : undefined;
+            // 'code' = gros plan sur le seul code de set, 'card' (défaut) = carte entière
+            const mode = (0, cardScanService_1.parseScanMode)(req.body?.mode);
+            logger_1.loggers.external.request('Claude Vision', '/scan', {
+                sizeIn: req.file.size,
+                sizeOut: processedBuf.length,
+                mode,
+                hasDescription: !!description,
+            });
+            const result = await (0, cardScanService_1.scanCard)(base64, mediaType, description, mode);
+            res.json({
+                ...result,
+                remainingScans: (0, cardScanService_1.getRemainingScanCalls)(),
+            });
+        }
+        catch (error) {
+            // On NE remonte PAS via next(error) : cela fait passer l'erreur par
+            // errorHandler qui masque le message reel en prod ("Une erreur interne
+            // est survenue"). On renvoie 200 avec success:false + le vrai message
+            // pour que le client puisse l'afficher a l'user.
+            const err = error;
+            logger_1.loggers.external.error('Claude Vision', err, '/scan');
+            res.json({
+                success: false,
+                error: `Scan echoue : ${err.name || 'Error'} — ${err.message || 'erreur inconnue'}`,
+                remainingScans: (0, cardScanService_1.getRemainingScanCalls)(),
+            });
+        }
+    }
+    /**
+     * Diagnose scan setup : test API key + model with a minimal Claude call.
+     * Used to debug the "erreur interne" without needing SSH access.
+     */
+    static async diagnoseScan(_req, res, next) {
+        try {
+            const { diagnose } = await Promise.resolve().then(() => __importStar(require('../services/cardScanService')));
+            const result = await diagnose();
+            res.json(result);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Agrégats de la collection (total cartes, ultra/secret rares, valeur EUR, répartition).
+     * Endpoint séparé de /cards car il calcule sur TOUTES les cartes, hors pagination.
+     */
+    static async getCollectionStats(req, res, next) {
+        try {
+            if (!req.user)
+                throw new errorHandler_1.ValidationError('Not authenticated');
+            const stats = await userCardModel_1.UserCardModel.getCollectionStats(req.user.id);
+            res.json(stats);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Disponibilité par carte : combien possédé, combien utilisé dans les
+     * autres decks, combien reste pour ajouter au deck en cours.
+     * `?exclude_deck=<id>` retire ce deck du calcul "used_in_decks".
+     */
+    static async getAvailability(req, res, next) {
+        try {
+            if (!req.user)
+                throw new errorHandler_1.ValidationError('Not authenticated');
+            const rawExclude = req.query.exclude_deck;
+            const excludeDeckId = typeof rawExclude === 'string' && /^\d+$/.test(rawExclude) ? parseInt(rawExclude, 10) : undefined;
+            const availability = await userCardModel_1.UserCardModel.getAvailability(req.user.id, excludeDeckId);
+            res.json(availability);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Return the current scan quota for the user.
+     */
+    static async getScanStatus(_req, res, next) {
+        try {
+            res.json({
+                remaining: (0, cardScanService_1.getRemainingScanCalls)(),
+                max: (0, cardScanService_1.getMaxScanCalls)(),
+                used: (0, cardScanService_1.getScanCallCount)(),
+            });
         }
         catch (error) {
             next(error);

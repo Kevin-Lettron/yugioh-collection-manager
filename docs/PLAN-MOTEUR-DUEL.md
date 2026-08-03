@@ -3,8 +3,8 @@
 > Fichier de passation, mis à jour et poussé **à chaque étape**, comme `SUIVI-REFONTE.md`.
 >
 > **Branche :** `dev`
-> **Dernière mise à jour :** 2026-08-03 — **étape 1 terminée**, le moteur tourne en local.
-> Étape 0 (licence) toujours en attente d'arbitrage, sans bloquer les étapes suivantes.
+> **Dernière mise à jour :** 2026-08-03 — **étapes 0, 1 et 2 terminées.** Le moteur tourne
+> dans un worker, piloté par l'API. Prochaine : étape 3, la traduction des messages.
 
 ---
 
@@ -276,7 +276,59 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
         contrepartie `@types/node` est passé de 20 à 24 — le serveur typecheck toujours
         proprement. *À vérifier avant l'étape 8 : le VPS doit tourner en Node 22+.*
       - `CardScripts` est bien sous AGPL-3.0 (cf. §3.2, corrigé).
-- [ ] **Étape 2** — Pont moteur ↔ serveur
+- [x] **Étape 2** — Pont moteur ↔ serveur — **fait le 2026-08-03**
+
+      Le moteur vit dans un `worker_thread` et n'en sort jamais : le fil principal ne
+      manipule que des identifiants de duel et des messages sérialisables. `duelProcess`
+      étant du calcul synchrone, l'exécuter dans la boucle d'événements aurait gelé toute
+      l'API le temps de résoudre une chaîne.
+
+      Fichiers : `server/src/services/duelEngine/{protocol,worker,engineClient,deckLoader}.ts`,
+      `server/src/controllers/duelEngineController.ts`, `server/scripts/duelEngineBench.ts`.
+
+      Routes : `POST /duels/:id/engine/start`, `POST /duels/:id/engine/respond`,
+      `DELETE /duels/:id/engine`, `GET /duels/engine/stats` (admin).
+      Les messages sont renvoyés **bruts** — leur traduction est l'étape 3, ne pas brancher
+      l'interface dessus avant.
+
+      **La mesure de mémoire, qui conditionnait le dimensionnement de l'étape 8 :**
+
+      | | RSS du processus |
+      |---|---|
+      | Serveur compilé, moteur chargé, 1 duel | **110,7 Mio** |
+      | Coût marginal par duel actif | **~2,3 Mio** |
+      | Extrapolation à 50 duels simultanés | **~225 Mio** |
+
+      Ouverture d'un duel : **329 ms**, amorçage du moteur compris.
+
+      Sous `ts-node` la même mesure donne 432 Mio de socle — c'est le compilateur
+      TypeScript, pas le moteur. `process.memoryUsage()` dans un worker rend le RSS du
+      processus entier. Seul l'écart par duel est comparable entre les deux, et il est
+      identique.
+
+      **Conclusion pour l'étape 8 : le moteur ne justifie pas à lui seul un droplet plus
+      gros.** 225 Mio pour 50 duels simultanés tiennent dans le palier actuel quel qu'il
+      soit. Le poste de coût attendu au §6 tombe à zéro tant qu'on reste à cette échelle.
+
+      **Ce qu'on a appris en le faisant :**
+
+      - `deck_cards.card_id` référence `cards.id`, notre clé interne — le passcode que le
+        moteur attend est dans `cards.card_id`, une colonne **texte**. Confondre les deux
+        donne un deck de cartes inexistantes, et le moteur répond par un silence : il
+        refuse de démarrer sans dire pourquoi. `deckLoader.ts` fait la conversion et
+        nomme les cartes qu'il rejette.
+      - Le classement Main / Extra suit le **type réel** de la carte (`shared/cards.ts`)
+        et non le drapeau `is_extra_deck` en base : le moteur refuse un monstre Fusion
+        placé dans le Main Deck, et une donnée incohérente ne doit pas rendre un duel
+        impossible à lancer.
+      - `Omit<Union, 'id'>` ne garde que les clés **communes** à l'union. Sur le type des
+        requêtes, il ne restait que `type`. Corrigé par un `DistributiveOmit`.
+      - `new Worker()` ne charge pas de TypeScript : en développement, le worker est
+        amorcé par un bout de code qui enregistre `ts-node` avant de charger le module.
+        En production il charge directement le `.js` compilé — les deux chemins sont
+        testés.
+      - `GET /duels/engine/stats` doit être déclarée **avant** `/:id`, sinon la route
+        paramétrée capte « engine » et tente de le lire comme un identifiant.
 - [ ] **Étape 3** — Traduction des messages
 - [ ] **Étape 4** — Cycle de vie
 - [ ] **Étape 5** — Front web

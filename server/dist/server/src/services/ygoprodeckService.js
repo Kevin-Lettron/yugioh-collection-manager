@@ -6,10 +6,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.YGOProDeckService = void 0;
 const axios_1 = __importDefault(require("axios"));
 const API_BASE_URL = process.env.YGOPRODECK_API_URL || 'https://db.ygoprodeck.com/api/v7';
+// Shared axios instance with a hard timeout so a slow YGOProDeck doesn't
+// hang Node workers indefinitely.
+const ygoHttp = axios_1.default.create({ timeout: 5000 });
 // Cache for card sets to avoid repeated API calls
 let cardSetsCache = null;
 let cardSetsCacheTime = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+/**
+ * Fetch la version FR d'une carte via ?language=fr et retourne juste
+ * { name_fr, description_fr }. Retourne null si l'API n'a pas la carte
+ * en FR (peu probable pour les cartes TCG officielles).
+ */
+async function fetchFrenchTranslation(cardId) {
+    try {
+        const res = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
+            params: { id: cardId, language: 'fr' },
+        });
+        const data = res.data?.data?.[0];
+        if (!data?.name || !data?.desc)
+            return null;
+        return { name_fr: data.name, description_fr: data.desc };
+    }
+    catch {
+        return null;
+    }
+}
 class YGOProDeckService {
     /**
      * Get all card sets from API (cached)
@@ -20,7 +42,7 @@ class YGOProDeckService {
             return cardSetsCache;
         }
         try {
-            const response = await axios_1.default.get(`${API_BASE_URL}/cardsets.php`);
+            const response = await ygoHttp.get(`${API_BASE_URL}/cardsets.php`);
             if (response.data) {
                 cardSetsCache = response.data;
                 cardSetsCacheTime = now;
@@ -108,7 +130,7 @@ class YGOProDeckService {
             // Normalize the set code to English format for comparison
             const normalizedSetCode = this.normalizeSetCode(setCode);
             // Search for cards in this set by name
-            const response = await axios_1.default.get(`${API_BASE_URL}/cardinfo.php`, {
+            const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
                 params: {
                     cardset: setName,
                     misc: 'yes',
@@ -128,7 +150,8 @@ class YGOProDeckService {
                     return false;
                 });
                 if (card) {
-                    return { card: this.transformCard(card) };
+                    const fr = await fetchFrenchTranslation(card.id);
+                    return { card: this.transformCard(card, fr) };
                 }
                 // Card not found with this exact set code in this set
                 return {
@@ -210,14 +233,17 @@ class YGOProDeckService {
      */
     static async getCardByName(name) {
         try {
-            const response = await axios_1.default.get(`${API_BASE_URL}/cardinfo.php`, {
+            const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
                 params: {
                     name: name,
                     misc: 'yes',
                 },
             });
             if (response.data && response.data.data && response.data.data.length > 0) {
-                return this.transformCard(response.data.data[0]);
+                const apiCard = response.data.data[0];
+                // Fetch la trad FR en parallele (best-effort, non bloquant en cas d'echec)
+                const fr = await fetchFrenchTranslation(apiCard.id);
+                return this.transformCard(apiCard, fr);
             }
             return null;
         }
@@ -231,14 +257,16 @@ class YGOProDeckService {
      */
     static async getCardById(id) {
         try {
-            const response = await axios_1.default.get(`${API_BASE_URL}/cardinfo.php`, {
+            const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
                 params: {
                     id: id,
                     misc: 'yes',
                 },
             });
             if (response.data && response.data.data && response.data.data.length > 0) {
-                return this.transformCard(response.data.data[0]);
+                const apiCard = response.data.data[0];
+                const fr = await fetchFrenchTranslation(apiCard.id);
+                return this.transformCard(apiCard, fr);
             }
             return null;
         }
@@ -252,7 +280,7 @@ class YGOProDeckService {
      */
     static async searchCards(query, limit = 20) {
         try {
-            const response = await axios_1.default.get(`${API_BASE_URL}/cardinfo.php`, {
+            const response = await ygoHttp.get(`${API_BASE_URL}/cardinfo.php`, {
                 params: {
                     fname: query,
                     misc: 'yes',
@@ -282,14 +310,16 @@ class YGOProDeckService {
     /**
      * Transform YGOProDeck API response to our Card type
      */
-    static transformCard(apiCard) {
+    static transformCard(apiCard, fr) {
         return {
             id: 0, // Will be set by database
             card_id: apiCard.id.toString(),
             name: apiCard.name,
+            name_fr: fr?.name_fr ?? null,
             type: apiCard.type,
             frame_type: apiCard.frameType,
             description: apiCard.desc,
+            description_fr: fr?.description_fr ?? null,
             atk: apiCard.atk,
             def: apiCard.def,
             level: apiCard.level,

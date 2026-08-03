@@ -10,6 +10,7 @@
     "migrate": "ts-node src/config/runMigration.ts",
     "duel:assets": "ts-node scripts/fetchDuelAssets.ts",
     "duel:smoke": "ts-node scripts/duelSmokeTest.ts",
+    "duel:bench": "ts-node scripts/duelEngineBench.ts",
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=tests/unit",

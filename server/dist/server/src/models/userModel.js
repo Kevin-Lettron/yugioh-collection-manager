@@ -14,14 +14,14 @@ class UserModel {
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const result = await (0, database_1.query)(`INSERT INTO users (username, email, password_hash)
        VALUES ($1, $2, $3)
-       RETURNING id, username, email, profile_picture, created_at, updated_at`, [username, email, hashedPassword]);
+       RETURNING id, username, email, profile_picture, role, is_active, created_at, updated_at`, [username, email, hashedPassword]);
         return result.rows[0];
     }
     /**
      * Find user by email
      */
     static async findByEmail(email) {
-        const result = await (0, database_1.query)(`SELECT id, username, email, password_hash, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, email, password_hash, profile_picture, role, is_active, disabled_at, created_at, updated_at
        FROM users
        WHERE email = $1`, [email]);
         return result.rows[0] || null;
@@ -30,7 +30,7 @@ class UserModel {
      * Find user by email or username (for login)
      */
     static async findByEmailOrUsername(identifier) {
-        const result = await (0, database_1.query)(`SELECT id, username, email, password_hash, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, email, password_hash, profile_picture, role, is_active, disabled_at, created_at, updated_at
        FROM users
        WHERE email = $1 OR username = $1`, [identifier]);
         return result.rows[0] || null;
@@ -39,7 +39,7 @@ class UserModel {
      * Find user by ID
      */
     static async findById(id) {
-        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, role, is_active, created_at, updated_at
        FROM users
        WHERE id = $1`, [id]);
         return result.rows[0] || null;
@@ -48,7 +48,7 @@ class UserModel {
      * Find user by username
      */
     static async findByUsername(username) {
-        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, role, is_active, created_at, updated_at
        FROM users
        WHERE username = $1`, [username]);
         return result.rows[0] || null;
@@ -65,7 +65,7 @@ class UserModel {
          LIMIT $3`, [`%${searchTerm}%`, excludeUserId, limit]);
             return result.rows;
         }
-        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, profile_picture, created_at, updated_at
        FROM users
        WHERE username ILIKE $1
        ORDER BY username
@@ -90,6 +90,11 @@ class UserModel {
         if (updates.profile_picture !== undefined) {
             fields.push(`profile_picture = $${paramCount++}`);
             values.push(updates.profile_picture);
+        }
+        if (updates.password) {
+            const hashedPassword = await bcrypt_1.default.hash(updates.password, 10);
+            fields.push(`password_hash = $${paramCount++}`);
+            values.push(hashedPassword);
         }
         if (fields.length === 0) {
             return this.findById(id);
@@ -134,14 +139,14 @@ class UserModel {
      */
     static async getRecentUsers(limit = 20, excludeUserId) {
         if (excludeUserId) {
-            const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, created_at, updated_at
+            const result = await (0, database_1.query)(`SELECT id, username, profile_picture, created_at, updated_at
          FROM users
          WHERE id != $1
          ORDER BY created_at DESC
          LIMIT $2`, [excludeUserId, limit]);
             return result.rows;
         }
-        const result = await (0, database_1.query)(`SELECT id, username, email, profile_picture, created_at, updated_at
+        const result = await (0, database_1.query)(`SELECT id, username, profile_picture, created_at, updated_at
        FROM users
        ORDER BY created_at DESC
        LIMIT $1`, [limit]);

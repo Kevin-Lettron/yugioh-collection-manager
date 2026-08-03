@@ -5,6 +5,9 @@ const errorHandler_1 = require("../middleware/errorHandler");
 const logger_1 = require("../utils/logger");
 const deckModel_1 = require("../models/deckModel");
 const cardModel_1 = require("../models/cardModel");
+const userCardModel_1 = require("../models/userCardModel");
+const claudeService_1 = require("../services/claudeService");
+const prices_1 = require("../utils/prices");
 class DeckController {
     /**
      * Create a new deck
@@ -72,7 +75,8 @@ class DeckController {
             if (!deck.is_public && (!req.user || deck.user_id !== req.user.id)) {
                 throw new errorHandler_1.ForbiddenError('You do not have permission to view this deck');
             }
-            res.json({ deck });
+            const stats = (0, prices_1.computeDeckStats)(deck);
+            res.json({ deck, stats });
         }
         catch (error) {
             next(error);
@@ -175,6 +179,49 @@ class DeckController {
             res.status(201).json({
                 message: 'Card added to deck successfully',
             });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Remplace tout le contenu d'un deck en une requête.
+     *
+     * Remplace l'ancienne séquence côté client (DELETE puis un POST par carte),
+     * qui laissait un deck à moitié rempli dès qu'une carte était refusée.
+     */
+    static async replaceDeckCards(req, res, next) {
+        try {
+            if (!req.user) {
+                throw new errorHandler_1.ValidationError('Not authenticated');
+            }
+            const deckId = parseInt(req.params.id);
+            if (isNaN(deckId)) {
+                throw new errorHandler_1.ValidationError('Invalid deck ID');
+            }
+            const { cards } = req.body;
+            if (!Array.isArray(cards)) {
+                throw new errorHandler_1.ValidationError('`cards` doit être un tableau');
+            }
+            const entries = cards.map((c) => ({
+                card_id: parseInt(c.card_id),
+                quantity: parseInt(c.quantity),
+                is_extra_deck: c.is_extra_deck === true,
+            }));
+            if (entries.some((e) => isNaN(e.card_id) || isNaN(e.quantity))) {
+                throw new errorHandler_1.ValidationError('Entrée de carte invalide');
+            }
+            const result = await deckModel_1.DeckModel.replaceCards(deckId, req.user.id, entries);
+            if (!result.success) {
+                // 400 + la liste complète : l'utilisateur voit tout ce qui bloque d'un
+                // coup, au lieu de corriger une carte à la fois.
+                res.status(400).json({
+                    error: result.errors?.[0] || 'Sauvegarde refusée',
+                    errors: result.errors,
+                });
+                return;
+            }
+            res.json({ message: 'Deck enregistré', count: entries.length });
         }
         catch (error) {
             next(error);
@@ -347,7 +394,8 @@ class DeckController {
             if (!deck) {
                 throw new errorHandler_1.NotFoundError('Shared deck not found or link has expired');
             }
-            res.json({ deck });
+            const stats = (0, prices_1.computeDeckStats)(deck);
+            res.json({ deck, stats });
         }
         catch (error) {
             next(error);
@@ -371,6 +419,65 @@ class DeckController {
             const requestingUserId = authReq.user?.id;
             const result = await deckModel_1.DeckModel.searchPublicDecks(filters, requestingUserId);
             res.json(result);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Build or optimize deck with AI
+     */
+    static async buildWithAI(req, res, next) {
+        try {
+            if (!req.user) {
+                throw new errorHandler_1.ValidationError('Not authenticated');
+            }
+            const { prompt, deckId } = req.body;
+            if (!prompt || prompt.trim().length === 0) {
+                throw new errorHandler_1.ValidationError('Un prompt est requis pour générer le deck');
+            }
+            if (prompt.length > 1000) {
+                throw new errorHandler_1.ValidationError('Le prompt ne peut pas dépasser 1000 caractères');
+            }
+            // Check if Claude API key is configured
+            if (!process.env.CLAUDE_API_KEY) {
+                throw new errorHandler_1.ValidationError('La clé API Claude n\'est pas configurée');
+            }
+            // Get user's collection
+            const userCards = await userCardModel_1.UserCardModel.getUserCollection(req.user.id, {
+                limit: 10000, // Get all cards
+                page: 1,
+            });
+            if (!userCards.data || userCards.data.length === 0) {
+                throw new errorHandler_1.ValidationError('Votre collection est vide. Ajoutez des cartes avant de créer un deck avec l\'IA.');
+            }
+            // Get existing deck if optimizing (from request body, not from DB)
+            const { existingMainDeck, existingExtraDeck } = req.body;
+            // Call Claude AI
+            const aiResponse = await (0, claudeService_1.buildDeckWithAI)(userCards.data, prompt, existingMainDeck, existingExtraDeck);
+            logger_1.loggers.api.request('POST', '/decks/ai/build', req.user.id);
+            res.json({
+                message: 'Deck généré avec succès',
+                selectedCards: aiResponse.selectedCards,
+                suggestions: aiResponse.suggestions,
+                explanation: aiResponse.explanation,
+                apiCallsRemaining: (0, claudeService_1.getRemainingCalls)(),
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * Get AI API call status
+     */
+    static async getAIStatus(req, res, next) {
+        try {
+            res.json({
+                callCount: (0, claudeService_1.getApiCallCount)(),
+                maxCalls: (0, claudeService_1.getMaxApiCalls)(),
+                remainingCalls: (0, claudeService_1.getRemainingCalls)(),
+            });
         }
         catch (error) {
             next(error);

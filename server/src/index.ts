@@ -144,6 +144,7 @@ import debugRoutes from './routes/debugRoutes';
 import clientErrorRoutes from './routes/clientErrorRoutes';
 import adminRoutes from './routes/adminRoutes';
 import duelRoutes from './routes/duelRoutes';
+import { onWorkerLost, shutdownEngine } from './services/duelEngine/engineClient';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
@@ -181,13 +182,27 @@ httpServer.listen(PORT, () => {
   logger.info('Server started successfully');
 });
 
+// Moteur de duel — un worker qui meurt emporte les parties qu'il hébergeait.
+// ygopro-core n'expose aucune sérialisation d'un duel en cours : on ne peut pas
+// les reprendre, seulement prévenir les joueurs. Politique retenue : le duel est
+// annulé, sans défaite pour personne (cf. docs/PLAN-MOTEUR-DUEL.md, étape 4).
+onWorkerLost((lostDuelIds, reason) => {
+  for (const duelId of lostDuelIds) {
+    io.to(`duel:${duelId}`).emit('duel:engine_lost', { duelId, reason });
+  }
+});
+
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
-  httpServer.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
+  shutdownEngine()
+    .catch(() => undefined)
+    .finally(() => {
+      httpServer.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
+    });
 });
 
 export default app;
