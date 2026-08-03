@@ -177,7 +177,36 @@ côté, `<entry>` de l'autre).
 
 ## 6. Avancement
 
-- [ ] **Étape 1** — Migration, sources, récupération des flux
+- [x] **Étape 1** — Migration, sources, récupération des flux — **faite le 2026-08-03**
+
+       appelle les trois flux, les analyse et affiche ce qu'ils
+      donnent vraiment. Sortie :
+
+      | Source | Articles | Résumé | Image | Catégories |
+      |---|---|---|---|---|
+      | YGOrganization | 10 | 10/10 | 0/10 | News (7), New Cards (6), English OCG (3), Rush Duel (3) |
+      | Pojo | 10 | 10/10 | 10/10 | General Topics (8), **yugioh (6)**, MTG Card of the Day (3) |
+      | Reddit r/yugioh | 25 | 25/25 | 20/25 | yugioh (25) |
+
+      Fichiers : , ,
+      .
+
+      **Ce qu'on a appris en le faisant :**
+
+      - **Les titres arrivent truffés d'entités HTML.** YGOrganization sert
+         là où il faut lire « Endymion ».  de
+        l'analyseur XML ne traite que les cinq entités **XML** ; les entités HTML
+        numériques passent au travers et se seraient affichées en clair dans
+        l'interface. D'où un décodeur maison, appliqué aux titres autant qu'aux résumés.
+      - **Reddit sert de l'Atom**, YGOrganization et Pojo du RSS. Les deux formats ne se
+        ressemblent que de loin —  contre , un lien texte contre un
+        attribut . Il fallait bien les deux analyseurs.
+      - **Un flux à un seul article** rendrait un objet là où le code attend un tableau,
+        et le premier article de la journée passerait à la trappe. Réglé par l'option
+         de l'analyseur.
+      - Pojo confirme le besoin de filtrer : « The Lonely Mountain – The Hobbit MTG
+        Review » et « Wingspan Pocket – Game Review » dans les trois derniers articles.
+        Sa catégorie  (6 articles sur 10) sera le signal retenu.
 - [ ] **Étape 2** — Classification, déduplication, ingestion
 - [ ] **Étape 3** — API et abonnements
 - [ ] **Étape 4** — Calendrier des sorties
