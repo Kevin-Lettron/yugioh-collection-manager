@@ -283,3 +283,50 @@ export interface PaginatedResponse<T> {
   limit: number;
   total_pages: number;
 }
+
+// ─── Actualités ─────────────────────────────────────────────
+
+/**
+ * Six thèmes exposés côté API. Miroir de `server/src/services/news/types.ts`.
+ * L'union est explicite pour que TypeScript rejette une valeur inconnue en
+ * clé de dictionnaire ou en filtre de topic.
+ */
+export type NewsTopic = 'tcg' | 'ocg' | 'competition' | 'releases' | 'banlist' | 'rulings';
+
+/**
+ * Un article tel que retourné par `GET /api/news`. Le corps n'est jamais
+ * stocké : `url` renvoie toujours au site d'origine.
+ */
+export interface NewsItem {
+  id: number;
+  source_id: number;
+  guid: string;
+  url: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string;
+  topics: NewsTopic[];
+  lang: string;
+  source: {
+    key: string;
+    name: string;
+    homepage: string | null;
+  };
+}
+
+/** Une extension TCG à venir ou récente — issue de YGOProDeck /cardsets.php. */
+export interface NewsRelease {
+  set_code: string;
+  set_name: string;
+  tcg_date: string; // "YYYY-MM-DD"
+  num_of_cards: number;
+}
+
+/** Métadonnées d'un thème pour l'écran d'abonnement. */
+export interface NewsTopicMeta {
+  key: NewsTopic;
+  label: string;
+  description: string;
+  subscribed: boolean;
+}

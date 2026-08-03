@@ -252,3 +252,40 @@ export interface AIStatus {
   max: number;
   used: number;
 }
+
+// ─── Actualites ─────────────────────────────────────────────
+// Miroirs de shared/types/index.ts. Duplication assumee.
+
+export type NewsTopic = 'tcg' | 'ocg' | 'competition' | 'releases' | 'banlist' | 'rulings';
+
+export interface NewsItem {
+  id: number;
+  source_id: number;
+  guid: string;
+  url: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string;
+  topics: NewsTopic[];
+  lang: string;
+  source: {
+    key: string;
+    name: string;
+    homepage: string | null;
+  };
+}
+
+export interface NewsRelease {
+  set_code: string;
+  set_name: string;
+  tcg_date: string; // "YYYY-MM-DD"
+  num_of_cards: number;
+}
+
+export interface NewsTopicMeta {
+  key: NewsTopic;
+  label: string;
+  description: string;
+  subscribed: boolean;
+}

@@ -126,6 +126,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import debugRoutes from './routes/debugRoutes';
 import clientErrorRoutes from './routes/clientErrorRoutes';
 import adminRoutes from './routes/adminRoutes';
+import newsRoutes from './routes/newsRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
@@ -135,6 +136,7 @@ app.use('/api/reactions', reactionRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/news', newsRoutes);
 
 // Crashs clients — monté aussi en production : un crash n'a de valeur que s'il
 // remonte depuis les appareils réels. Auth optionnelle, débit plafonné.
@@ -160,6 +162,47 @@ httpServer.listen(PORT, () => {
 ╚══════════════════════════════════════════════════╝
   `);
   logger.info('Server started successfully');
+
+  // ─── Cron actualités ────────────────────────────────────────
+  // Ingestion : une fois au démarrage puis toutes les 30 minutes.
+  // Purge : une fois par jour pour dégonfler les 6+ mois.
+  // Un `Promise` orphelin (pas d'`await`) : on ne veut pas bloquer le boot.
+  import('./services/news/ingest').then(({ ingestAllSources, purgeOldItems }) => {
+    const runIngest = () => {
+      ingestAllSources()
+        .then((bilan) => {
+          const total = Object.values(bilan).reduce(
+            (acc, r) => ({
+              inserted: acc.inserted + r.inserted,
+              skipped: acc.skipped + r.skipped,
+              errors: acc.errors + r.errors,
+            }),
+            { inserted: 0, skipped: 0, errors: 0 }
+          );
+          logger.info('[news:cron] ingest', total);
+        })
+        .catch((err) => logger.error('[news:cron] ingest KO', { error: err instanceof Error ? err.message : err }));
+    };
+
+    const runPurge = () => {
+      purgeOldItems()
+        .then((n) => { if (n > 0) logger.info(`[news:cron] purge ${n} article(s)`); })
+        .catch((err) => logger.error('[news:cron] purge KO', { error: err instanceof Error ? err.message : err }));
+    };
+
+    // Premier tir au démarrage (une petite temporisation pour laisser la DB
+    // finir de s'éveiller et le pool de se remplir).
+    setTimeout(runIngest, 5_000);
+
+    // Rythme de croisière — chaque source décide finement de son intervalle
+    // via `min_interval_minutes` en base ; ce timer est le battement d'horloge.
+    setInterval(runIngest, 30 * 60 * 1000);
+
+    // Ménage quotidien.
+    setInterval(runPurge, 24 * 60 * 60 * 1000);
+  }).catch((err) => {
+    logger.error('[news:cron] chargement KO', { error: err instanceof Error ? err.message : err });
+  });
 });
 
 // Handle graceful shutdown

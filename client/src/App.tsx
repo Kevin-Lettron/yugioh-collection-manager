@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Social from './pages/Social';
 import Followers from './pages/Followers';
+import News from './pages/News';
 import Admin from './pages/Admin';
 
 // Protected route wrapper
@@ -115,6 +116,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Social />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actualites"
+        element={
+          <ProtectedRoute>
+            <News />
           </ProtectedRoute>
         }
       />

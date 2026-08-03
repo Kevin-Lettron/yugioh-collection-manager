@@ -7,6 +7,9 @@ const ICONS = {
   collection: require('@/assets/images/tabIcons/tab-collection.png'),
   decks: require('@/assets/images/tabIcons/tab-decks.png'),
   social: require('@/assets/images/tabIcons/tab-social.png'),
+  // Placeholder : pas d'icone dediee pour Actualites, on reutilise l'icone
+  // Social en attendant qu'un asset tab-news.png soit fourni.
+  news: require('@/assets/images/tabIcons/tab-social.png'),
   profile: require('@/assets/images/tabIcons/tab-profile.png'),
 } as const;
 
@@ -76,6 +79,13 @@ export default function TabsLayout() {
         options={{
           title: 'Social',
           tabBarIcon: ({ color }) => <TabIcon name="social" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="news"
+        options={{
+          title: 'Actualités',
+          tabBarIcon: ({ color }) => <TabIcon name="news" color={color} />,
         }}
       />
       <Tabs.Screen

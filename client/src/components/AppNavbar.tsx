@@ -143,6 +143,7 @@ const AppNavbar = () => {
     { to: '/collection', label: 'Collection' },
     { to: '/decks', label: 'Decks' },
     { to: '/social', label: 'Social' },
+    { to: '/actualites', label: 'Actualités' },
   ];
 
   const mobileNavLinks = isAdmin
