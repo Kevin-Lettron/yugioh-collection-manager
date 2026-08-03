@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/theme/ThemeContext';
 
 const ICONS = {
@@ -21,8 +22,18 @@ function TabIcon({ name, color }: { name: IconName; color: string }) {
   );
 }
 
+/** Hauteur de la barre elle-même, hors zone système. */
+const TAB_BAR_HEIGHT = 62;
+
 export default function TabsLayout() {
   const { colors, type } = useAppTheme();
+  const insets = useSafeAreaInsets();
+
+  // Android dessine sa barre système (3 boutons ou trait de geste) PAR-DESSUS
+  // l'app en mode edge-to-edge. Une hauteur fixe passait donc dessous et rendait
+  // les onglets intouchables : on ajoute l'inset bas à la hauteur, et on
+  // repousse le contenu de la barre d'autant.
+  const bottomInset = insets.bottom;
 
   return (
     <Tabs
@@ -35,7 +46,8 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           paddingTop: 6,
-          height: 62,
+          height: TAB_BAR_HEIGHT + bottomInset,
+          paddingBottom: bottomInset,
         },
         tabBarLabelStyle: {
           fontSize: 10,

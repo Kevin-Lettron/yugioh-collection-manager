@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
@@ -71,10 +72,15 @@ function ThemedRoot() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ThemedRoot />
-      </AuthProvider>
-    </ThemeProvider>
+    // SafeAreaProvider est requis par `useSafeAreaInsets` : sans lui, la barre
+    // d'onglets ne connaît pas la hauteur de la barre système Android et se
+    // retrouve dessous.
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ThemedRoot />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
