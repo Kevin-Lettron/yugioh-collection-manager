@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
+import { reportClientError } from './crashReporter';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -31,6 +32,23 @@ api.interceptors.response.use(
   (error: AxiosError<{ error: string }>) => {
     if (error.response) {
       const message = error.response.data?.error || 'Une erreur est survenue';
+
+      // Remontée serveur : un 401 est une situation normale (session expirée),
+      // et l'endpoint de report lui-même est exclu pour ne pas boucler.
+      const url = error.config?.url || '';
+      if (error.response.status !== 401 && !url.includes('client-errors')) {
+        reportClientError({
+          message: `HTTP ${error.response.status} · ${error.config?.method?.toUpperCase()} ${url}`,
+          context: {
+            status: error.response.status,
+            url,
+            method: error.config?.method,
+            // Le corps de la réponse dit souvent pourquoi, là où le toast
+            // générique ne dit rien.
+            body: JSON.stringify(error.response.data)?.slice(0, 600),
+          },
+        });
+      }
 
       // Handle authentication errors
       if (error.response.status === 401) {
