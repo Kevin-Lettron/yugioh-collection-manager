@@ -9,6 +9,8 @@ import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
 import CardTile from '../components/decor/CardTile';
 import { CardIcon } from '../components/decor/Icons';
+import DrawOddsPanel from '../components/DrawOddsPanel';
+import ZoneViewer, { type ZoneKey } from '../components/ZoneViewer';
 
 const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
 const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
@@ -23,6 +25,25 @@ const CUT_JAUGE = 'polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%
  * - Grimoire : jauge répartition + 3 colonnes Deck principal / Extra / Side avec rows biseautés.
  * Sidebar sticky : like/share/copier + deckMeta (« À venir » quand pas de data) + comments.
  */
+
+/** Zone d'information du plateau, cliquable pour inspecter son contenu. */
+function zoneButtonStyle(borderColor: string, textColor: string): React.CSSProperties {
+  return {
+    width: 76,
+    height: 46,
+    border: `1px dashed ${borderColor}`,
+    background: 'transparent',
+    display: 'grid',
+    placeItems: 'center',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: 9,
+    color: textColor,
+    letterSpacing: '0.1em',
+    cursor: 'pointer',
+    padding: 0,
+  };
+}
+
 const DeckView = () => {
   const { deckId } = useParams<{ deckId: string }>();
   const { user } = useAuth();
@@ -53,6 +74,8 @@ const DeckView = () => {
   const [boardField, setBoardField] = useState<BoardCard | null>(null);
   /** Si actif, la prochaine carte posée le sera face verso. Reset après pose. */
   const [nextFaceDown, setNextFaceDown] = useState(false);
+  /** Zone dont on inspecte le contenu (Extra, Cimetière, Bannis). */
+  const [openZone, setOpenZone] = useState<ZoneKey | null>(null);
 
   /** Renvoie 'monster' | 'spelltrap' | 'field' selon le type de la carte. */
   const zoneKindOf = (dc: DeckCard | null | undefined): 'monster' | 'spelltrap' | 'field' | null => {
@@ -865,37 +888,28 @@ const DeckView = () => {
                             alignItems: 'center',
                             marginTop: 6,
                           }}>
-                          <div
-                            style={{
-                              width: 76,
-                              height: 46,
-                              border: '1px dashed rgba(34,211,238,.5)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontFamily: "'Orbitron', sans-serif",
-                              fontSize: 9,
-                              color: 'var(--cyan)',
-                              letterSpacing: '0.1em',
-                            }}
-                            title={`Extra deck : ${extraCount} cartes (non cliquable en test hand)`}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('extra')}
+                            style={zoneButtonStyle('rgba(34,211,238,.5)', 'var(--cyan)')}
+                            title={`Extra Deck : ${extraCount} cartes — cliquer pour voir`}>
                             EXTRA {extraCount}
-                          </div>
+                          </button>
                           {renderZone('field', 0, boardField, 'rgba(245,197,24,.55)', 'Terrain', 104, 44)}
-                          <div
-                            style={{
-                              width: 76,
-                              height: 46,
-                              border: '1px dashed rgba(255,46,136,.45)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontFamily: "'Orbitron', sans-serif",
-                              fontSize: 9,
-                              color: 'var(--magenta)',
-                              letterSpacing: '0.1em',
-                            }}
-                            title={`Cimetière : ${graveyard.length} cartes`}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('banished')}
+                            style={zoneButtonStyle('rgba(168,85,247,.45)', 'var(--violet)')}
+                            title={`Bannis : ${banished.length} cartes — cliquer pour voir`}>
+                            BANNIS {banished.length}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('graveyard')}
+                            style={zoneButtonStyle('rgba(255,46,136,.45)', 'var(--magenta)')}
+                            title={`Cimetière : ${graveyard.length} cartes — cliquer pour voir`}>
                             CIMETIÈRE {graveyard.length}
-                          </div>
+                          </button>
                         </div>
                       </div>
                     );
@@ -1444,6 +1458,14 @@ const DeckView = () => {
                 />
               </form>
             </div>
+
+            {/* Probabilités de pioche — sous les commentaires, colonne de droite */}
+            <DrawOddsPanel
+              mainDeck={deck.main_deck || []}
+              deckPile={deckPile}
+              handCards={handCards}
+              active={playMode !== null}
+            />
           </div>
         </div>
       ) : (
@@ -1703,6 +1725,21 @@ const DeckView = () => {
           </div>
         </div>
       )}
+
+      {/* Contenu d'une zone du plateau — monté en racine pour passer au-dessus
+          du plateau, qui est en perspective 3D et crée son propre contexte
+          d'empilement. */}
+      <ZoneViewer
+        zone={openZone}
+        cards={
+          openZone === 'extra'
+            ? deck.extra_deck || []
+            : openZone === 'graveyard'
+              ? graveyard
+              : banished
+        }
+        onClose={() => setOpenZone(null)}
+      />
     </div>
   );
 };
