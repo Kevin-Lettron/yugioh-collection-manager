@@ -34,8 +34,13 @@
   --success: #34d399;
   --danger: #ff4d6d;
   --on-gold: #0b0906;
-  --grid: rgba(245, 197, 24, 0.055);
+  --grid: rgba(245, 197, 24, 0.07);
   --glow: 0 0 24px rgba(245, 197, 24, 0.25);
+  /* Halos du fond de page. Valeurs de la maquette : le halo violet était à
+     0.13 dans l'intégration, soit à peine plus de la moitié. */
+  --halo-violet: rgba(168, 85, 247, 0.22);
+  --halo-gold: rgba(245, 197, 24, 0.08);
+  --grain-opacity: 0.05;
 
   /* Nuances introduites par la refonte v2, qui étaient codées en dur dans les
      styles inline des pages — d'où un thème clair inopérant. */
@@ -167,8 +172,14 @@
   --success: #047857;
   --danger: #be123c;
   --on-gold: #ffffff;
-  --grid: rgba(138, 109, 11, 0.07);
+  --grid: rgba(138, 109, 11, 0.09);
   --glow: 0 0 20px rgba(138, 109, 11, 0.18);
+  /* En clair, les mêmes halos aveugleraient : un violet à 0.22 sur fond crème
+     vire au lavande sale. On divise par trois et on laisse le grain de côté,
+     il salit un fond clair au lieu de le texturer. */
+  --halo-violet: rgba(124, 58, 237, 0.07);
+  --halo-gold: rgba(138, 109, 11, 0.05);
+  --grain-opacity: 0;
 
   /* Pendants clairs des nuances v2. L'échelle s'inverse : `sunken` est plus
      clair que le fond en sombre, plus foncé que le fond en clair. */
@@ -274,18 +285,60 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FOND DE PAGE — trame de circuit + halo violet
+   FOND DE PAGE — trame de circuit, halos, dégradé vertical et grain
+
+   Cinq couches, dans l'ordre de la maquette (docs/maquette-v2-web-home.html).
+   L'intégration n'en avait retenu que trois, et le halo violet à la moitié de
+   son intensité : d'où un fond qui rendait presque uni en production alors que
+   la maquette a du relief.
+
+   La trame seule ne suffit pas à se voir sur un fond quasi noir. C'est le
+   **dégradé vertical** qui éclaircit le milieu de page et la fait apparaître —
+   les deux vont ensemble, retirer l'un rend l'autre invisible.
    ═══════════════════════════════════════════════════════════════════════════ */
 body {
   background-color: var(--bg);
   color: var(--text);
   background-image:
+    /* halo violet, en haut */
+    radial-gradient(ellipse 80% 60% at 50% -10%, var(--halo-violet), transparent 60%),
+    /* contre-halo or, en bas à gauche */
+    radial-gradient(ellipse 40% 40% at 10% 100%, var(--halo-gold), transparent 60%),
+    /* trame de circuit */
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-    radial-gradient(ellipse 80% 50% at 50% -5%, rgba(168, 85, 247, 0.13), transparent);
-  background-size: 44px 44px, 44px 44px, 100% 100%;
+    /* dégradé vertical : c'est lui qui donne sa profondeur à la page */
+    linear-gradient(180deg, var(--bg), var(--bg-elev) 50%, var(--bg));
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px, 100% 100%;
   background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Grain de pellicule — casse l'aplat des dégradés, qui bandent sinon sur les
+   grands écrans. Posé au-dessus du fond mais sous tout le contenu. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: san-grain 8s steps(6) infinite;
+}
+
+@keyframes san-grain {
+  0%, 100% { transform: translate(0, 0); }
+  16% { transform: translate(-3%, -1%); }
+  33% { transform: translate(2%, 3%); }
+  50% { transform: translate(-2%, 2%); }
+  66% { transform: translate(3%, -2%); }
+  83% { transform: translate(-1%, 3%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -108,7 +108,7 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
         <div
           className="animate-spin"
           style={{
@@ -124,7 +124,7 @@ const UserProfile = () => {
   }
   if (!profileUser) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
         <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
           <h2 style={{ fontFamily: "'Orbitron', sans-serif", color: 'var(--text)', fontSize: 20 }}>Utilisateur introuvable</h2>
           <Link to="/social" style={{ color: 'var(--gold)' }}>Retour</Link>
@@ -142,7 +142,7 @@ const UserProfile = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />

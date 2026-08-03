@@ -154,7 +154,7 @@ const Social = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
