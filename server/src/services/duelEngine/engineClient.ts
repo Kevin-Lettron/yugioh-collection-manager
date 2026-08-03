@@ -1,6 +1,6 @@
 import path from 'path';
 import { Worker } from 'worker_threads';
-import type { OcgResponse } from 'ocgcore-wasm';
+import type { DuelChoice, DuelSeat, DuelStateResponse } from '../../../../shared/duelView';
 import logger from '../../utils/logger';
 import { assetsInstalled, MISSING_ASSETS_HINT } from './paths';
 import {
@@ -11,7 +11,6 @@ import {
   type EngineRequestBody,
   type EngineResponse,
   type EngineStats,
-  type EngineTurnResult,
 } from './protocol';
 
 /**
@@ -165,6 +164,8 @@ function send<T>(req: EngineRequestBody, label: string): Promise<T> {
 
 export interface CreateDuelParams {
   duelId: number;
+  /** Siège dont on veut la vue en retour. */
+  seat: DuelSeat;
   players: [EnginePlayerDeck, EnginePlayerDeck];
   /** Rejouer un duel à l'identique = réutiliser la graine. */
   seed?: [bigint, bigint, bigint, bigint];
@@ -180,13 +181,14 @@ function defaultSeed(duelId: number): [bigint, bigint, bigint, bigint] {
   return [now, base, now ^ base, base * 6364136223846793005n];
 }
 
-export async function createEngineDuel(params: CreateDuelParams): Promise<EngineTurnResult> {
-  const result = await send<EngineTurnResult>(
+export async function createEngineDuel(params: CreateDuelParams): Promise<DuelStateResponse> {
+  const result = await send<DuelStateResponse>(
     {
       type: 'create',
       duelId: params.duelId,
       seed: params.seed ?? defaultSeed(params.duelId),
       players: params.players,
+      seat: params.seat,
       startingLP: params.startingLP ?? 8000,
       startingDrawCount: params.startingDrawCount ?? 5,
       drawCountPerTurn: params.drawCountPerTurn ?? 1,
@@ -197,8 +199,17 @@ export async function createEngineDuel(params: CreateDuelParams): Promise<Engine
   return result;
 }
 
-export function respondToEngine(duelId: number, response: OcgResponse): Promise<EngineTurnResult> {
-  return send<EngineTurnResult>({ type: 'respond', duelId, response }, `respond ${duelId}`);
+export function chooseInEngine(
+  duelId: number,
+  seat: DuelSeat,
+  choice: DuelChoice
+): Promise<DuelStateResponse> {
+  return send<DuelStateResponse>({ type: 'choose', duelId, seat, choice }, `choose ${duelId}`);
+}
+
+/** Etat courant sans rien changer — pour un rechargement de page. */
+export function viewEngineDuel(duelId: number, seat: DuelSeat): Promise<DuelStateResponse> {
+  return send<DuelStateResponse>({ type: 'view', duelId, seat }, `view ${duelId}`);
 }
 
 export async function destroyEngineDuel(duelId: number): Promise<void> {

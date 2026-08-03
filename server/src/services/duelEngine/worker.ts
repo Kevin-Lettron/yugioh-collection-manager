@@ -1,5 +1,6 @@
 import { parentPort } from 'worker_threads';
-import type { OcgCoreSync, OcgDuelHandle, OcgMessage } from 'ocgcore-wasm';
+import type { OcgCoreSync } from 'ocgcore-wasm';
+import type { DuelSeat, DuelStateResponse } from '../../../../shared/duelView';
 import {
   getCore,
   getOcgModule,
@@ -8,11 +9,11 @@ import {
   readBootstrapScript,
 } from './engineHost';
 import { getCardStore, resolveCard, type CardStore } from './cardStore';
+import { DuelSession } from './session';
 import type {
   EngineRequest,
   EngineResponse,
   EngineStats,
-  EngineTurnResult,
   EnginePlayerDeck,
 } from './protocol';
 
@@ -25,7 +26,7 @@ import type {
  * ne gèle que lui-même.
  *
  * Le worker ne parle jamais à PostgreSQL : il reçoit des passcodes et renvoie
- * des messages. Toute la logique métier reste dans le fil principal.
+ * des vues déjà filtrées. Toute la logique métier reste dans le fil principal.
  */
 
 if (!parentPort) {
@@ -33,12 +34,7 @@ if (!parentPort) {
 }
 const port = parentPort;
 
-interface Session {
-  handle: OcgDuelHandle;
-  createdAt: number;
-}
-
-const sessions = new Map<number, Session>();
+const sessions = new Map<number, DuelSession>();
 
 let core: OcgCoreSync | null = null;
 let ocg: typeof import('ocgcore-wasm') | null = null;
@@ -63,51 +59,6 @@ async function ensureReady(): Promise<{
     store = getCardStore();
   }
   return { core, ocg, store };
-}
-
-/**
- * Déroule le moteur jusqu'à ce qu'il réclame une décision ou termine la partie.
- *
- * `duelGetMessage` doit être appelé **à chaque tour de boucle** et pas seulement
- * à la fin : le moteur vide sa file interne, et ce qui n'est pas relevé est
- * perdu.
- */
-function pump(lib: OcgCoreSync, mod: typeof import('ocgcore-wasm'), duelId: number): EngineTurnResult {
-  const session = sessions.get(duelId);
-  if (!session) throw new Error(`duel ${duelId} inconnu du moteur`);
-
-  const messages: OcgMessage[] = [];
-  let steps = 0;
-
-  while (steps++ < MAX_STEPS_PER_TURN) {
-    const status = lib.duelProcess(session.handle);
-
-    let won = false;
-    for (const message of lib.duelGetMessage(session.handle)) {
-      if (!message) continue;
-      messages.push(message);
-      if (message.type === mod.OcgMessageType.WIN) won = true;
-    }
-
-    // C'est **l'hôte** qui arrête la partie, pas le moteur.
-    //
-    // Mesuré : le moteur émet `win` — ici sur un deck-out — puis redemande une
-    // décision comme si de rien n'était. Sans cette coupure, une partie gagnée
-    // continue : le relevé de l'étape 3 a tourné 409 tours et émis 338 `win`
-    // avant d'atteindre le garde-fou.
-    if (won) {
-      return { duelId, status: 'ended', messages, steps };
-    }
-
-    if (status === mod.OcgProcessResult.END) {
-      return { duelId, status: 'ended', messages, steps };
-    }
-    if (status === mod.OcgProcessResult.CONTINUE) continue;
-
-    return { duelId, status: 'awaiting_response', messages, steps };
-  }
-
-  return { duelId, status: 'stalled', messages, steps };
 }
 
 /**
@@ -151,14 +102,12 @@ function shuffled(cards: readonly number[], rng: () => number): number[] {
   return a;
 }
 
-function createSession(req: Extract<EngineRequest, { type: 'create' }>): EngineTurnResult {
+function createSession(req: Extract<EngineRequest, { type: 'create' }>): DuelStateResponse {
   const lib = core!;
   const mod = ocg!;
   const cards = store!;
 
-  if (sessions.has(req.duelId)) {
-    destroySession(req.duelId);
-  }
+  if (sessions.has(req.duelId)) destroySession(req.duelId);
 
   const handle = lib.createDuel({
     flags: mod.OcgDuelMode.MODE_MR5,
@@ -189,8 +138,8 @@ function createSession(req: Extract<EngineRequest, { type: 'create' }>): EngineT
     lib.loadScript(handle, name, readBootstrapScript(name));
   }
 
-  // Un générateur par joueur, dérivé de la même graine : les deux mélanges sont
-  // indépendants mais l'ensemble reste reproductible.
+  // Un seul générateur pour les deux decks : les mélanges sont indépendants
+  // mais l'ensemble reste reproductible à partir de la graine.
   const rng = makeRng(req.seed);
 
   const addDeck = (team: 0 | 1, deck: EnginePlayerDeck): void => {
@@ -221,10 +170,13 @@ function createSession(req: Extract<EngineRequest, { type: 'create' }>): EngineT
   addDeck(0, req.players[0]);
   addDeck(1, req.players[1]);
 
-  sessions.set(req.duelId, { handle, createdAt: Date.now() });
+  const session = new DuelSession(handle, req.startingLP);
+  sessions.set(req.duelId, session);
 
   lib.startDuel(handle);
-  return pump(lib, mod, req.duelId);
+  session.pump(lib, mod, cards, MAX_STEPS_PER_TURN);
+
+  return session.view(lib, mod, req.duelId, req.seat, cards);
 }
 
 function destroySession(duelId: number): null {
@@ -235,6 +187,12 @@ function destroySession(duelId: number): null {
   core!.destroyDuel(session.handle);
   sessions.delete(duelId);
   return null;
+}
+
+function requireSession(duelId: number): DuelSession {
+  const session = sessions.get(duelId);
+  if (!session) throw new Error(`duel ${duelId} inconnu du moteur`);
+  return session;
 }
 
 function stats(): EngineStats {
@@ -252,19 +210,35 @@ function stats(): EngineStats {
 
 async function handle(req: EngineRequest): Promise<EngineResponse> {
   try {
-    const { core: lib, ocg: mod } = await ensureReady();
+    const { core: lib, ocg: mod, store: cards } = await ensureReady();
 
     switch (req.type) {
       case 'create':
         return { id: req.id, ok: true, result: createSession(req) };
-      case 'respond': {
-        const session = sessions.get(req.duelId);
-        if (!session) throw new Error(`duel ${req.duelId} inconnu du moteur`);
-        lib.duelSetResponse(session.handle, req.response);
-        return { id: req.id, ok: true, result: pump(lib, mod, req.duelId) };
+
+      case 'choose': {
+        const session = requireSession(req.duelId);
+        session.applyChoice(lib, mod, req.seat as DuelSeat, req.choice, cards);
+        session.pump(lib, mod, cards, MAX_STEPS_PER_TURN);
+        return {
+          id: req.id,
+          ok: true,
+          result: session.view(lib, mod, req.duelId, req.seat as DuelSeat, cards),
+        };
       }
+
+      case 'view': {
+        const session = requireSession(req.duelId);
+        return {
+          id: req.id,
+          ok: true,
+          result: session.view(lib, mod, req.duelId, req.seat as DuelSeat, cards),
+        };
+      }
+
       case 'destroy':
         return { id: req.id, ok: true, result: destroySession(req.duelId) };
+
       case 'stats':
         return { id: req.id, ok: true, result: stats() };
     }

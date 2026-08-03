@@ -5,10 +5,12 @@ import logger from '../utils/logger';
 import { DuelModel } from '../models/duelModel';
 import { DeckModel } from '../models/deckModel';
 import { Duel } from '../../../shared/types';
+import type { DuelChoice, DuelSeat } from '../../../shared/duelView';
 import { deckToEngine, checkEngineDeck } from '../services/duelEngine/deckLoader';
 import {
   createEngineDuel,
-  respondToEngine,
+  chooseInEngine,
+  viewEngineDuel,
   destroyEngineDuel,
   engineStats,
   isDuelLive,
@@ -24,22 +26,21 @@ import { assetsInstalled } from '../services/duelEngine/paths';
  * abandon) et rien d'autre — l'état de partie du mode moteur vit dans le worker,
  * pas dans `challenger_state` / `opponent_state`.
  *
- * **À ce stade (étape 2 du plan), les messages sont renvoyés bruts.** Leur
- * traduction en événements exploitables par le front, et le filtrage de ce que
- * chaque joueur a le droit de voir, sont l'objet de l'étape 3. Ne pas brancher
- * l'interface dessus avant.
+ * Le front ne voit **jamais** une structure du moteur : il reçoit un plateau
+ * déjà filtré de l'information cachée, et une invite dont les options portent
+ * des identifiants opaques. Il renvoie ces identifiants, le serveur retraduit.
+ * Un client ne peut donc ni répondre à la place de l'adversaire, ni désigner
+ * une carte qu'on ne lui a pas proposée.
  */
 
 /** Le challenger tient l'équipe 0, l'adversaire l'équipe 1. */
-type Seat = 0 | 1;
-
-function seatOf(duel: Duel, userId: number): Seat | null {
+function seatOf(duel: Duel, userId: number): DuelSeat | null {
   if (duel.challenger_id === userId) return 0;
   if (duel.opponent_id === userId) return 1;
   return null;
 }
 
-async function loadParticipantDuel(req: AuthRequest): Promise<{ duel: Duel; seat: Seat }> {
+async function loadParticipantDuel(req: AuthRequest): Promise<{ duel: Duel; seat: DuelSeat }> {
   if (!req.user) throw new ValidationError('Not authenticated');
 
   const id = parseInt(req.params.id, 10);
@@ -54,13 +55,22 @@ async function loadParticipantDuel(req: AuthRequest): Promise<{ duel: Duel; seat
   return { duel, seat };
 }
 
+/** Diffuse aux deux joueurs le fait que l'état a changé, sans leur envoyer la vue. */
+function notifySeats(req: AuthRequest, duel: Duel): void {
+  const io = req.app.get('io');
+  if (!io) return;
+  // Chacun doit redemander **sa** vue : envoyer l'état dans la room commune
+  // révélerait la main de l'un à l'autre.
+  io.to(`duel:${duel.id}`).emit('duel:engine_update', { duelId: duel.id });
+}
+
 export class DuelEngineController {
   /**
    * POST /duels/:id/engine/start — ouvre la partie dans le moteur.
    *
-   * Idempotent au sens utile du terme : relancer sur un duel déjà ouvert
-   * détruit l'instance précédente et repart d'un mélange neuf. C'est voulu tant
-   * qu'on est en développement ; l'étape 4 le fermera.
+   * Relancer sur un duel déjà ouvert détruit l'instance précédente et repart
+   * d'un mélange neuf. C'est volontaire tant qu'on développe ; l'étape 4 le
+   * fermera.
    */
   static async start(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -96,60 +106,73 @@ export class DuelEngineController {
         })
         .filter((p): p is string => p !== null);
 
-      if (problems.length) {
-        throw new ValidationError(problems.join(' · '));
-      }
+      if (problems.length) throw new ValidationError(problems.join(' · '));
 
-      const result = await createEngineDuel({
+      const state = await createEngineDuel({
         duelId: duel.id,
+        seat,
         players: [conversions[0].deck, conversions[1].deck],
       });
 
-      logger.info(
-        `[DUEL_ENGINE] duel ${duel.id} ouvert — ${result.messages.length} messages, ` +
-          `statut ${result.status}`
-      );
+      logger.info(`[DUEL_ENGINE] duel ${duel.id} ouvert (statut ${state.status})`);
+      notifySeats(req, duel);
 
-      res.json({
-        duel_id: duel.id,
-        seat,
-        status: result.status,
-        steps: result.steps,
-        // Bruts : voir l'avertissement en tête de fichier.
-        messages: result.messages,
-      });
+      res.json(state);
     } catch (err) {
       next(err);
     }
   }
 
   /**
-   * POST /duels/:id/engine/respond — transmet la décision du joueur au moteur.
+   * GET /duels/:id/engine — l'état courant, du point de vue de l'appelant.
    *
-   * Passe-plat volontaire : le corps est une `OcgResponse` telle que le moteur
-   * l'attend. C'est utilisable pour tester le pont de bout en bout, pas pour
-   * brancher une interface — l'étape 3 mettra une vraie traduction devant, et
-   * surtout la vérification que c'est bien au joueur qui répond de le faire.
+   * Sans effet de bord : c'est ce qu'appelle un joueur qui recharge sa page, ou
+   * celui qui attend que l'autre joue.
    */
-  static async respond(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  static async view(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { duel } = await loadParticipantDuel(req);
+      const { duel, seat } = await loadParticipantDuel(req);
+      if (!isDuelLive(duel.id)) {
+        throw new NotFoundError("Ce duel n'est pas ouvert dans le moteur");
+      }
+      res.json(await viewEngineDuel(duel.id, seat));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /duels/:id/engine/choose — la décision du joueur.
+   *
+   * Corps attendu : `{ optionIds: string[], cancel?: boolean }`, où les
+   * identifiants sont ceux de l'invite reçue. Le worker vérifie que la question
+   * était bien posée à ce siège et que les options existent ; une option
+   * inventée est rejetée avant d'atteindre le moteur.
+   */
+  static async choose(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { duel, seat } = await loadParticipantDuel(req);
 
       if (!isDuelLive(duel.id)) {
         throw new ValidationError("Ce duel n'est pas ouvert dans le moteur");
       }
-      if (!req.body || typeof req.body !== 'object') {
-        throw new ValidationError('Réponse absente');
+
+      const body = req.body as Partial<DuelChoice> | undefined;
+      const optionIds = Array.isArray(body?.optionIds) ? body!.optionIds : [];
+      if (!optionIds.every((id) => typeof id === 'string' && id.length <= 64)) {
+        throw new ValidationError('Choix mal formé');
+      }
+      if (optionIds.length === 0 && !body?.cancel) {
+        throw new ValidationError('Aucune option choisie');
       }
 
-      const result = await respondToEngine(duel.id, req.body);
-
-      res.json({
-        duel_id: duel.id,
-        status: result.status,
-        steps: result.steps,
-        messages: result.messages,
+      const state = await chooseInEngine(duel.id, seat, {
+        optionIds,
+        cancel: body?.cancel === true,
       });
+
+      notifySeats(req, duel);
+      res.json(state);
     } catch (err) {
       next(err);
     }
@@ -165,6 +188,7 @@ export class DuelEngineController {
     try {
       const { duel } = await loadParticipantDuel(req);
       await destroyEngineDuel(duel.id);
+      notifySeats(req, duel);
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -172,10 +196,7 @@ export class DuelEngineController {
   }
 
   /**
-   * GET /duels/engine/stats — santé du moteur.
-   *
-   * Réservé à l'administration : la consommation mémoire du worker est
-   * l'indicateur qui décidera du dimensionnement du serveur.
+   * GET /duels/engine/stats — santé du moteur, réservé à l'administration.
    */
   static async stats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {

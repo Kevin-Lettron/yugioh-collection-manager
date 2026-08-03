@@ -3,8 +3,9 @@
 > Fichier de passation, mis à jour et poussé **à chaque étape**, comme `SUIVI-REFONTE.md`.
 >
 > **Branche :** `dev`
-> **Dernière mise à jour :** 2026-08-03 — **étapes 0, 1 et 2 terminées.** Le moteur tourne
-> dans un worker, piloté par l'API. Prochaine : étape 3, la traduction des messages.
+> **Dernière mise à jour :** 2026-08-03 — **étapes 0 à 3 terminées.** Une partie complète
+> se joue de bout en bout par l'API, sans qu'aucune structure du moteur n'atteigne le
+> front. Prochaine : étape 4, le cycle de vie.
 
 ---
 
@@ -329,7 +330,7 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
         testés.
       - `GET /duels/engine/stats` doit être déclarée **avant** `/:id`, sinon la route
         paramétrée capte « engine » et tente de le lire comme un identifiant.
-- [ ] **Étape 3** — Traduction des messages — *en cours*
+- [x] **Étape 3** — Traduction des messages — **faite le 2026-08-03**
 
       **3a. Relevé de terrain — fait le 2026-08-03.** `npm run duel:autoplay 10` fait jouer
       le moteur contre lui-même avec une politique naïve, et compte ce qui arrive
@@ -358,7 +359,54 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
       documentation du paquet. Seul l'auto-joueur les a fait apparaître. Il reste dans le
       dépôt comme test de non-régression.
 
-      **3b. Traduction proprement dite** — à faire.
+      **3b. Traduction — faite le 2026-08-03.** Le front ne voit désormais **aucune**
+      structure du moteur. Le contrat tient en trois pièces, dans `shared/duelView.ts` :
+
+      - `DuelBoardView` — le plateau **tel que ce joueur a le droit de le voir**. Il est
+        *interrogé au moteur* (`duelQueryField` / `duelQueryLocation`) et non reconstruit
+        à partir des messages. Rejouer les deltas pour deviner l'état est la façon la plus
+        sûre de désynchroniser une interface : un message mal interprété, un joueur qui
+        recharge sa page, et l'affichage ment. Le moteur, lui, sait toujours où il en est.
+      - `DuelPrompt` — la demande du moteur, normalisée en options nommées avec des
+        identifiants opaques.
+      - `DuelChoice` — la réponse, par identifiant d'option. **Le client ne fabrique jamais
+        une `OcgResponse`.** Sinon il pourrait répondre à la place de l'adversaire,
+        désigner une carte qu'on ne lui a pas proposée, ou envoyer une structure que le
+        moteur rejetterait par un `retry` muet.
+
+      Routes : `POST /duels/:id/engine/start`, `GET /duels/:id/engine` (sans effet de
+      bord — c'est ce qu'appelle un joueur qui recharge), `POST /duels/:id/engine/choose`,
+      `DELETE /duels/:id/engine`.
+
+      Fichiers : `shared/duelView.ts`, `server/src/services/duelEngine/{snapshot,prompt,session}.ts`.
+
+      **L'auto-joueur a changé de rôle** : il ne touche plus aux structures du moteur, il
+      joue exactement comme jouerait une interface — il lit une `DuelPrompt`, choisit un
+      identifiant, le renvoie. Il est devenu le test de bout en bout de la traduction, et
+      il vérifie en plus l'étanchéité de l'information cachée : main adverse détaillée,
+      carte adverse face cachée révélée, invite servie au mauvais siège. Il sort en code
+      non nul si l'un de ces contrôles échoue.
+
+      Résultat sur 10 parties menées jusqu'à la victoire :
+
+      ```
+      2699 × chain   521 × main   231 × battle   200 × place   95 × cards   16 × position
+      invites non couvertes  : aucune
+      réponses refusées      : aucune
+      fuites d'information   : aucune
+      ```
+
+      **Une quatrième découverte, du même genre que les trois précédentes :**
+      `OcgQueryFlags.TYPE` demandé sur la **main** fait lever `Error: eof` au lecteur
+      binaire du paquet. Testé drapeau par drapeau : c'est le seul qui échoue, et seulement
+      sur `HAND` — sur les zones du terrain il passe. L'erreur remonte comme une mort du
+      worker, sans rien dire de la cause. Contourné en ne le demandant pas : le type de la
+      carte est déjà dans `cards.cdb`, qu'on a intégralement en mémoire.
+
+      **Ce qui reste avant de brancher une interface** : les invites `announce` (annoncer
+      un type, un attribut, une carte, un nombre) ne sont pas couvertes — elles ne sont
+      jamais apparues avec le deck de test, qui n'a aucune carte les déclenchant. Elles
+      remontent en `kind: 'unsupported'`, que le front doit afficher plutôt que d'ignorer.
 - [ ] **Étape 4** — Cycle de vie
 - [ ] **Étape 5** — Front web
 - [ ] **Étape 6** — Front mobile

@@ -65,6 +65,7 @@ async function main(): Promise<void> {
     const duelId = 900_000 + i;
     const result = await createEngineDuel({
       duelId,
+      seat: 0,
       players: [DECK, DECK],
     });
     duelIds.push(duelId);
@@ -75,8 +76,7 @@ async function main(): Promise<void> {
 
     console.log(
       `duel ${String(i).padStart(2)} : ${result.status.padEnd(17)} ` +
-        `${String(result.messages.length).padStart(3)} messages, ` +
-        `${String(result.steps).padStart(3)} itérations · ` +
+        `${String(result.log.length).padStart(3)} lignes de journal · ` +
         `rss ${mib(s.memory.rss)} (${delta >= 0 ? '+' : ''}${mib(delta)})`
     );
   }

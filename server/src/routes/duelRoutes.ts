@@ -18,8 +18,9 @@ router.post('/:id/cancel', authenticateToken, DuelController.cancel);
 router.post('/:id/action', authenticateToken, DuelController.performAction);
 
 // ─── Mode moteur (ygopro-core) — cf. docs/PLAN-MOTEUR-DUEL.md
-router.post('/:id/engine/start',   authenticateToken, DuelEngineController.start);
-router.post('/:id/engine/respond', authenticateToken, DuelEngineController.respond);
-router.delete('/:id/engine',       authenticateToken, DuelEngineController.close);
+router.post('/:id/engine/start',  authenticateToken, DuelEngineController.start);
+router.get('/:id/engine',         authenticateToken, DuelEngineController.view);
+router.post('/:id/engine/choose', authenticateToken, DuelEngineController.choose);
+router.delete('/:id/engine',      authenticateToken, DuelEngineController.close);
 
 export default router;
