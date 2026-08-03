@@ -17,6 +17,8 @@ router.post('/', authenticateToken, DeckController.createDeck);
 router.put('/:id', authenticateToken, DeckController.updateDeck);
 router.delete('/:id', authenticateToken, DeckController.deleteDeck);
 router.post('/:id/cards', authenticateToken, DeckController.addCardToDeck);
+// Remplacement atomique de tout le contenu — valide avant d'écrire.
+router.put('/:id/cards', authenticateToken, DeckController.replaceDeckCards);
 router.delete('/:id/cards', authenticateToken, DeckController.clearDeckCards);
 router.delete('/:id/cards/:cardId', authenticateToken, DeckController.removeCardFromDeck);
 router.put('/:id/cards/:cardId', authenticateToken, DeckController.updateCardQuantity);

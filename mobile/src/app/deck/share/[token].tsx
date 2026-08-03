@@ -222,7 +222,7 @@ export default function SharedDeckScreen() {
                     ) : (
                       <Image
                         source={CARD_ICON}
-                        style={{ width: '55%', height: '55%', tintColor: '#F5C518', opacity: 0.3 }}
+                        style={{ width: '55%', height: '55%', tintColor: colors.gold, opacity: 0.3 }}
                         resizeMode="contain"
                       />
                     )}

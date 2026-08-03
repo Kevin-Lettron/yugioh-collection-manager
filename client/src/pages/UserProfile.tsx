@@ -110,7 +110,7 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
         <div
           className="animate-spin"
           style={{
@@ -118,7 +118,7 @@ const UserProfile = () => {
             height: 40,
             borderRadius: '50%',
             border: '3px solid rgba(245,197,24,.3)',
-            borderTopColor: '#F5C518',
+            borderTopColor: 'var(--gold)',
           }}
         />
       </div>
@@ -126,10 +126,10 @@ const UserProfile = () => {
   }
   if (!profileUser) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
-        <div style={{ textAlign: 'center', color: '#A99C86' }}>
-          <h2 style={{ fontFamily: "'Orbitron', sans-serif", color: '#F5EFE0', fontSize: 20 }}>Utilisateur introuvable</h2>
-          <Link to="/social" style={{ color: '#F5C518' }}>Retour</Link>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <h2 style={{ fontFamily: "'Orbitron', sans-serif", color: 'var(--text)', fontSize: 20 }}>Utilisateur introuvable</h2>
+          <Link to="/social" style={{ color: 'var(--gold)' }}>Retour</Link>
         </div>
       </div>
     );
@@ -144,7 +144,7 @@ const UserProfile = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
@@ -155,7 +155,7 @@ const UserProfile = () => {
             position: 'relative',
             height: 180,
             background: 'linear-gradient(120deg,rgba(168,85,247,.24),rgba(245,197,24,.1))',
-            borderBottom: '1px solid #3A2E1C',
+            borderBottom: '1px solid var(--border)',
             overflow: 'hidden',
           }}>
           <div
@@ -168,7 +168,7 @@ const UserProfile = () => {
             }}
           />
           <GlyphEye
-            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: '#F5C518', opacity: 0.12 }}
+            style={{ position: 'absolute', right: 80, top: -30, width: 220, height: 220, color: 'var(--gold)', opacity: 0.12 }}
           />
         </div>
 
@@ -182,7 +182,7 @@ const UserProfile = () => {
                   width: 120,
                   height: 120,
                   objectFit: 'cover',
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   clipPath: HEX,
                   boxShadow: '0 0 40px rgba(245,197,24,.3)',
                 }}
@@ -192,14 +192,14 @@ const UserProfile = () => {
                 style={{
                   width: 120,
                   height: 120,
-                  background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
-                  color: '#0B0906',
+                  background: 'linear-gradient(135deg,var(--violet),var(--gold-dim))',
+                  color: 'var(--bg)',
                   display: 'grid',
                   placeItems: 'center',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 38,
                   fontWeight: 900,
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   clipPath: HEX,
                   boxShadow: '0 0 40px rgba(245,197,24,.3)',
                 }}>
@@ -214,11 +214,11 @@ const UserProfile = () => {
                   fontWeight: 900,
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                 }}>
                 @{profileUser.username}
               </div>
-              <div style={{ marginTop: 6, fontSize: 15, color: '#A99C86' }}>
+              <div style={{ marginTop: 6, fontSize: 15, color: 'var(--text-muted)' }}>
                 Gardien du sanctuaire · depuis {new Date(profileUser.created_at).getFullYear()}
               </div>
             </div>
@@ -226,8 +226,8 @@ const UserProfile = () => {
               <span
                 style={{
                   padding: '6px 12px',
-                  border: '1px solid #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 9,
                   letterSpacing: '0.14em',
@@ -238,8 +238,8 @@ const UserProfile = () => {
               <span
                 style={{
                   padding: '6px 12px',
-                  border: '1px solid #3A2E1C',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 9,
                   letterSpacing: '0.14em',
@@ -256,8 +256,8 @@ const UserProfile = () => {
                       height: 44,
                       padding: '0 20px',
                       background: 'transparent',
-                      border: '1px solid #3A2E1C',
-                      color: '#A99C86',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-muted)',
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 11,
                       letterSpacing: '0.12em',
@@ -279,7 +279,7 @@ const UserProfile = () => {
                       isolation: 'isolate',
                       border: 0,
                       background: 'transparent',
-                      color: '#0B0906',
+                      color: 'var(--bg)',
                       fontFamily: "'Orbitron', sans-serif",
                       fontWeight: 700,
                       fontSize: 11,
@@ -291,7 +291,7 @@ const UserProfile = () => {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        background: '#A855F7',
+                        background: 'var(--violet)',
                         transform: 'translate(5px,0)',
                         clipPath: CUT_BTN,
                         zIndex: -1,
@@ -301,7 +301,7 @@ const UserProfile = () => {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        background: '#F5C518',
+                        background: 'var(--gold)',
                         clipPath: CUT_BTN,
                         zIndex: -1,
                       }}
@@ -350,8 +350,8 @@ const UserProfile = () => {
               display: 'grid',
               gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
               gap: 1,
-              background: '#3A2E1C',
-              border: '1px solid #3A2E1C',
+              background: 'var(--border)',
+              border: '1px solid var(--border)',
               clipPath: CUT_STATS,
             }}
             className="max-md:!grid-cols-2">
@@ -360,7 +360,7 @@ const UserProfile = () => {
                 key={s.label}
                 style={{
                   padding: '18px 22px',
-                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
@@ -370,7 +370,7 @@ const UserProfile = () => {
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 9,
                     letterSpacing: '0.2em',
-                    color: '#A99C86',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                   }}>
                   {s.label}
@@ -380,7 +380,7 @@ const UserProfile = () => {
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 26,
                     fontWeight: 700,
-                    color: '#F5EFE0',
+                    color: 'var(--text)',
                     fontVariantNumeric: 'tabular-nums',
                   }}>
                   {s.value}
@@ -396,15 +396,15 @@ const UserProfile = () => {
                 fontSize: 12,
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: '#F5C518',
+                color: 'var(--gold)',
               }}>
               Ses decks publics
             </span>
-            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,#3A2E1C,transparent)' }} />
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border),transparent)' }} />
           </div>
 
           {decks.length === 0 ? (
-            <div style={{ marginTop: 24, textAlign: 'center', padding: '60px 20px', color: '#A99C86', fontSize: 14, border: '1px dashed #3A2E1C' }}>
+            <div style={{ marginTop: 24, textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', fontSize: 14, border: '1px dashed var(--border)' }}>
               {profileUser.username} n'a pas encore de deck public.
             </div>
           ) : (
@@ -424,19 +424,19 @@ const UserProfile = () => {
                     <div
                       style={{
                         padding: 18,
-                        background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                        border: '1px solid #3A2E1C',
+                        background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                        border: '1px solid var(--border)',
                         cursor: 'pointer',
                         transition: 'transform 240ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
                         clipPath: CUT_TILE,
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-6px)';
-                        e.currentTarget.style.borderColor = '#C29A0F';
+                        e.currentTarget.style.borderColor = 'var(--gold-dim)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.borderColor = '#3A2E1C';
+                        e.currentTarget.style.borderColor = 'var(--border)';
                       }}>
                       <div style={{ height: 78, display: 'flex', alignItems: 'center' }}>
                         <div
@@ -444,7 +444,7 @@ const UserProfile = () => {
                             width: 52,
                             height: 74,
                             border: '1px solid rgba(245,197,24,.42)',
-                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                             transform: 'rotate(-7deg)',
                             display: 'grid',
                             placeItems: 'center',
@@ -456,13 +456,13 @@ const UserProfile = () => {
                             width: 52,
                             height: 74,
                             border: '1px solid rgba(168,85,247,.42)',
-                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                             marginLeft: -18,
                             transform: 'rotate(7deg)',
                             display: 'grid',
                             placeItems: 'center',
                           }}>
-                          <CardIcon size={20} style={{ color: '#A855F7' }} />
+                          <CardIcon size={20} style={{ color: 'var(--violet)' }} />
                         </div>
                       </div>
                       <div
@@ -471,7 +471,7 @@ const UserProfile = () => {
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 12,
                           fontWeight: 700,
-                          color: '#F5EFE0',
+                          color: 'var(--text)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -484,12 +484,12 @@ const UserProfile = () => {
                           display: 'flex',
                           justifyContent: 'space-between',
                           fontSize: 12,
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                         }}>
                         <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                           {main} · {extra} · 0
                         </span>
-                        <span style={{ color: '#FF2E88' }}>♥ {d.likes_count || 0}</span>
+                        <span style={{ color: 'var(--magenta)' }}>♥ {d.likes_count || 0}</span>
                       </div>
                     </div>
                   </Link>

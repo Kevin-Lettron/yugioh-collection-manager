@@ -154,7 +154,7 @@ const Social = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
@@ -169,7 +169,7 @@ const Social = () => {
                 fontStyle: 'italic',
                 fontSize: 12,
                 letterSpacing: '0.32em',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 textTransform: 'uppercase',
               }}>
               — Vitrines ouvertes —
@@ -182,7 +182,7 @@ const Social = () => {
                 fontWeight: 900,
                 letterSpacing: '0.02em',
                 textTransform: 'uppercase',
-                background: 'linear-gradient(180deg,#F5EFE0 25%,#C29A0F 100%)',
+                background: 'linear-gradient(180deg,var(--text) 25%,var(--gold-dim) 100%)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
@@ -203,9 +203,9 @@ const Social = () => {
                   style={{
                     height: 44,
                     padding: '0 22px',
-                    border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
+                    border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`,
                     background: on ? 'rgba(245,197,24,.14)' : 'transparent',
-                    color: on ? '#F5C518' : '#A99C86',
+                    color: on ? 'var(--gold)' : 'var(--text-muted)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     letterSpacing: '0.14em',
@@ -236,8 +236,8 @@ const Social = () => {
                   padding: '10px 18px',
                   background: 'transparent',
                   border: 0,
-                  borderBottom: `2px solid ${on ? '#F5C518' : 'transparent'}`,
-                  color: on ? '#F5C518' : '#A99C86',
+                  borderBottom: `2px solid ${on ? 'var(--gold)' : 'transparent'}`,
+                  color: on ? 'var(--gold)' : 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   letterSpacing: '0.14em',
@@ -269,19 +269,19 @@ const Social = () => {
                     key={deck.id}
                     onClick={() => navigate(`/decks/${deck.id}`)}
                     style={{
-                      background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                      border: '1px solid #3A2E1C',
+                      background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                      border: '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'transform 260ms cubic-bezier(.2,.8,.2,1),border-color 200ms',
                       clipPath: CUT_FEED,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-6px)';
-                      e.currentTarget.style.borderColor = '#C29A0F';
+                      e.currentTarget.style.borderColor = 'var(--gold-dim)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.borderColor = '#3A2E1C';
+                      e.currentTarget.style.borderColor = 'var(--border)';
                     }}>
                     {/* Image header 172px avec fan de 3 mini-cartes */}
                     <div
@@ -289,7 +289,7 @@ const Social = () => {
                         position: 'relative',
                         height: 172,
                         overflow: 'hidden',
-                        background: 'linear-gradient(120deg,#221B12,#0B0906)',
+                        background: 'linear-gradient(120deg,var(--panel-2),var(--bg))',
                       }}>
                       <div
                         style={{
@@ -306,41 +306,41 @@ const Social = () => {
                             width: 76,
                             height: 114,
                             border: '1px solid rgba(245,197,24,.5)',
-                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                             display: 'grid',
                             placeItems: 'center',
                             transform: 'rotate(-8deg)',
                             boxShadow: '0 14px 26px rgba(0,0,0,.6),0 0 20px rgba(245,197,24,.2)',
                           }}>
-                          <CardIcon size={40} style={{ color: '#F5C518', opacity: 0.3 }} />
+                          <CardIcon size={40} style={{ color: 'var(--gold)', opacity: 0.3 }} />
                         </div>
                         <div
                           style={{
                             width: 76,
                             height: 114,
                             border: '1px solid rgba(168,85,247,.5)',
-                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                             display: 'grid',
                             placeItems: 'center',
                             marginLeft: -22,
                             transform: 'rotate(4deg)',
                             boxShadow: '0 14px 26px rgba(0,0,0,.6)',
                           }}>
-                          <CardIcon size={40} style={{ color: '#A855F7', opacity: 0.34 }} />
+                          <CardIcon size={40} style={{ color: 'var(--violet)', opacity: 0.34 }} />
                         </div>
                         <div
                           style={{
                             width: 76,
                             height: 114,
                             border: '1px solid rgba(34,211,238,.45)',
-                            background: 'linear-gradient(150deg,#221B12,#14100A)',
+                            background: 'linear-gradient(150deg,var(--panel-2),var(--bg-elev))',
                             display: 'grid',
                             placeItems: 'center',
                             marginLeft: -22,
                             transform: 'rotate(14deg)',
                             boxShadow: '0 14px 26px rgba(0,0,0,.6)',
                           }}>
-                          <CardIcon size={40} style={{ color: '#22D3EE', opacity: 0.3 }} />
+                          <CardIcon size={40} style={{ color: 'var(--cyan)', opacity: 0.3 }} />
                         </div>
                       </div>
                       <span
@@ -350,8 +350,8 @@ const Social = () => {
                           top: 14,
                           padding: '4px 10px',
                           background: 'rgba(11,9,6,.82)',
-                          border: '1px solid #3A2E1C',
-                          color: '#C29A0F',
+                          border: '1px solid var(--border)',
+                          color: 'var(--gold-dim)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 9,
                           letterSpacing: '0.16em',
@@ -367,13 +367,13 @@ const Social = () => {
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 17,
                           fontWeight: 700,
-                          color: '#F5EFE0',
+                          color: 'var(--text)',
                           letterSpacing: '0.02em',
                         }}>
                         {deck.name}
                       </div>
-                      <div style={{ marginTop: 6, fontSize: 14, color: '#A99C86' }}>
-                        par <span style={{ color: '#A855F7' }}>@{deck.user?.username}</span>
+                      <div style={{ marginTop: 6, fontSize: 14, color: 'var(--text-muted)' }}>
+                        par <span style={{ color: 'var(--violet)' }}>@{deck.user?.username}</span>
                       </div>
                       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 18 }}>
                         <span
@@ -383,7 +383,7 @@ const Social = () => {
                             gap: 6,
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 12,
-                            color: '#FF2E88',
+                            color: 'var(--magenta)',
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                           ♥ {deck.likes_count || 0}
@@ -395,7 +395,7 @@ const Social = () => {
                             gap: 6,
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 12,
-                            color: '#A99C86',
+                            color: 'var(--text-muted)',
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                           💬 {deck.comments_count || 0}
@@ -405,7 +405,7 @@ const Social = () => {
                           style={{
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 12,
-                            color: '#F5C518',
+                            color: 'var(--gold)',
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                           {c.main} · {c.extra} · {c.side}
@@ -426,7 +426,7 @@ const Social = () => {
                     height: 28,
                     borderRadius: '50%',
                     border: '3px solid rgba(245,197,24,.3)',
-                    borderTopColor: '#F5C518',
+                    borderTopColor: 'var(--gold)',
                   }}
                 />
               </div>
@@ -434,7 +434,7 @@ const Social = () => {
             <div ref={decksLoadMoreRef} className="h-8" />
 
             {!decksLoading && decks.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#A99C86', fontSize: 16 }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', fontSize: 16 }}>
                 Aucun deck à découvrir pour le moment.
               </div>
             )}
@@ -453,10 +453,10 @@ const Social = () => {
                   width: '100%',
                   height: 52,
                   padding: '0 18px',
-                  background: '#1A1510',
-                  border: '1px solid #3A2E1C',
-                  borderLeft: '3px solid #F5C518',
-                  color: '#F5EFE0',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--border)',
+                  borderLeft: '3px solid var(--gold)',
+                  color: 'var(--text)',
                   fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 16,
                   outline: 'none',
@@ -479,8 +479,8 @@ const Social = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 14,
-                    background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                    border: '1px solid #3A2E1C',
+                    background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                    border: '1px solid var(--border)',
                     clipPath: CUT_FEED,
                   }}>
                   {u.profile_picture ? (
@@ -491,7 +491,7 @@ const Social = () => {
                         width: 56,
                         height: 56,
                         objectFit: 'cover',
-                        border: '1px solid #C29A0F',
+                        border: '1px solid var(--gold-dim)',
                         clipPath: 'polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)',
                       }}
                     />
@@ -500,8 +500,8 @@ const Social = () => {
                       style={{
                         width: 56,
                         height: 56,
-                        background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
-                        color: '#0B0906',
+                        background: 'linear-gradient(135deg,var(--violet),var(--gold-dim))',
+                        color: 'var(--bg)',
                         display: 'grid',
                         placeItems: 'center',
                         fontFamily: "'Orbitron', sans-serif",
@@ -518,7 +518,7 @@ const Social = () => {
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 13,
                         fontWeight: 700,
-                        color: '#F5EFE0',
+                        color: 'var(--text)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -529,7 +529,7 @@ const Social = () => {
                       onClick={() => navigate(`/user/${u.id}`)}
                       style={{
                         marginTop: 4,
-                        color: '#A855F7',
+                        color: 'var(--violet)',
                         background: 'transparent',
                         border: 0,
                         fontSize: 11,
@@ -549,8 +549,8 @@ const Social = () => {
                         style={{
                           padding: '8px 14px',
                           background: 'transparent',
-                          border: '1px solid #3A2E1C',
-                          color: '#A99C86',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-muted)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
                           letterSpacing: '0.12em',
@@ -566,8 +566,8 @@ const Social = () => {
                         onClick={() => handleFollow(u.id)}
                         style={{
                           padding: '8px 14px',
-                          background: '#F5C518',
-                          color: '#0B0906',
+                          background: 'var(--gold)',
+                          color: 'var(--bg)',
                           border: 0,
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
@@ -584,12 +584,12 @@ const Social = () => {
               ))}
             </div>
             {usersLoading && (
-              <div className="text-center py-6" style={{ color: '#A99C86' }}>
+              <div className="text-center py-6" style={{ color: 'var(--text-muted)' }}>
                 Recherche…
               </div>
             )}
             {!usersLoading && users.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#A99C86', fontSize: 14 }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: 14 }}>
                 {userSearch ? `Aucun gardien pour « ${userSearch} »` : 'Recherche un gardien à suivre'}
               </div>
             )}

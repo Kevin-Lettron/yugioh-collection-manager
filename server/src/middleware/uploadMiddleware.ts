@@ -203,15 +203,26 @@ export const uploadDeckCover = upload.single('cover_image');
 export const uploadCardImage = upload.single('card_image');
 
 // Ephemeral in-memory upload for card scanning (photo is never written to disk).
-// Limite a 8 MB : les photos iPhone/Android modernes font souvent 2-5 MB en
-// JPEG haute qualite. 8 MB donne de la marge sans permettre de bombers un
-// serveur avec des PNG geants (Claude Vision refuse au-dela de ~5 MB de base64
-// de toute facon).
+//
+// La limite Anthropic (~5 MB de base64) n'est PAS la contrainte : la photo passe
+// par preprocessCardImage (sharp) qui la redimensionne a 1600 px et la reencode
+// en JPEG 92 % avant l'appel a Claude. Quelle que soit la taille entrante, ce qui
+// part vers l'API fait quelques centaines de Ko. Cette limite ne protege donc que
+// la memoire du serveur pendant l'upload.
+//
+// 20 MB couvre les capteurs 50-200 Mpx des telephones recents en pleine qualite.
+//
+// /!\ nginx impose sa propre limite en amont (`client_max_body_size`, 10M dans
+// DEPLOYMENT-GUIDE.md). Au-dela, nginx renvoie un 413 AVANT que Node ne voie la
+// requete, et l'utilisateur n'a pas le message ci-dessous. Les deux valeurs
+// doivent etre relevees ensemble.
+const MAX_SCAN_BYTES = parseInt(process.env.MAX_SCAN_FILE_SIZE || String(20 * 1024 * 1024), 10);
+
 const scanUpload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
   limits: {
-    fileSize: 8 * 1024 * 1024, // 8 MB max for scan photos
+    fileSize: MAX_SCAN_BYTES,
   },
 });
 
@@ -225,7 +236,8 @@ export const uploadCardScan = (req: Request, res: Response, next: NextFunction):
     if (!err) return next();
     let message = 'Upload de la photo echoue';
     if (err.code === 'LIMIT_FILE_SIZE') {
-      message = 'Photo trop volumineuse (max 8 Mo). Reduisez la qualite dans les reglages appareil photo ou reprends une photo plus rapprochee.';
+      const maxMo = Math.round(MAX_SCAN_BYTES / (1024 * 1024));
+      message = `Photo trop volumineuse (max ${maxMo} Mo). Reduisez la qualite dans les reglages appareil photo ou reprends une photo plus rapprochee.`;
     } else if (err.message) {
       message = err.message;
     }

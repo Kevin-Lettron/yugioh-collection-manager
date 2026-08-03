@@ -244,13 +244,13 @@ const Collection = () => {
       trend: collectionStats && collectionStats.recent_added_30d > 0
         ? `+${collectionStats.recent_added_30d} ce mois`
         : '',
-      accent: '#F5C518',
+      accent: 'var(--gold)',
     },
     {
       label: 'Cartes uniques',
       value: uniqueCards.toLocaleString('fr-FR'),
       trend: '',
-      accent: '#F5EFE0',
+      accent: 'var(--text)',
     },
     {
       // Quand une rareté est filtrée, la stat suit le filtre (label + compte)
@@ -262,7 +262,7 @@ const Collection = () => {
           ).toLocaleString('fr-FR')
         : '—',
       trend: '',
-      accent: '#F5EFE0',
+      accent: 'var(--text)',
     },
     {
       label: 'Valeur estimée',
@@ -274,21 +274,21 @@ const Collection = () => {
           })
         : '—',
       trend: '',
-      accent: '#F5EFE0',
+      accent: 'var(--text)',
     },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
 
       <div style={{ position: 'relative', zIndex: 20, padding: '46px 40px 60px', maxWidth: 1440, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid #3A2E1C' }}>
+        <div style={{ position: 'relative', paddingBottom: 30, borderBottom: '1px solid var(--border)' }}>
           <GlyphPyramid
-            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: '#F5C518', opacity: 0.07 }}
+            style={{ position: 'absolute', right: 0, top: -16, width: 150, height: 150, color: 'var(--gold)', opacity: 0.07 }}
           />
           <div
             style={{
@@ -296,7 +296,7 @@ const Collection = () => {
               fontStyle: 'italic',
               fontSize: 12,
               letterSpacing: '0.32em',
-              color: '#F5C518',
+              color: 'var(--gold)',
               textTransform: 'uppercase',
             }}>
             — Vitrine du Millénium —
@@ -310,7 +310,7 @@ const Collection = () => {
               lineHeight: 0.96,
               letterSpacing: '0.02em',
               textTransform: 'uppercase',
-              background: 'linear-gradient(180deg,#F5EFE0 25%,#C29A0F 100%)',
+              background: 'linear-gradient(180deg,var(--text) 25%,var(--gold-dim) 100%)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
               color: 'transparent',
@@ -318,7 +318,7 @@ const Collection = () => {
             }}>
             Ma Collection
           </h1>
-          <p style={{ margin: '14px 0 0', maxWidth: 560, fontSize: 17, lineHeight: 1.5, color: '#A99C86' }}>
+          <p style={{ margin: '14px 0 0', maxWidth: 560, fontSize: 17, lineHeight: 1.5, color: 'var(--text-muted)' }}>
             {totalCards > 0
               ? `${totalCards.toLocaleString('fr-FR')} cartes rassemblées, cataloguées, prêtes à être invoquées. Ton grimoire vivant de duelliste.`
               : 'Ta vitrine est vide. Scanne, ajoute, catalogue.'}
@@ -331,8 +331,8 @@ const Collection = () => {
               display: 'grid',
               gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
               gap: 1,
-              background: '#3A2E1C',
-              border: '1px solid #3A2E1C',
+              background: 'var(--border)',
+              border: '1px solid var(--border)',
               clipPath: CUT_STATS,
             }}
             className="max-md:!grid-cols-2">
@@ -341,7 +341,7 @@ const Collection = () => {
                 key={s.label}
                 style={{
                   padding: '18px 22px',
-                  background: 'linear-gradient(135deg,#1A1510,#221B12)',
+                  background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
@@ -355,7 +355,7 @@ const Collection = () => {
                     left: 0,
                     width: 3,
                     height: '100%',
-                    background: '#F5C518',
+                    background: 'var(--gold)',
                     opacity: 0.55,
                   }}
                 />
@@ -364,7 +364,7 @@ const Collection = () => {
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 9,
                     letterSpacing: '0.2em',
-                    color: '#A99C86',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                   }}>
                   {s.label}
@@ -381,7 +381,7 @@ const Collection = () => {
                   {s.value}
                 </span>
                 {s.trend && (
-                  <span style={{ fontSize: 12, color: '#6E6250', letterSpacing: '0.04em' }}>{s.trend}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)', letterSpacing: '0.04em' }}>{s.trend}</span>
                 )}
               </div>
             ))}
@@ -401,7 +401,7 @@ const Collection = () => {
                 left: 16,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#F5C518',
+                color: 'var(--gold)',
                 pointerEvents: 'none',
               }}>
               <SearchIcon size={18} />
@@ -419,10 +419,10 @@ const Collection = () => {
                 width: '100%',
                 height: 52,
                 padding: '0 18px 0 46px',
-                background: '#1A1510',
-                border: '1px solid #3A2E1C',
-                borderLeft: '3px solid #F5C518',
-                color: '#F5EFE0',
+                background: 'var(--panel)',
+                border: '1px solid var(--border)',
+                borderLeft: '3px solid var(--gold)',
+                color: 'var(--text)',
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 16,
                 outline: 'none',
@@ -440,7 +440,7 @@ const Collection = () => {
               isolation: 'isolate',
               border: 0,
               background: 'transparent',
-              color: '#0B0906',
+              color: 'var(--bg)',
               fontFamily: "'Orbitron', sans-serif",
               fontWeight: 700,
               fontSize: 12,
@@ -455,7 +455,7 @@ const Collection = () => {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: '#A855F7',
+                background: 'var(--violet)',
                 transform: 'translate(5px,0)',
                 clipPath: CUT_BTN,
                 zIndex: -1,
@@ -465,7 +465,7 @@ const Collection = () => {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: '#F5C518',
+                background: 'var(--gold)',
                 clipPath: CUT_BTN,
                 zIndex: -1,
               }}
@@ -481,9 +481,9 @@ const Collection = () => {
             style={{
               height: 52,
               padding: '0 24px',
-              border: '1px solid #A855F7',
+              border: '1px solid var(--violet)',
               background: 'rgba(168,85,247,.12)',
-              color: '#C084FC',
+              color: 'var(--violet-soft)',
               fontFamily: "'Orbitron', sans-serif",
               fontWeight: 700,
               fontSize: 12,
@@ -510,9 +510,9 @@ const Collection = () => {
                 onClick={() => applyChip(i)}
                 style={{
                   padding: '9px 17px',
-                  border: `1px solid ${on ? '#F5C518' : '#3A2E1C'}`,
-                  background: on ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
-                  color: on ? '#0B0906' : '#A99C86',
+                  border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`,
+                  background: on ? 'linear-gradient(135deg,var(--gold),var(--gold-dim))' : 'var(--panel)',
+                  color: on ? 'var(--bg)' : 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   letterSpacing: '0.14em',
@@ -538,9 +538,9 @@ const Collection = () => {
               onClick={() => setRarityOpen((o) => !o)}
               style={{
                 padding: '9px 32px 9px 17px',
-                border: `1px solid ${rarity ? '#F5C518' : '#3A2E1C'}`,
-                background: rarity ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
-                color: rarity ? '#0B0906' : '#A99C86',
+                border: `1px solid ${rarity ? 'var(--gold)' : 'var(--border)'}`,
+                background: rarity ? 'linear-gradient(135deg,var(--gold),var(--gold-dim))' : 'var(--panel)',
+                color: rarity ? 'var(--bg)' : 'var(--text-muted)',
                 fontFamily: "'Orbitron', sans-serif",
                 fontSize: 11,
                 letterSpacing: '0.14em',
@@ -577,8 +577,8 @@ const Collection = () => {
                   minWidth: 220,
                   maxHeight: 320,
                   overflowY: 'auto',
-                  background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
-                  border: '1px solid #3A2E1C',
+                  background: 'linear-gradient(160deg,var(--panel),var(--bg))',
+                  border: '1px solid var(--border)',
                   boxShadow: '0 20px 40px rgba(0,0,0,.6),0 0 30px rgba(245,197,24,.1)',
                   clipPath: 'polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))',
                   zIndex: 60,
@@ -599,8 +599,8 @@ const Collection = () => {
                         padding: '10px 18px',
                         border: 0,
                         background: active ? 'rgba(245,197,24,.12)' : 'transparent',
-                        borderLeft: `3px solid ${active ? '#F5C518' : 'transparent'}`,
-                        color: active ? '#F5C518' : '#F5EFE0',
+                        borderLeft: `3px solid ${active ? 'var(--gold)' : 'transparent'}`,
+                        color: active ? 'var(--gold)' : 'var(--text)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 11,
                         letterSpacing: '0.12em',
@@ -624,7 +624,7 @@ const Collection = () => {
                         <span
                           style={{
                             fontSize: 10,
-                            color: active ? '#F5C518' : '#A99C86',
+                            color: active ? 'var(--gold)' : 'var(--text-muted)',
                             fontVariantNumeric: 'tabular-nums',
                             opacity: 0.85,
                           }}>
@@ -672,7 +672,7 @@ const Collection = () => {
                 height: 32,
                 borderRadius: '50%',
                 border: '3px solid rgba(245,197,24,.3)',
-                borderTopColor: '#F5C518',
+                borderTopColor: 'var(--gold)',
               }}
             />
           </div>
@@ -681,12 +681,12 @@ const Collection = () => {
 
         {!loading && cards.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#A99C86', fontSize: 16 }}>Aucune carte dans votre grimoire.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>Aucune carte dans votre grimoire.</p>
             <button
               onClick={() => setShowAddModal(true)}
               style={{
                 marginTop: 16,
-                color: '#F5C518',
+                color: 'var(--gold)',
                 background: 'transparent',
                 border: 0,
                 fontFamily: "'Orbitron', sans-serif",
@@ -720,8 +720,8 @@ const Collection = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'linear-gradient(160deg,#1A1510,#0D0A06)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(160deg,var(--panel),var(--bg))',
+              border: '1px solid var(--border)',
               boxShadow: '0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(245,197,24,.08)',
               padding: 32,
               maxWidth: 520,
@@ -738,7 +738,7 @@ const Collection = () => {
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                 }}>
                 Ajouter une carte
               </div>
@@ -747,7 +747,7 @@ const Collection = () => {
                 style={{
                   background: 'transparent',
                   border: 0,
-                  color: '#A99C86',
+                  color: 'var(--text-muted)',
                   fontSize: 24,
                   cursor: 'pointer',
                 }}>
@@ -763,12 +763,12 @@ const Collection = () => {
                   fontSize: 10,
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  color: '#A99C86',
+                  color: 'var(--text-muted)',
                   marginBottom: 6,
                 }}>
                 Code Set ou ID
               </label>
-              <p style={{ color: '#6E6250', fontSize: 12, marginBottom: 8 }}>
+              <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 8 }}>
                 Ex : LDK2-FRK40 (sous l'illustration) ou 46986414 (bas gauche).
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -781,10 +781,10 @@ const Collection = () => {
                   style={{
                     flex: 1,
                     padding: '10px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    borderLeft: '2px solid #F5C518',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    borderLeft: '2px solid var(--gold)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                     outline: 'none',
@@ -796,8 +796,8 @@ const Collection = () => {
                   disabled={searchLoading}
                   style={{
                     padding: '0 16px',
-                    background: '#F5C518',
-                    color: '#0B0906',
+                    background: 'var(--gold)',
+                    color: 'var(--bg)',
                     border: 0,
                     fontFamily: "'Orbitron', sans-serif",
                     fontWeight: 700,
@@ -811,7 +811,7 @@ const Collection = () => {
                 </button>
               </div>
               {searchError && (
-                <p style={{ color: '#FF4D6D', fontSize: 12, marginTop: 8 }}>{searchError}</p>
+                <p style={{ color: 'var(--danger)', fontSize: 12, marginTop: 8 }}>{searchError}</p>
               )}
             </div>
 
@@ -819,8 +819,8 @@ const Collection = () => {
               <div
                 style={{
                   padding: 12,
-                  background: '#14100A',
-                  border: '1px solid #3A2E1C',
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--border)',
                   display: 'flex',
                   gap: 12,
                   marginBottom: 20,
@@ -838,11 +838,11 @@ const Collection = () => {
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 13,
                       fontWeight: 700,
-                      color: '#F5EFE0',
+                      color: 'var(--text)',
                     }}>
                     {searchedCard.name}
                   </div>
-                  <div style={{ fontSize: 12, color: '#A99C86', marginTop: 4 }}>{searchedCard.type}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{searchedCard.type}</div>
                 </div>
               </div>
             )}
@@ -856,10 +856,10 @@ const Collection = () => {
                   placeholder="Code Set"
                   style={{
                     padding: '10px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    borderLeft: '2px solid #F5C518',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    borderLeft: '2px solid var(--gold)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                     outline: 'none',
@@ -877,9 +877,9 @@ const Collection = () => {
                     }}
                     style={{
                       padding: '10px 14px',
-                      background: '#14100A',
-                      border: '1px solid #3A2E1C',
-                      color: '#F5EFE0',
+                      background: 'var(--bg-elev)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
                       fontFamily: "'Rajdhani', sans-serif",
                       fontSize: 13,
                     }}>
@@ -896,9 +896,9 @@ const Collection = () => {
                   onChange={(e) => setSelectedRarity(e.target.value)}
                   style={{
                     padding: '10px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                   }}>
@@ -915,9 +915,9 @@ const Collection = () => {
                   onChange={(e) => setSelectedLanguage(e.target.value as CardLanguage)}
                   style={{
                     padding: '10px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                   }}>
@@ -933,9 +933,9 @@ const Collection = () => {
                   placeholder="Quantité"
                   style={{
                     padding: '10px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                   }}
@@ -947,9 +947,9 @@ const Collection = () => {
                     style={{
                       flex: 1,
                       height: 44,
-                      background: '#14100A',
-                      color: '#A99C86',
-                      border: '1px solid #3A2E1C',
+                      background: 'var(--bg-elev)',
+                      color: 'var(--text-muted)',
+                      border: '1px solid var(--border)',
                       fontFamily: "'Orbitron', sans-serif",
                       fontWeight: 600,
                       fontSize: 11,
@@ -966,8 +966,8 @@ const Collection = () => {
                     style={{
                       flex: 1,
                       height: 44,
-                      background: '#F5C518',
-                      color: '#0B0906',
+                      background: 'var(--gold)',
+                      color: 'var(--bg)',
                       border: 0,
                       fontFamily: "'Orbitron', sans-serif",
                       fontWeight: 700,
@@ -1017,19 +1017,19 @@ const Collection = () => {
                 style={{
                   width: 330,
                   height: 'auto',
-                  border: '1px solid #F5C518',
+                  border: '1px solid var(--gold)',
                   boxShadow: '0 40px 90px rgba(0,0,0,.75),0 0 60px rgba(245,197,24,.25)',
                 }}
               />
             )}
-            <div style={{ maxWidth: 420, color: '#F5EFE0' }}>
+            <div style={{ maxWidth: 420, color: 'var(--text)' }}>
               <div
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
                   fontStyle: 'italic',
                   fontSize: 11,
                   letterSpacing: '0.3em',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                   textTransform: 'uppercase',
                 }}>
                 — {selectedCardDetail.rarity} —
@@ -1041,7 +1041,7 @@ const Collection = () => {
                   fontSize: 30,
                   fontWeight: 900,
                   letterSpacing: '0.02em',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                   lineHeight: 1.05,
                 }}>
                 {selectedCardDetail.card.name}
@@ -1053,25 +1053,25 @@ const Collection = () => {
                   fontSize: 11,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: '#A99C86',
+                  color: 'var(--text-muted)',
                 }}>
                 {selectedCardDetail.set_code} · {selectedCardDetail.card.type}
               </div>
               {(selectedCardDetail.card.atk !== undefined || selectedCardDetail.card.def !== undefined) && (
                 <div style={{ marginTop: 22, display: 'flex', gap: 26, fontSize: 13 }}>
                   {selectedCardDetail.card.atk !== undefined && (
-                    <span style={{ color: '#A99C86' }}>ATK <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.atk}</span></span>
+                    <span style={{ color: 'var(--text-muted)' }}>ATK <span style={{ color: 'var(--text)' }}>{selectedCardDetail.card.atk}</span></span>
                   )}
                   {selectedCardDetail.card.def !== undefined && (
-                    <span style={{ color: '#A99C86' }}>DEF <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.def}</span></span>
+                    <span style={{ color: 'var(--text-muted)' }}>DEF <span style={{ color: 'var(--text)' }}>{selectedCardDetail.card.def}</span></span>
                   )}
                   {selectedCardDetail.card.level !== undefined && (
-                    <span style={{ color: '#A99C86' }}>NIV <span style={{ color: '#F5EFE0' }}>{selectedCardDetail.card.level}</span></span>
+                    <span style={{ color: 'var(--text-muted)' }}>NIV <span style={{ color: 'var(--text)' }}>{selectedCardDetail.card.level}</span></span>
                   )}
                 </div>
               )}
               {selectedCardDetail.card.description && (
-                <p style={{ marginTop: 22, fontSize: 14, lineHeight: 1.6, color: '#A99C86' }}>
+                <p style={{ marginTop: 22, fontSize: 14, lineHeight: 1.6, color: 'var(--text-muted)' }}>
                   {selectedCardDetail.card.description}
                 </p>
               )}
@@ -1084,8 +1084,8 @@ const Collection = () => {
                   style={{
                     padding: '10px 16px',
                     background: 'transparent',
-                    border: '1px solid #FF4D6D',
-                    color: '#FF4D6D',
+                    border: '1px solid var(--danger)',
+                    color: 'var(--danger)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     letterSpacing: '0.12em',
@@ -1099,8 +1099,8 @@ const Collection = () => {
                   onClick={() => setSelectedCardDetail(null)}
                   style={{
                     padding: '10px 16px',
-                    background: '#F5C518',
-                    color: '#0B0906',
+                    background: 'var(--gold)',
+                    color: 'var(--bg)',
                     border: 0,
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,

@@ -9,6 +9,8 @@ import AppBackground from '../components/decor/AppBackground';
 import CornerOrnaments from '../components/decor/CornerOrnaments';
 import CardTile from '../components/decor/CardTile';
 import { CardIcon } from '../components/decor/Icons';
+import DrawOddsPanel from '../components/DrawOddsPanel';
+import ZoneViewer, { type ZoneKey } from '../components/ZoneViewer';
 
 const CUT_BTN = 'polygon(0 0,100% 0,100% 100%,95% 100%,95% 90%,85% 90%,85% 100%,8% 100%,0 70%)';
 const CUT_SM = 'polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)';
@@ -23,6 +25,25 @@ const CUT_JAUGE = 'polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%
  * - Grimoire : jauge répartition + 3 colonnes Deck principal / Extra / Side avec rows biseautés.
  * Sidebar sticky : like/share/copier + deckMeta (« À venir » quand pas de data) + comments.
  */
+
+/** Zone d'information du plateau, cliquable pour inspecter son contenu. */
+function zoneButtonStyle(borderColor: string, textColor: string): React.CSSProperties {
+  return {
+    width: 76,
+    height: 46,
+    border: `1px dashed ${borderColor}`,
+    background: 'transparent',
+    display: 'grid',
+    placeItems: 'center',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: 9,
+    color: textColor,
+    letterSpacing: '0.1em',
+    cursor: 'pointer',
+    padding: 0,
+  };
+}
+
 const DeckView = () => {
   const { deckId } = useParams<{ deckId: string }>();
   const { user } = useAuth();
@@ -53,6 +74,8 @@ const DeckView = () => {
   const [boardField, setBoardField] = useState<BoardCard | null>(null);
   /** Si actif, la prochaine carte posée le sera face verso. Reset après pose. */
   const [nextFaceDown, setNextFaceDown] = useState(false);
+  /** Zone dont on inspecte le contenu (Extra, Cimetière, Bannis). */
+  const [openZone, setOpenZone] = useState<ZoneKey | null>(null);
 
   /** Renvoie 'monster' | 'spelltrap' | 'field' selon le type de la carte. */
   const zoneKindOf = (dc: DeckCard | null | undefined): 'monster' | 'spelltrap' | 'field' | null => {
@@ -326,7 +349,7 @@ const DeckView = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0B0906' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
         <div
           className="animate-spin"
           style={{
@@ -334,7 +357,7 @@ const DeckView = () => {
             height: 40,
             borderRadius: '50%',
             border: '3px solid rgba(245,197,24,.3)',
-            borderTopColor: '#F5C518',
+            borderTopColor: 'var(--gold)',
           }}
         />
       </div>
@@ -368,7 +391,7 @@ const DeckView = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: '#0B0906' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />
@@ -397,7 +420,7 @@ const DeckView = () => {
                     fontStyle: 'italic',
                     fontSize: 11,
                     letterSpacing: '0.3em',
-                    color: '#F5C518',
+                    color: 'var(--gold)',
                     textTransform: 'uppercase',
                   }}>
                   — Arène · variante A —
@@ -410,20 +433,20 @@ const DeckView = () => {
                     fontWeight: 900,
                     letterSpacing: '0.02em',
                     textTransform: 'uppercase',
-                    color: '#F5EFE0',
+                    color: 'var(--text)',
                     lineHeight: 1,
                   }}>
                   {deck.name}
                 </h1>
-                <div style={{ marginTop: 8, fontSize: 15, color: '#A99C86' }}>
+                <div style={{ marginTop: 8, fontSize: 15, color: 'var(--text-muted)' }}>
                   par{' '}
                   <Link
                     to={`/user/${deck.user_id}`}
-                    style={{ color: '#A855F7', textDecoration: 'none' }}>
+                    style={{ color: 'var(--violet)', textDecoration: 'none' }}>
                     @{deck.user?.username}
                   </Link>{' '}
                   ·{' '}
-                  <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>
                     {mainCount} · {extraCount} · {sideCount}
                   </span>
                 </div>
@@ -433,9 +456,9 @@ const DeckView = () => {
                 style={{
                   height: 44,
                   padding: '0 20px',
-                  border: '1px solid #3A2E1C',
-                  background: '#14100A',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elev)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   fontWeight: 700,
@@ -454,8 +477,8 @@ const DeckView = () => {
                 marginTop: 26,
                 position: 'relative',
                 padding: '44px 40px 34px',
-                background: 'linear-gradient(180deg,#14100A,#0B0906)',
-                border: '1px solid #3A2E1C',
+                background: 'linear-gradient(180deg,var(--bg-elev),var(--bg))',
+                border: '1px solid var(--border)',
                 overflow: 'hidden',
                 clipPath: CUT_ARENA,
               }}>
@@ -493,7 +516,7 @@ const DeckView = () => {
                       fontStyle: 'italic',
                       fontSize: 13,
                       letterSpacing: '0.3em',
-                      color: '#F5C518',
+                      color: 'var(--gold)',
                       textTransform: 'uppercase',
                     }}>
                     — Test hand solo —
@@ -506,12 +529,12 @@ const DeckView = () => {
                       fontWeight: 900,
                       letterSpacing: '0.03em',
                       textTransform: 'uppercase',
-                      color: '#F5EFE0',
+                      color: 'var(--text)',
                       textAlign: 'center',
                     }}>
                     Piocher pour tester ton ouverture
                   </h2>
-                  <p style={{ margin: 0, fontSize: 13, color: '#A99C86', textAlign: 'center', maxWidth: 460 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 460 }}>
                     Simule une main d'ouverture pour évaluer la variance de ton deck. P1 pioche 5 cartes,
                     P2 pioche 6 (5 + draw du tour 1).
                   </p>
@@ -525,7 +548,7 @@ const DeckView = () => {
                         isolation: 'isolate',
                         border: 0,
                         background: 'transparent',
-                        color: '#0B0906',
+                        color: 'var(--bg)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontWeight: 700,
                         fontSize: 12,
@@ -537,7 +560,7 @@ const DeckView = () => {
                         style={{
                           position: 'absolute',
                           inset: 0,
-                          background: '#A855F7',
+                          background: 'var(--violet)',
                           transform: 'translate(5px,0)',
                           clipPath: CUT_BTN,
                           zIndex: -1,
@@ -547,7 +570,7 @@ const DeckView = () => {
                         style={{
                           position: 'absolute',
                           inset: 0,
-                          background: '#F5C518',
+                          background: 'var(--gold)',
                           clipPath: CUT_BTN,
                           zIndex: -1,
                         }}
@@ -559,9 +582,9 @@ const DeckView = () => {
                       style={{
                         height: 52,
                         padding: '0 26px',
-                        border: '1px solid #A855F7',
+                        border: '1px solid var(--violet)',
                         background: 'rgba(168,85,247,.12)',
-                        color: '#A855F7',
+                        color: 'var(--violet)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontWeight: 700,
                         fontSize: 12,
@@ -590,8 +613,8 @@ const DeckView = () => {
                       <span
                         style={{
                           padding: '6px 14px',
-                          background: playMode === 'first' ? '#F5C518' : '#A855F7',
-                          color: '#0B0906',
+                          background: playMode === 'first' ? 'var(--gold)' : 'var(--violet)',
+                          color: 'var(--bg)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
                           fontWeight: 700,
@@ -601,13 +624,13 @@ const DeckView = () => {
                         }}>
                         {playMode === 'first' ? 'Joueur 1' : 'Joueur 2'}
                       </span>
-                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: '#A99C86' }}>
-                        Main <strong style={{ color: '#F5EFE0' }}>{handCards.length}</strong> · Deck{' '}
-                        <strong style={{ color: '#F5C518', fontVariantNumeric: 'tabular-nums' }}>{deckPile.length}</strong> ·{' '}
-                        Cimetière <strong style={{ color: '#FF2E88' }}>{graveyard.length}</strong>
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: 'var(--text-muted)' }}>
+                        Main <strong style={{ color: 'var(--text)' }}>{handCards.length}</strong> · Deck{' '}
+                        <strong style={{ color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>{deckPile.length}</strong> ·{' '}
+                        Cimetière <strong style={{ color: 'var(--magenta)' }}>{graveyard.length}</strong>
                         {banished.length > 0 && (
                           <>
-                            {' '}· Bannies <strong style={{ color: '#22D3EE' }}>{banished.length}</strong>
+                            {' '}· Bannies <strong style={{ color: 'var(--cyan)' }}>{banished.length}</strong>
                           </>
                         )}
                       </span>
@@ -619,9 +642,9 @@ const DeckView = () => {
                         style={{
                           height: 38,
                           padding: '0 16px',
-                          border: '1px solid #F5C518',
-                          background: deckPile.length ? 'linear-gradient(135deg,#F5C518,#C29A0F)' : '#1A1510',
-                          color: deckPile.length ? '#0B0906' : '#6B5A3E',
+                          border: '1px solid var(--gold)',
+                          background: deckPile.length ? 'linear-gradient(135deg,var(--gold),var(--gold-dim))' : 'var(--panel)',
+                          color: deckPile.length ? 'var(--bg)' : 'var(--text-dim)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
                           fontWeight: 700,
@@ -637,9 +660,9 @@ const DeckView = () => {
                         style={{
                           height: 38,
                           padding: '0 16px',
-                          border: '1px solid #A855F7',
+                          border: '1px solid var(--violet)',
                           background: 'transparent',
-                          color: '#A855F7',
+                          color: 'var(--violet)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
                           fontWeight: 700,
@@ -655,9 +678,9 @@ const DeckView = () => {
                         style={{
                           height: 38,
                           padding: '0 16px',
-                          border: '1px solid #3A2E1C',
+                          border: '1px solid var(--border)',
                           background: 'transparent',
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 10,
                           fontWeight: 700,
@@ -716,7 +739,7 @@ const DeckView = () => {
                                 ? 'pointer'
                                 : 'default',
                             background: occupied
-                              ? 'linear-gradient(150deg,#2A2216,#14100A)'
+                              ? 'linear-gradient(150deg,var(--border-soft),var(--bg-elev))'
                               : isDropTarget
                               ? `${accent.replace(/,\s*\.[0-9]+\)/, ',.15)')}`
                               : 'rgba(255,255,255,.02)',
@@ -741,7 +764,7 @@ const DeckView = () => {
                                   width: '100%',
                                   height: '100%',
                                   background:
-                                    'radial-gradient(circle at 50% 40%,#5A4D2E 0%,#2A2216 60%,#14100A 100%)',
+                                    'radial-gradient(circle at 50% 40%,var(--border-soft) 0%,var(--border-soft) 60%,var(--bg-elev) 100%)',
                                   display: 'grid',
                                   placeItems: 'center',
                                   position: 'relative',
@@ -761,14 +784,14 @@ const DeckView = () => {
                                     aspectRatio: '1',
                                     borderRadius: '50%',
                                     background:
-                                      'radial-gradient(circle,#F5C518 0%,#C29A0F 55%,rgba(194,154,15,0) 75%)',
+                                      'radial-gradient(circle,var(--gold) 0%,var(--gold-dim) 55%,rgba(194,154,15,0) 75%)',
                                     display: 'grid',
                                     placeItems: 'center',
                                     fontFamily: "'Cormorant Garamond', serif",
                                     fontStyle: 'italic',
                                     fontSize: h * 0.28,
                                     fontWeight: 700,
-                                    color: '#0B0906',
+                                    color: 'var(--bg)',
                                     textShadow: '0 1px 2px rgba(0,0,0,.4)',
                                     position: 'relative',
                                   }}>
@@ -782,7 +805,7 @@ const DeckView = () => {
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                             ) : (
-                              <span style={{ fontSize: 9, color: '#F5EFE0', padding: 4 }}>
+                              <span style={{ fontSize: 9, color: 'var(--text)', padding: 4 }}>
                                 {occupied.card.card?.name}
                               </span>
                             )
@@ -792,7 +815,7 @@ const DeckView = () => {
                                 fontFamily: "'Orbitron', sans-serif",
                                 fontSize: 9,
                                 letterSpacing: '0.12em',
-                                color: isDropTarget ? '#F5EFE0' : '#A99C86',
+                                color: isDropTarget ? 'var(--text)' : 'var(--text-muted)',
                                 opacity: isDropTarget ? 0.9 : 0.6,
                                 textTransform: 'uppercase',
                               }}>
@@ -815,7 +838,7 @@ const DeckView = () => {
                                 height: 16,
                                 border: '1px solid rgba(255,46,136,.5)',
                                 background: 'rgba(11,9,6,.85)',
-                                color: '#FF2E88',
+                                color: 'var(--magenta)',
                                 fontFamily: "'Orbitron', sans-serif",
                                 fontSize: 10,
                                 fontWeight: 700,
@@ -865,37 +888,28 @@ const DeckView = () => {
                             alignItems: 'center',
                             marginTop: 6,
                           }}>
-                          <div
-                            style={{
-                              width: 76,
-                              height: 46,
-                              border: '1px dashed rgba(34,211,238,.5)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontFamily: "'Orbitron', sans-serif",
-                              fontSize: 9,
-                              color: '#22D3EE',
-                              letterSpacing: '0.1em',
-                            }}
-                            title={`Extra deck : ${extraCount} cartes (non cliquable en test hand)`}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('extra')}
+                            style={zoneButtonStyle('rgba(34,211,238,.5)', 'var(--cyan)')}
+                            title={`Extra Deck : ${extraCount} cartes — cliquer pour voir`}>
                             EXTRA {extraCount}
-                          </div>
+                          </button>
                           {renderZone('field', 0, boardField, 'rgba(245,197,24,.55)', 'Terrain', 104, 44)}
-                          <div
-                            style={{
-                              width: 76,
-                              height: 46,
-                              border: '1px dashed rgba(255,46,136,.45)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontFamily: "'Orbitron', sans-serif",
-                              fontSize: 9,
-                              color: '#FF2E88',
-                              letterSpacing: '0.1em',
-                            }}
-                            title={`Cimetière : ${graveyard.length} cartes`}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('banished')}
+                            style={zoneButtonStyle('rgba(168,85,247,.45)', 'var(--violet)')}
+                            title={`Bannis : ${banished.length} cartes — cliquer pour voir`}>
+                            BANNIS {banished.length}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOpenZone('graveyard')}
+                            style={zoneButtonStyle('rgba(255,46,136,.45)', 'var(--magenta)')}
+                            title={`Cimetière : ${graveyard.length} cartes — cliquer pour voir`}>
                             CIMETIÈRE {graveyard.length}
-                          </div>
+                          </button>
                         </div>
                       </div>
                     );
@@ -908,7 +922,7 @@ const DeckView = () => {
                         padding: '8px 14px',
                         background: 'rgba(245,197,24,.08)',
                         border: '1px solid rgba(245,197,24,.3)',
-                        color: '#F5C518',
+                        color: 'var(--gold)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 10,
                         letterSpacing: '0.14em',
@@ -927,9 +941,9 @@ const DeckView = () => {
                         title={nextFaceDown ? 'La carte sera posée face verso' : 'La carte sera posée face visible'}
                         style={{
                           padding: '4px 12px',
-                          border: `1px solid ${nextFaceDown ? '#F5C518' : '#3A2E1C'}`,
+                          border: `1px solid ${nextFaceDown ? 'var(--gold)' : 'var(--border)'}`,
                           background: nextFaceDown ? 'rgba(245,197,24,.15)' : 'transparent',
-                          color: nextFaceDown ? '#F5C518' : '#A99C86',
+                          color: nextFaceDown ? 'var(--gold)' : 'var(--text-muted)',
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 9,
                           letterSpacing: '0.12em',
@@ -955,15 +969,15 @@ const DeckView = () => {
                       const isSelected = selectedHandIdx === i;
                       const kind = zoneKindOf(dc);
                       const accent =
-                        kind === 'monster' ? '#F5C518' : kind === 'field' ? '#22D3EE' : kind === 'spelltrap' ? '#A855F7' : '#3A2E1C';
+                        kind === 'monster' ? 'var(--gold)' : kind === 'field' ? 'var(--cyan)' : kind === 'spelltrap' ? 'var(--violet)' : 'var(--border)';
                       return (
                         <div key={`${dc.card_id}-${i}`} style={{ position: 'relative', width: 130, flex: 'none' }}>
                           <div
                             onClick={() => setSelectedHandIdx(isSelected ? null : i)}
                             style={{
                               aspectRatio: '59 / 86',
-                              background: 'linear-gradient(135deg,#221B12,#14100A)',
-                              border: `${isSelected ? 2 : 1}px solid ${isSelected ? accent : '#3A2E1C'}`,
+                              background: 'linear-gradient(135deg,var(--panel-2),var(--bg-elev))',
+                              border: `${isSelected ? 2 : 1}px solid ${isSelected ? accent : 'var(--border)'}`,
                               overflow: 'hidden',
                               cursor: 'pointer',
                               transform: isSelected ? 'translateY(-8px)' : 'translateY(0)',
@@ -980,7 +994,7 @@ const DeckView = () => {
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                             ) : (
-                              <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#A99C86' }}>
+                              <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
                                 {dc.card?.name}
                               </div>
                             )}
@@ -994,7 +1008,7 @@ const DeckView = () => {
                                 padding: '4px 0',
                                 border: '1px solid rgba(255,46,136,.5)',
                                 background: 'transparent',
-                                color: '#FF2E88',
+                                color: 'var(--magenta)',
                                 fontFamily: "'Orbitron', sans-serif",
                                 fontSize: 8,
                                 letterSpacing: '0.1em',
@@ -1011,7 +1025,7 @@ const DeckView = () => {
                                 padding: '4px 0',
                                 border: '1px solid rgba(34,211,238,.5)',
                                 background: 'transparent',
-                                color: '#22D3EE',
+                                color: 'var(--cyan)',
                                 fontFamily: "'Orbitron', sans-serif",
                                 fontSize: 8,
                                 letterSpacing: '0.1em',
@@ -1026,7 +1040,7 @@ const DeckView = () => {
                               marginTop: 5,
                               fontFamily: "'Orbitron', sans-serif",
                               fontSize: 9,
-                              color: isSelected ? accent : '#A99C86',
+                              color: isSelected ? accent : 'var(--text-muted)',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -1044,7 +1058,7 @@ const DeckView = () => {
                           width: '100%',
                           padding: 30,
                           textAlign: 'center',
-                          color: '#A99C86',
+                          color: 'var(--text-muted)',
                           fontFamily: "'Rajdhani',sans-serif",
                           fontSize: 14,
                         }}>
@@ -1071,7 +1085,7 @@ const DeckView = () => {
                           fontSize: 10,
                           letterSpacing: '0.14em',
                           textTransform: 'uppercase',
-                          color: '#FF2E88',
+                          color: 'var(--magenta)',
                         }}>
                         Cimetière ({graveyard.length})
                       </span>
@@ -1082,14 +1096,14 @@ const DeckView = () => {
                             padding: '3px 8px',
                             background: 'rgba(11,9,6,.7)',
                             border: '1px solid rgba(255,46,136,.3)',
-                            color: '#A99C86',
+                            color: 'var(--text-muted)',
                             fontSize: 11,
                           }}>
                           {dc.card?.name}
                         </span>
                       ))}
                       {graveyard.length > 6 && (
-                        <span style={{ color: '#A99C86', fontSize: 11 }}>… +{graveyard.length - 6}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>… +{graveyard.length - 6}</span>
                       )}
                     </div>
                   )}
@@ -1105,7 +1119,7 @@ const DeckView = () => {
                   fontSize: 12,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                 }}>
                 Cartes clés
               </span>
@@ -1113,7 +1127,7 @@ const DeckView = () => {
                 style={{
                   flex: 1,
                   height: 1,
-                  background: 'linear-gradient(90deg,#3A2E1C,transparent)',
+                  background: 'linear-gradient(90deg,var(--border),transparent)',
                 }}
               />
             </div>
@@ -1142,8 +1156,8 @@ const DeckView = () => {
             <div
               style={{
                 padding: 22,
-                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                border: '1px solid #3A2E1C',
+                background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                border: '1px solid var(--border)',
                 clipPath: CUT_PANEL,
               }}>
               <div style={{ display: 'flex', gap: 10 }}>
@@ -1156,9 +1170,9 @@ const DeckView = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    border: `1px solid ${isLiked ? '#FF2E88' : '#3A2E1C'}`,
-                    background: isLiked ? 'rgba(255,46,136,.16)' : '#14100A',
-                    color: isLiked ? '#FF2E88' : '#A99C86',
+                    border: `1px solid ${isLiked ? 'var(--magenta)' : 'var(--border)'}`,
+                    background: isLiked ? 'rgba(255,46,136,.16)' : 'var(--bg-elev)',
+                    color: isLiked ? 'var(--magenta)' : 'var(--text-muted)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     fontWeight: 700,
@@ -1178,9 +1192,9 @@ const DeckView = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    border: '1px solid #3A2E1C',
-                    background: '#14100A',
-                    color: '#A99C86',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-elev)',
+                    color: 'var(--text-muted)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontSize: 11,
                     fontWeight: 700,
@@ -1202,7 +1216,7 @@ const DeckView = () => {
                     isolation: 'isolate',
                     border: 0,
                     background: 'transparent',
-                    color: '#0B0906',
+                    color: 'var(--bg)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontWeight: 700,
                     fontSize: 12,
@@ -1214,7 +1228,7 @@ const DeckView = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#A855F7',
+                      background: 'var(--violet)',
                       transform: 'translate(5px,0)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
@@ -1224,7 +1238,7 @@ const DeckView = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#F5C518',
+                      background: 'var(--gold)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
                     }}
@@ -1242,7 +1256,7 @@ const DeckView = () => {
                     isolation: 'isolate',
                     border: 0,
                     background: 'transparent',
-                    color: '#0B0906',
+                    color: 'var(--bg)',
                     fontFamily: "'Orbitron', sans-serif",
                     fontWeight: 700,
                     fontSize: 12,
@@ -1254,7 +1268,7 @@ const DeckView = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#A855F7',
+                      background: 'var(--violet)',
                       transform: 'translate(5px,0)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
@@ -1264,7 +1278,7 @@ const DeckView = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: '#F5C518',
+                      background: 'var(--gold)',
                       clipPath: CUT_BTN,
                       zIndex: -1,
                     }}
@@ -1281,14 +1295,14 @@ const DeckView = () => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       fontSize: 14,
-                      color: '#A99C86',
+                      color: 'var(--text-muted)',
                       paddingBottom: 8,
                       borderBottom: '1px solid rgba(58,46,28,.6)',
                     }}>
                     <span>{m.label}</span>
                     <span
                       style={{
-                        color: '#F5EFE0',
+                        color: 'var(--text)',
                         fontFamily: "'Orbitron', sans-serif",
                         fontSize: 12,
                         fontVariantNumeric: 'tabular-nums',
@@ -1304,8 +1318,8 @@ const DeckView = () => {
             <div
               style={{
                 padding: 22,
-                background: 'linear-gradient(150deg,#1A1510,#0F0C07)',
-                border: '1px solid #3A2E1C',
+                background: 'linear-gradient(150deg,var(--panel),var(--bg-sunken))',
+                border: '1px solid var(--border)',
                 clipPath: CUT_PANEL,
               }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1315,7 +1329,7 @@ const DeckView = () => {
                     fontSize: 11,
                     letterSpacing: '0.16em',
                     textTransform: 'uppercase',
-                    color: '#F5C518',
+                    color: 'var(--gold)',
                   }}>
                   Commentaires {comments.length}
                 </span>
@@ -1323,7 +1337,7 @@ const DeckView = () => {
                   style={{
                     flex: 1,
                     height: 1,
-                    background: 'linear-gradient(90deg,#3A2E1C,transparent)',
+                    background: 'linear-gradient(90deg,var(--border),transparent)',
                   }}
                 />
               </div>
@@ -1335,8 +1349,8 @@ const DeckView = () => {
                         width: 32,
                         height: 32,
                         flex: 'none',
-                        background: 'linear-gradient(135deg,#A855F7,#C29A0F)',
-                        color: '#0B0906',
+                        background: 'linear-gradient(135deg,var(--violet),var(--gold-dim))',
+                        color: 'var(--bg)',
                         display: 'grid',
                         placeItems: 'center',
                         fontFamily: "'Orbitron', sans-serif",
@@ -1353,15 +1367,15 @@ const DeckView = () => {
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 10,
                             letterSpacing: '0.08em',
-                            color: '#C084FC',
+                            color: 'var(--violet-soft)',
                           }}>
                           @{c.user?.username}
                         </span>
-                        <span style={{ fontSize: 11, color: '#6E6250' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
                           {new Date(c.created_at).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
-                      <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: '#A99C86' }}>
+                      <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--text-muted)' }}>
                         {c.content}
                       </p>
                       <div style={{ marginTop: 6 }}>
@@ -1370,7 +1384,7 @@ const DeckView = () => {
                           style={{
                             background: 'transparent',
                             border: 0,
-                            color: '#A855F7',
+                            color: 'var(--violet)',
                             fontSize: 11,
                             cursor: 'pointer',
                             padding: 0,
@@ -1386,9 +1400,9 @@ const DeckView = () => {
                             style={{
                               width: '100%',
                               padding: 8,
-                              background: '#14100A',
-                              border: '1px solid #3A2E1C',
-                              color: '#F5EFE0',
+                              background: 'var(--bg-elev)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
                               fontFamily: "'Rajdhani', sans-serif",
                               fontSize: 13,
                               minHeight: 60,
@@ -1401,7 +1415,7 @@ const DeckView = () => {
                             style={{
                               marginTop: 6,
                               padding: '6px 12px',
-                              background: '#A855F7',
+                              background: 'var(--violet)',
                               color: '#fff',
                               border: 0,
                               fontFamily: "'Orbitron', sans-serif",
@@ -1419,7 +1433,7 @@ const DeckView = () => {
                   </div>
                 ))}
                 {comments.length === 0 && (
-                  <p style={{ color: '#6E6250', fontSize: 13, textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center' }}>
                     Aucune offrande encore. Sois le premier.
                   </p>
                 )}
@@ -1433,10 +1447,10 @@ const DeckView = () => {
                     marginTop: 16,
                     width: '100%',
                     padding: '12px 14px',
-                    background: '#14100A',
-                    border: '1px solid #3A2E1C',
-                    borderLeft: '2px solid #A855F7',
-                    color: '#F5EFE0',
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--border)',
+                    borderLeft: '2px solid var(--violet)',
+                    color: 'var(--text)',
                     fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 14,
                     outline: 'none',
@@ -1444,6 +1458,14 @@ const DeckView = () => {
                 />
               </form>
             </div>
+
+            {/* Probabilités de pioche — sous les commentaires, colonne de droite */}
+            <DrawOddsPanel
+              mainDeck={deck.main_deck || []}
+              deckPile={deckPile}
+              handCards={handCards}
+              active={playMode !== null}
+            />
           </div>
         </div>
       ) : (
@@ -1464,7 +1486,7 @@ const DeckView = () => {
                   fontStyle: 'italic',
                   fontSize: 11,
                   letterSpacing: '0.3em',
-                  color: '#F5C518',
+                  color: 'var(--gold)',
                   textTransform: 'uppercase',
                 }}>
                 — Grimoire · variante B —
@@ -1477,18 +1499,18 @@ const DeckView = () => {
                   fontWeight: 900,
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
-                  color: '#F5EFE0',
+                  color: 'var(--text)',
                   lineHeight: 1,
                 }}>
                 {deck.name}
               </h1>
-              <div style={{ marginTop: 8, fontSize: 15, color: '#A99C86' }}>
+              <div style={{ marginTop: 8, fontSize: 15, color: 'var(--text-muted)' }}>
                 par{' '}
-                <Link to={`/user/${deck.user_id}`} style={{ color: '#A855F7', textDecoration: 'none' }}>
+                <Link to={`/user/${deck.user_id}`} style={{ color: 'var(--violet)', textDecoration: 'none' }}>
                   @{deck.user?.username}
                 </Link>{' '}
                 ·{' '}
-                <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: '#F5C518' }}>
+                <span style={{ fontFamily: "'Orbitron', sans-serif", fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>
                   {mainCount} · {extraCount} · {sideCount}
                 </span>
               </div>
@@ -1502,9 +1524,9 @@ const DeckView = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  border: `1px solid ${isLiked ? '#FF2E88' : '#3A2E1C'}`,
-                  background: isLiked ? 'rgba(255,46,136,.16)' : '#14100A',
-                  color: isLiked ? '#FF2E88' : '#A99C86',
+                  border: `1px solid ${isLiked ? 'var(--magenta)' : 'var(--border)'}`,
+                  background: isLiked ? 'rgba(255,46,136,.16)' : 'var(--bg-elev)',
+                  color: isLiked ? 'var(--magenta)' : 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   fontWeight: 700,
@@ -1519,9 +1541,9 @@ const DeckView = () => {
                 style={{
                   height: 44,
                   padding: '0 20px',
-                  border: '1px solid #3A2E1C',
-                  background: '#14100A',
-                  color: '#A99C86',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elev)',
+                  color: 'var(--text-muted)',
                   fontFamily: "'Orbitron', sans-serif",
                   fontSize: 11,
                   fontWeight: 700,
@@ -1540,8 +1562,8 @@ const DeckView = () => {
             style={{
               marginTop: 24,
               padding: '18px 22px',
-              background: 'linear-gradient(135deg,#1A1510,#221B12)',
-              border: '1px solid #3A2E1C',
+              background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
+              border: '1px solid var(--border)',
               clipPath: CUT_JAUGE,
             }}>
             <div
@@ -1551,43 +1573,43 @@ const DeckView = () => {
                 fontFamily: "'Orbitron', sans-serif",
                 fontSize: 10,
                 letterSpacing: '0.18em',
-                color: '#A99C86',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
               }}>
               <span>Répartition du deck principal</span>
-              <span style={{ color: '#F5C518', fontVariantNumeric: 'tabular-nums' }}>{mainCount} / 40</span>
+              <span style={{ color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>{mainCount} / 40</span>
             </div>
             <div style={{ marginTop: 10, height: 10, display: 'flex', gap: 2 }}>
               <div
                 style={{
                   flex: stats?.main_by_type.monster ?? 22,
-                  background: 'linear-gradient(90deg,#C29A0F,#F5C518)',
+                  background: 'linear-gradient(90deg,var(--gold-dim),var(--gold))',
                 }}
               />
               <div
                 style={{
                   flex: stats?.main_by_type.spell ?? 12,
-                  background: 'linear-gradient(90deg,#7C3AED,#A855F7)',
+                  background: 'linear-gradient(90deg,var(--violet),var(--violet))',
                 }}
               />
               <div
                 style={{
                   flex: stats?.main_by_type.trap ?? 6,
-                  background: 'linear-gradient(90deg,#0E7490,#22D3EE)',
+                  background: 'linear-gradient(90deg,var(--cyan),var(--cyan))',
                 }}
               />
             </div>
-            <div style={{ marginTop: 10, display: 'flex', gap: 20, fontSize: 13, color: '#A99C86', flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 10, display: 'flex', gap: 20, fontSize: 13, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 9, height: 9, background: '#F5C518' }} />
+                <span style={{ width: 9, height: 9, background: 'var(--gold)' }} />
                 Monstres {stats ? stats.main_by_type.monster : '—'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 9, height: 9, background: '#A855F7' }} />
+                <span style={{ width: 9, height: 9, background: 'var(--violet)' }} />
                 Magies {stats ? stats.main_by_type.spell : '—'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 9, height: 9, background: '#22D3EE' }} />
+                <span style={{ width: 9, height: 9, background: 'var(--cyan)' }} />
                 Pièges {stats ? stats.main_by_type.trap : '—'}
               </span>
             </div>
@@ -1616,7 +1638,7 @@ const DeckView = () => {
                       fontSize: 12,
                       letterSpacing: '0.18em',
                       textTransform: 'uppercase',
-                      color: '#F5C518',
+                      color: 'var(--gold)',
                     }}>
                     {col.title}
                   </span>
@@ -1624,7 +1646,7 @@ const DeckView = () => {
                     style={{
                       fontFamily: "'Orbitron', sans-serif",
                       fontSize: 12,
-                      color: '#A99C86',
+                      color: 'var(--text-muted)',
                       fontVariantNumeric: 'tabular-nums',
                     }}>
                     {col.count}
@@ -1633,13 +1655,13 @@ const DeckView = () => {
                     style={{
                       flex: 1,
                       height: 1,
-                      background: 'linear-gradient(90deg,#3A2E1C,transparent)',
+                      background: 'linear-gradient(90deg,var(--border),transparent)',
                     }}
                   />
                 </div>
                 <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {col.rows.length === 0 && (
-                    <div style={{ padding: 20, color: '#6E6250', fontSize: 13, textAlign: 'center' }}>
+                    <div style={{ padding: 20, color: 'var(--text-dim)', fontSize: 13, textAlign: 'center' }}>
                       {col.title === 'Side' ? '— À venir —' : 'Aucune carte'}
                     </div>
                   )}
@@ -1651,8 +1673,8 @@ const DeckView = () => {
                         alignItems: 'center',
                         gap: 13,
                         padding: '9px 12px',
-                        background: '#14100A',
-                        border: '1px solid #3A2E1C',
+                        background: 'var(--bg-elev)',
+                        border: '1px solid var(--border)',
                         cursor: 'pointer',
                         clipPath: CUT_ROW,
                       }}>
@@ -1660,8 +1682,8 @@ const DeckView = () => {
                         style={{
                           width: 28,
                           height: 40,
-                          background: 'linear-gradient(135deg,#221B12,#14100A)',
-                          border: '1px solid #3A2E1C',
+                          background: 'linear-gradient(135deg,var(--panel-2),var(--bg-elev))',
+                          border: '1px solid var(--border)',
                           flex: 'none',
                           display: 'grid',
                           placeItems: 'center',
@@ -1674,14 +1696,14 @@ const DeckView = () => {
                             fontFamily: "'Orbitron', sans-serif",
                             fontSize: 11,
                             fontWeight: 600,
-                            color: '#F5EFE0',
+                            color: 'var(--text)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                           }}>
                           {r.card?.name}
                         </div>
-                        <div style={{ marginTop: 2, fontSize: 12, color: '#A99C86' }}>
+                        <div style={{ marginTop: 2, fontSize: 12, color: 'var(--text-muted)' }}>
                           {r.card?.type}
                         </div>
                       </div>
@@ -1690,7 +1712,7 @@ const DeckView = () => {
                           fontFamily: "'Orbitron', sans-serif",
                           fontSize: 12,
                           fontWeight: 700,
-                          color: '#F5C518',
+                          color: 'var(--gold)',
                           fontVariantNumeric: 'tabular-nums',
                         }}>
                         ×{r.quantity}
@@ -1703,6 +1725,21 @@ const DeckView = () => {
           </div>
         </div>
       )}
+
+      {/* Contenu d'une zone du plateau — monté en racine pour passer au-dessus
+          du plateau, qui est en perspective 3D et crée son propre contexte
+          d'empilement. */}
+      <ZoneViewer
+        zone={openZone}
+        cards={
+          openZone === 'extra'
+            ? deck.extra_deck || []
+            : openZone === 'graveyard'
+              ? graveyard
+              : banished
+        }
+        onClose={() => setOpenZone(null)}
+      />
     </div>
   );
 };

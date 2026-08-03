@@ -29,19 +29,27 @@ const PAGE_SIZE = 40;
 const NUM_COLUMNS = 3;
 const MARGIN = 6;
 
-const EXTRA_DECK_TYPES = new Set([
-  'Fusion Monster',
-  'Synchro Monster',
-  'XYZ Monster',
-  'Link Monster',
-  'Synchro Tuner Monster',
-  'XYZ Pendulum Effect Monster',
-  'Pendulum Effect Fusion Monster',
-]);
+/**
+ * Miroir de shared/cards.ts — le mobile ne peut pas importer hors de son
+ * package (cf. le commentaire en tête de src/types.ts). Toute modification ici
+ * doit être répercutée là-bas.
+ *
+ * L'ancienne version testait les premiers mots de la liste, dont « Pendulum » :
+ * une « Pendulum Effect Monster », qui est une carte de **Main Deck**, se
+ * retrouvait donc classée en Extra.
+ */
+const EXTRA_DECK_FRAMES = ['fusion', 'synchro', 'xyz', 'link'];
 
-function isExtraDeckCard(t?: string): boolean {
-  if (!t) return false;
-  return Array.from(EXTRA_DECK_TYPES).some((et) => t.includes(et.split(' ')[0]));
+function isExtraDeckCard(card?: { type?: string | null; frame_type?: string | null } | null): boolean {
+  if (!card) return false;
+
+  // `frame_type` est normalisé à quatre valeurs, contrairement à `type` qui se
+  // décline (« Synchro Tuner Monster », « Pendulum Effect Fusion Monster »…).
+  const frame = (card.frame_type ?? '').toLowerCase().trim();
+  if (frame) return EXTRA_DECK_FRAMES.includes(frame);
+
+  const type = (card.type ?? '').toLowerCase();
+  return type ? EXTRA_DECK_FRAMES.some((keyword) => type.includes(keyword)) : false;
 }
 
 export default function AddCardsFromCollectionModal({
@@ -95,7 +103,7 @@ export default function AddCardsFromCollectionModal({
 
   const filteredCards = useMemo(() => {
     return cards.filter((c) => {
-      const isExtra = isExtraDeckCard(c.card?.type);
+      const isExtra = isExtraDeckCard(c.card);
       return target === 'extra' ? isExtra : !isExtra;
     });
   }, [cards, target]);

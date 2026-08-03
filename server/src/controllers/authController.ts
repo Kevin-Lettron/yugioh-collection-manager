@@ -183,10 +183,17 @@ export class AuthController {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const { username, profile_picture, password } = req.body;
+      const { username, email, profile_picture, password } = req.body;
 
       const updates: any = {};
       if (username) updates.username = username;
+      if (email) {
+        // Basic email shape check to avoid saving obviously invalid strings.
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+          throw new ValidationError('Adresse email invalide');
+        }
+        updates.email = email;
+      }
       if (profile_picture !== undefined) updates.profile_picture = profile_picture;
       if (password) {
         const pwError = validatePasswordPolicy(password);

@@ -27,18 +27,23 @@ import CyberButton from '@/components/CyberButton';
 import { AppBackground } from '@/components/decor/AppBackground';
 import { CornerOrnaments } from '@/components/decor/CornerOrnaments';
 import { spacing } from '@/theme/palette';
+import PlaytestArena from '@/components/arena/PlaytestArena';
+import DrawOddsPanel from '@/components/arena/DrawOddsPanel';
+import { usePlaytest, type Playtest } from '@/components/arena/usePlaytest';
+import type { ZoneKey } from '@/components/arena/ZoneSheet';
 
 const CARD_ICON = require('@/assets/images/decor/glyph-pyramid.png'); // placeholder svg-card icon
 
 type ViewMode = 'arena' | 'list';
 
 /**
- * DeckView — implémente les deux variantes du PhoneFrame :
- *   • sc-if `isArena` (l.190-260) — variante A « Sanctuaire draconique » avec
- *     plateau 3D perspective + zones + compteurs + Cartes clés scrollables.
- *   • sc-if `isList`  (l.262-323) — variante B « grimoire » avec jauge répartition
- *     et sections Deck principal / Extra / Side en rows biseautés.
- * Toggle « Vue arène ↔ Vue liste » en haut à droite du header.
+ * DeckView — deux variantes, basculées par « Vue arène ↔ Vue liste » :
+ *   • arène — plateau de test jouable (main, pioche, pose, zones) + Cartes clés.
+ *   • liste — « grimoire » avec jauge de répartition et sections Deck principal /
+ *     Extra / Side en rows biseautés.
+ *
+ * Le panneau de probabilités de pioche est rendu sous les commentaires et suit
+ * le test lancé dans l'arène, comme sur le web.
  */
 export default function DeckViewScreen() {
   const styles = useThemedStyles(makeStyles);
@@ -57,6 +62,8 @@ export default function DeckViewScreen() {
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('arena');
+  /** Zone dont on inspecte le contenu (Extra, Cimetière, Bannis). */
+  const [openZone, setOpenZone] = useState<ZoneKey | null>(null);
 
   // Wishlist (« copier deck ») + follow author — état local optimistic, resynchro
   // depuis /social/wishlist et /social/following à chaque fetchAll.
@@ -227,6 +234,12 @@ export default function DeckViewScreen() {
     [deck]
   );
 
+  // Le test de main vit ici et non dans le bloc arène : le panneau de
+  // probabilités, affiché sous les commentaires, lit le même état.
+  const mainDeckCards = useMemo(() => deck?.main_deck ?? [], [deck]);
+  const extraDeckCards = useMemo(() => deck?.extra_deck ?? [], [deck]);
+  const playtest = usePlaytest(mainDeckCards);
+
   if (loading || !deck) {
     return (
       <View style={styles.root}>
@@ -331,7 +344,11 @@ export default function DeckViewScreen() {
               <ArenaBlock
                 mainCount={mainCount}
                 extraCount={extraCount}
-                mainDeck={deck.main_deck || []}
+                mainDeck={mainDeckCards}
+                extraDeck={extraDeckCards}
+                playtest={playtest}
+                openZone={openZone}
+                onOpenZone={setOpenZone}
                 colors={colors}
                 styles={styles}
               />
@@ -438,6 +455,16 @@ export default function DeckViewScreen() {
                 </View>
               ))
             )}
+
+            {/* ═══ PROBABILITÉS DE PIOCHE ═══
+                Sous les commentaires, comme sur le web : elles se mettent à jour
+                à chaque pioche du test lancé plus haut. */}
+            <DrawOddsPanel
+              mainDeck={mainDeckCards}
+              deckPile={playtest.deckPile}
+              handCards={playtest.handCards}
+              active={playtest.active}
+            />
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -451,99 +478,42 @@ export default function DeckViewScreen() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Bloc Arène — plateau 3D + Cartes clés horizontales + 3 compteurs biseautés.
- * Le plateau perspective 3D est mis en placeholder « — À venir » (React Native n'a
- * pas d'équivalent de `perspective+rotateX+transform-origin` avec le rendu attendu).
+ * Bloc Arène — plateau de test jouable + Cartes clés horizontales.
+ *
+ * Le plateau était auparavant un décor figé (zones remplies en dur, « à venir ») :
+ * il est maintenant piloté par `usePlaytest`, comme l'arène web.
  */
 function ArenaBlock({
   mainCount,
   extraCount,
   mainDeck,
+  extraDeck,
+  playtest,
+  openZone,
+  onOpenZone,
   colors,
   styles,
 }: {
   mainCount: number;
   extraCount: number;
   mainDeck: DeckCard[];
+  extraDeck: DeckCard[];
+  playtest: Playtest;
+  openZone: ZoneKey | null;
+  onOpenZone: (zone: ZoneKey | null) => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
   styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <>
-      {/* Plateau — placeholder « À venir » avec 5+5 zones stylées */}
-      <View style={styles.arenaBoard}>
-        <View style={styles.arenaGrid}>
-          <View style={styles.arenaGridLines} pointerEvents="none" />
-
-          {/* Back row — 3 Monstres actives + 2 vides */}
-          <View style={styles.arenaZoneRow}>
-            {[true, true, true, false, false].map((filled, i) => (
-              <View
-                key={`b-${i}`}
-                style={[
-                  styles.arenaZone,
-                  filled
-                    ? { borderColor: colors.rarityUltra, backgroundColor: colors.panel2 }
-                    : styles.arenaZoneEmpty,
-                ]}>
-                {filled && <Text style={styles.arenaZoneLabel}>M</Text>}
-              </View>
-            ))}
-          </View>
-          {/* Front row — 2 Magies + 1 vide + 1 Piège + 1 vide */}
-          <View style={styles.arenaZoneRow}>
-            {[
-              { filled: true, color: colors.raritySuper, label: 'S' },
-              { filled: true, color: colors.raritySuper, label: 'S' },
-              { filled: false, color: null, label: '' },
-              { filled: true, color: colors.raritySecret2, label: 'T' },
-              { filled: false, color: null, label: '' },
-            ].map((z, i) => (
-              <View
-                key={`f-${i}`}
-                style={[
-                  styles.arenaZone,
-                  z.filled
-                    ? { borderColor: z.color!, backgroundColor: colors.panel2 }
-                    : styles.arenaZoneEmpty,
-                ]}>
-                {z.filled && <Text style={styles.arenaZoneLabel}>{z.label}</Text>}
-              </View>
-            ))}
-          </View>
-
-          {/* Extra / Terrain / Cimetière row */}
-          <View style={styles.arenaBottomRow}>
-            <View style={[styles.arenaTag, { borderColor: colors.rarityRare }]}>
-              <Text style={[styles.arenaTagText, { color: colors.cyan }]}>EXTRA</Text>
-            </View>
-            <View style={[styles.arenaTag, { borderColor: colors.rarityUltra }]}>
-              <Text style={[styles.arenaTagText, { color: colors.goldDim }]}>TERRAIN</Text>
-            </View>
-            <View style={[styles.arenaTag, { borderColor: colors.raritySecret1 }]}>
-              <Text style={[styles.arenaTagText, { color: colors.magenta }]}>CIM.</Text>
-            </View>
-          </View>
-
-          {/* 3 compteurs biseautés Main / Extra / Side */}
-          <View style={styles.arenaCounters}>
-            <View style={styles.arenaCounter}>
-              <Text style={styles.arenaCounterLabel}>Main</Text>
-              <Text style={[styles.arenaCounterVal, { color: colors.gold }]}>{mainCount}</Text>
-            </View>
-            <View style={styles.arenaCounter}>
-              <Text style={styles.arenaCounterLabel}>Extra</Text>
-              <Text style={[styles.arenaCounterVal, { color: colors.violet }]}>{extraCount}</Text>
-            </View>
-            <View style={styles.arenaCounter}>
-              <Text style={styles.arenaCounterLabel}>Side</Text>
-              <Text style={[styles.arenaCounterVal, { color: colors.cyan }]}>—</Text>
-            </View>
-          </View>
-
-          <Text style={styles.arenaComingSoon}>— Plateau 3D interactif à venir —</Text>
-        </View>
-      </View>
+      <PlaytestArena
+        playtest={playtest}
+        extraDeck={extraDeck}
+        mainCount={mainCount}
+        extraCount={extraCount}
+        openZone={openZone}
+        onOpenZone={onOpenZone}
+      />
 
       {/* Cartes clés — horizontal scroll */}
       <View style={styles.sectionRow}>
@@ -569,7 +539,7 @@ function ArenaBlock({
                 ) : (
                   <Image
                     source={CARD_ICON}
-                    style={{ width: '55%', height: '55%', tintColor: '#F5C518', opacity: 0.3 }}
+                    style={{ width: '55%', height: '55%', tintColor: colors.gold, opacity: 0.3 }}
                     resizeMode="contain"
                   />
                 )}
@@ -795,102 +765,6 @@ const makeStyles = (t: Theme) =>
       letterSpacing: 1.2,
       textTransform: 'uppercase',
       color: t.colors.text,
-    },
-
-    // ─── Plateau arène ──────────────────────────────
-    arenaBoard: {
-      marginTop: 18,
-      padding: 12,
-      backgroundColor: t.colors.bgElev,
-      borderWidth: 1,
-      borderColor: t.colors.border,
-      position: 'relative',
-      overflow: 'hidden',
-    },
-    arenaGrid: {
-      gap: 9,
-    },
-    arenaGridLines: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'transparent',
-    },
-    arenaZoneRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 7,
-    },
-    arenaZone: {
-      width: 38,
-      height: 52,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-    },
-    arenaZoneEmpty: {
-      borderStyle: 'dashed',
-      borderColor: 'rgba(245,197,24,0.22)',
-      backgroundColor: 'rgba(255,255,255,0.02)',
-    },
-    arenaZoneLabel: {
-      fontFamily: 'sans-serif',
-      fontSize: 8,
-      color: t.colors.textMuted,
-      letterSpacing: 0.8,
-      opacity: 0.75,
-    },
-    arenaBottomRow: {
-      marginTop: 4,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-    },
-    arenaTag: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-    },
-    arenaTagText: {
-      fontFamily: 'sans-serif',
-      fontSize: 7,
-      letterSpacing: 0.8,
-      fontWeight: '700',
-    },
-    arenaCounters: {
-      marginTop: 8,
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    arenaCounter: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      backgroundColor: t.colors.panel,
-      borderWidth: 1,
-      borderColor: t.colors.border,
-      alignItems: 'center',
-    },
-    arenaCounterLabel: {
-      fontFamily: 'sans-serif',
-      fontSize: 8,
-      letterSpacing: 1.6,
-      color: t.colors.textMuted,
-      textTransform: 'uppercase',
-    },
-    arenaCounterVal: {
-      fontFamily: 'sans-serif',
-      fontSize: 15,
-      fontWeight: '700',
-      marginTop: 2,
-    },
-    arenaComingSoon: {
-      marginTop: 8,
-      textAlign: 'center',
-      fontStyle: 'italic',
-      fontSize: 10,
-      color: t.colors.textMuted,
-      letterSpacing: 1,
     },
 
     // ─── Cartes clés (arena) ────────────────────────

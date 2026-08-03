@@ -18,6 +18,7 @@ import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import CyberButton from '@/components/CyberButton';
 import { AppBackground } from '@/components/decor/AppBackground';
 import { spacing } from '@/theme/palette';
+import PasswordInput from '@/components/PasswordInput';
 
 const GLYPH_EYE = require('@/assets/images/decor/glyph-eye.png');
 
@@ -86,16 +87,13 @@ export default function LoginScreen() {
 
             <View>
               <Text style={styles.fieldLabel}>Sceau</Text>
-              <TextInput
-                style={styles.input}
+              <PasswordInput
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                placeholder="••••••••"
-                placeholderTextColor={colors.textMuted}
                 editable={!submitting}
                 onSubmitEditing={handleSubmit}
+                inputStyle={styles.input}
+                autoComplete={'current-password'}
               />
             </View>
 
@@ -145,8 +143,11 @@ export default function LoginScreen() {
   );
 }
 
-/** Logo Millennium simplifié — triangle inversé (borderTop) + point central noir. */
+/** Logo Millennium simplifié — triangle inversé (borderTop) + point central. */
 function MillenniumLogo({ color, size = 52 }: { color: string; size?: number }) {
+  // L'œil laisse voir le fond : sa couleur doit suivre le thème, sinon il
+  // reste un point noir sur fond clair.
+  const { colors } = useAppTheme();
   return (
     <View
       style={{
@@ -180,7 +181,7 @@ function MillenniumLogo({ color, size = 52 }: { color: string; size?: number }) 
           width: size * 0.15,
           height: size * 0.15,
           borderRadius: (size * 0.15) / 2,
-          backgroundColor: '#0B0906',
+          backgroundColor: colors.bg,
         }}
       />
     </View>

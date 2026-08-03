@@ -20,6 +20,8 @@ type AuthContextType = {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  updateProfile: (updates: { username?: string; email?: string; password?: string; profile_picture?: string }) => Promise<void>;
+  uploadAvatar: (photoUri: string, mimeType?: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -74,8 +76,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const updateProfile = async (updates: {
+    username?: string;
+    email?: string;
+    password?: string;
+    profile_picture?: string;
+  }) => {
+    const { data } = await api.put<{ user: User }>('/auth/profile', updates);
+    setUser(data.user);
+  };
+
+  const uploadAvatar = async (photoUri: string, mimeType: string = 'image/jpeg') => {
+    const form = new FormData();
+    // RN FormData accepte { uri, name, type }
+    form.append('avatar', {
+      uri: photoUri,
+      name: `avatar.${mimeType.split('/')[1] || 'jpg'}`,
+      type: mimeType,
+    } as unknown as Blob);
+    const { data } = await api.post<{ user: User }>('/auth/upload-avatar', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 45000,
+    });
+    setUser(data.user);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refresh }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, refresh, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );

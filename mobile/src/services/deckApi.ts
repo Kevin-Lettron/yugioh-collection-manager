@@ -5,11 +5,25 @@ import type {
   DeckComment,
   DeckStats,
   DeckValidation,
+  PaginatedResponse,
 } from '@/types';
 
 export const deckApi = {
   // ── Deck CRUD
-  listMine: () => api.get<Deck[]>('/decks').then((r) => r.data),
+
+  /**
+   * `GET /decks` renvoie une réponse paginée `{ data, total, page, … }`, pas un
+   * tableau : le typage `Deck[]` était faux et les écrans recevaient l'enveloppe.
+   * `decks.filter(...)` levait alors « filter is not a function » pendant le
+   * rendu, ce qui faisait planter les onglets Decks et Profil.
+   *
+   * On tolère les deux formes : si un jour l'API renvoie un tableau nu, le code
+   * continue de fonctionner.
+   */
+  listMine: () =>
+    api
+      .get<PaginatedResponse<Deck> | Deck[]>('/decks')
+      .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data ?? [])),
 
   listPublic: (params: { page?: number; limit?: number; search?: string } = {}) =>
     api
@@ -78,8 +92,21 @@ export const deckApi = {
     api.delete(`/reactions/decks/${id}`).then((r) => r.data),
 
   // ── Comments
+  /**
+   * `GET /comments/deck/:id` renvoie `{ comments, total }`, pas un tableau.
+   *
+   * Le typage `DeckComment[]` etait faux et l'enveloppe remontait telle quelle
+   * jusqu'a l'ecran : `comments.length === 0` valait alors `undefined === 0`,
+   * donc faux, et le rendu partait sur `comments.map(...)` dont `.map` est
+   * undefined. D'ou le « undefined is not a function » a chaque ouverture de
+   * deck, y compris sans le moindre commentaire.
+   *
+   * On tolere les deux formes, comme pour `listMine` et le wishlist.
+   */
   listComments: (deckId: number) =>
-    api.get<DeckComment[]>(`/comments/deck/${deckId}`).then((r) => r.data),
+    api
+      .get<{ comments: DeckComment[] } | DeckComment[]>(`/comments/deck/${deckId}`)
+      .then((r) => (Array.isArray(r.data) ? r.data : r.data?.comments ?? [])),
 
   createComment: (deckId: number, content: string) =>
     api

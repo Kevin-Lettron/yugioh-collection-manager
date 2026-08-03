@@ -130,6 +130,26 @@ texte `#1A1206`, or assombri à `#8A6D0B` (l'or néon est illisible sur fond cla
       exceptions déjà documentées (`CardDetailModal` attributs YGO, `scan.tsx` overlays caméra,
       `palette.ts` lui-même).
 
+- [x] **Étape 11** — Mobile : arène de test jouable
+      Le plateau de `mobile/src/app/deck/[id].tsx` était un décor figé (zones remplies en
+      dur, mention « Plateau 3D interactif à venir »). Il est remplacé par le portage de
+      l'arène web, dans `mobile/src/components/arena/` :
+      - `usePlaytest.ts` — machine à états (main, pioche, cimetière, bannis, 5 zones
+        monstres / 5 magies-pièges / 1 terrain, pose face verso). L'état vit dans un hook
+        et non dans le plateau : le panneau de probabilités, rendu **sous les
+        commentaires**, lit le même état.
+      - `PlaytestArena.tsx` — plateau tactile. La pose se fait **en deux temps** (taper la
+        carte, puis la zone) : un glisser-déposer entrerait en conflit avec le défilement
+        horizontal de la main.
+      - `DrawOddsPanel.tsx` — miroir du panneau web ; colonnes à largeur fixe, React Native
+        n'ayant pas de `table-layout`.
+      - `ZoneSheet.tsx` — Extra / Cimetière / Bannis en feuille modale, ouvrables depuis le
+        plateau.
+      - `mobile/src/utils/drawOdds.ts` — copie assumée de `client/src/utils/drawOdds.ts`
+        (le mobile ne peut pas importer hors de son package, cf. l'en-tête de `src/types.ts`).
+      Les messages d'erreur du test passent par un bandeau inline et non des `Alert.alert` :
+      un « zone occupée » modal couperait le rythme à chaque tap maladroit.
+
 ## 5. Points de vigilance
 
 - **`client/src/__tests__/components/ui/*.test.tsx` assertent les classes Tailwind exactes**

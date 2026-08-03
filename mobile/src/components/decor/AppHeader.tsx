@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -15,7 +16,12 @@ const BELL = require('@/assets/images/ui/i-bell.png');
 function AppHeaderBase({ onPressAvatar }: { onPressAvatar?: () => void }) {
   const { colors } = useAppTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const initials = (user?.username || 'YG').slice(0, 2).toUpperCase();
+  // Comportement par défaut : cliquer l'avatar nav vers l'onglet Profil.
+  // Un override via `onPressAvatar` reste possible (ex: sur la page profil
+  // elle-même on veut peut-être ouvrir un menu déconnexion).
+  const handleAvatarPress = onPressAvatar || (() => router.push('/(tabs)/profile'));
 
   return (
     <View>
@@ -40,12 +46,20 @@ function AppHeaderBase({ onPressAvatar }: { onPressAvatar?: () => void }) {
             <View style={[styles.dot, { backgroundColor: colors.magenta }]} />
           </Pressable>
           <Pressable
-            onPress={onPressAvatar}
+            onPress={handleAvatarPress}
             style={[
               styles.avatar,
               { borderColor: colors.gold, backgroundColor: colors.violet },
             ]}>
-            <Text style={[styles.avatarText, { color: colors.onGold }]}>{initials}</Text>
+            {user?.profile_picture ? (
+              <Image
+                source={{ uri: buildProfileUri(user.profile_picture) }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={[styles.avatarText, { color: colors.onGold }]}>{initials}</Text>
+            )}
           </Pressable>
         </View>
       </View>
@@ -105,6 +119,19 @@ function MillenniumLogo({ color }: { color: string }) {
       />
     </View>
   );
+}
+
+/**
+ * Le back stocke profile_picture au format `/uploads/profiles/xxx.png`.
+ * En mobile il faut préfixer par la baseURL. Détecte aussi les URL absolues.
+ */
+function buildProfileUri(pp: string): string {
+  if (/^https?:\/\//i.test(pp)) return pp;
+  // Fallback conservateur : on prend l'origin de l'API sans le suffixe /api.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { API_URL } = require('@/config');
+  const origin = String(API_URL || '').replace(/\/api\/?$/, '');
+  return `${origin}${pp}`;
 }
 
 export const AppHeader = memo(AppHeaderBase);
