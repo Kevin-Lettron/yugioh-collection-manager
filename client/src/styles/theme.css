@@ -699,7 +699,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
 /* ─── Prismatic / Starlight / Ghost — arc-en-ciel plein pot ────────── */
 .card-tile--prismatic .card-art {
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(245, 197, 24, 0.4),
     0 0 18px rgba(255, 46, 136, 0.55),
     0 0 28px rgba(168, 85, 247, 0.5),
     0 0 38px rgba(34, 211, 238, 0.45),
@@ -710,7 +710,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
 @keyframes san-prism-breath {
   0%, 100% {
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+      inset 0 0 0 1px rgba(245, 197, 24, 0.4),
       0 0 18px rgba(255, 46, 136, 0.55),
       0 0 28px rgba(168, 85, 247, 0.5),
       0 0 38px rgba(34, 211, 238, 0.45),
@@ -718,7 +718,7 @@ button[style*="isolation"]:not(:disabled):hover::before {
   }
   50% {
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+      inset 0 0 0 1px rgba(168, 85, 247, 0.55),
       0 0 26px rgba(34, 211, 238, 0.65),
       0 0 36px rgba(245, 197, 24, 0.55),
       0 0 48px rgba(255, 46, 136, 0.55),
@@ -748,8 +748,8 @@ button[style*="isolation"]:not(:disabled):hover::before {
     #ff2e88, #ffa500, #f5c518, #00ff88,
     #22d3ee, #a855f7, #ff2e88);
   filter: blur(14px) saturate(1.4);
-  opacity: 0.55;
-  mix-blend-mode: color-dodge;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
   animation: san-prism-rotate 6s linear infinite;
   pointer-events: none;
 }
@@ -759,17 +759,20 @@ button[style*="isolation"]:not(:disabled):hover::before {
   to   { transform: rotate(360deg) scale(1.15); }
 }
 
-/* Bande diagonale scintillante qui balaie la carte (effet foil physique). */
+/* Bande diagonale scintillante qui balaie la carte (effet foil physique).
+   mix-blend `overlay` moins agressif que `screen` — le blanc n'ecrase plus
+   les couleurs sous-jacentes. Opacite tres reduite : on garde juste un
+   subtil reflet, pas un flash. */
 .card-tile__shimmer {
   position: absolute;
   inset: 0;
   background: linear-gradient(115deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.38) 45%,
-    rgba(255, 255, 255, 0.61) 50%,
-    rgba(255, 255, 255, 0.38) 55%,
+    rgba(255, 255, 255, 0.15) 45%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.15) 55%,
     transparent 70%);
-  mix-blend-mode: screen;
+  mix-blend-mode: overlay;
   animation: san-prism-sweep 2.8s linear infinite;
   pointer-events: none;
   transform: translateX(-100%);
