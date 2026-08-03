@@ -747,8 +747,8 @@ button[style*="isolation"]:not(:disabled):hover::before {
   background: conic-gradient(from 0deg,
     #ff2e88, #ffa500, #f5c518, #00ff88,
     #22d3ee, #a855f7, #ff2e88);
-  filter: blur(14px) saturate(1.4);
-  opacity: 0.4;
+  filter: blur(14px) saturate(1.7);
+  opacity: 0.6;
   mix-blend-mode: overlay;
   animation: san-prism-rotate 6s linear infinite;
   pointer-events: none;
