@@ -3,7 +3,8 @@
 > Fichier de passation, mis à jour et poussé **à chaque étape**, comme `SUIVI-REFONTE.md`.
 >
 > **Branche :** `dev`
-> **Dernière mise à jour :** 2026-08-03 — plan établi, étape 0 en attente d'arbitrage
+> **Dernière mise à jour :** 2026-08-03 — **étape 1 terminée**, le moteur tourne en local.
+> Étape 0 (licence) toujours en attente d'arbitrage, sans bloquer les étapes suivantes.
 
 ---
 
@@ -39,9 +40,9 @@ Autrement dit, il faut trois briques, pas une :
 
 | Brique | Source | Poids | État |
 |---|---|---|---|
-| Le moteur | [`edo9300/ygopro-core`](https://github.com/edo9300/ygopro-core) | — | actif (poussé le 2026-07-31) |
-| Les scripts de cartes (Lua) | [`ProjectIgnis/CardScripts`](https://github.com/ProjectIgnis/CardScripts) | ~72 Mo | actif (2026-08-02) |
-| Les données de cartes (`cards.cdb`, SQLite) | [`ProjectIgnis/BabelCDB`](https://github.com/ProjectIgnis/BabelCDB) | ~245 Mo | actif (2026-07-31) |
+| Le moteur | [`edo9300/ygopro-core`](https://github.com/edo9300/ygopro-core) | — | actif (poussé le 2026-07-31), AGPL-3.0 |
+| Les scripts de cartes (Lua) | [`ProjectIgnis/CardScripts`](https://github.com/ProjectIgnis/CardScripts) | ~72 Mo de dépôt | actif (2026-08-02), AGPL-3.0 |
+| Les données de cartes (`cards.cdb`, SQLite) | [`ProjectIgnis/BabelCDB`](https://github.com/ProjectIgnis/BabelCDB) | **7,5 Mo** pour le seul `cards.cdb` | actif (2026-07-31), sans licence déclarée |
 
 ### Par où on l'attaque
 
@@ -100,17 +101,21 @@ Le dépôt **n'a aujourd'hui aucun fichier `LICENSE`** — sans licence explicit
 n'a le droit de réutiliser le code, y compris toi si tu changes d'avis plus tard. Quel que
 soit le choix, il faut en poser un.
 
-### 3.2 Les données de cartes — à vérifier
+### 3.2 Les données de cartes — moins grave que prévu
 
-`CardScripts` et `BabelCDB` **ne déclarent aucune licence** sur GitHub. Par défaut, cela
-signifie « tous droits réservés », même si l'usage communautaire est massif et toléré
-depuis plus de dix ans. À cela s'ajoute le fait que les textes et noms de cartes sont la
-propriété de Konami.
+Correction faite pendant l'étape 1 : **`CardScripts` est bien sous AGPL-3.0**. L'API GitHub
+annonce « pas de licence » parce que le fichier s'appelle `COPYING` et n'est pas détecté,
+mais le texte de l'AGPL y est en entier et le `README` le confirme. Ça ne change rien à la
+décision §3.1 — au contraire, ça la renforce : deux des trois briques sont déjà AGPL.
+
+Reste **`BabelCDB`**, qui n'a effectivement aucune licence. Par défaut cela signifie « tous
+droits réservés », même si l'usage communautaire est massif et toléré depuis plus de dix
+ans. À cela s'ajoute le fait que les textes et noms de cartes appartiennent à Konami.
 
 Ce n'est pas un avis juridique et je n'en donnerai pas. Le risque est **faible en
 pratique, non nul en droit**, et il porte sur la redistribution — pas sur l'usage. Une
-atténuation simple : ne pas versionner ces fichiers dans le dépôt, les télécharger à
-l'installation depuis leur source d'origine (c'est ce que fait le script de l'étape 1).
+atténuation simple, appliquée dès l'étape 1 : ne pas versionner ces fichiers dans le
+dépôt, les télécharger à l'installation depuis leur source d'origine.
 
 ---
 
@@ -221,7 +226,45 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
 ## 7. Avancement
 
 - [ ] **Étape 0** — Arbitrage licence + `LICENSE` *(en attente de décision : option A ou B)*
-- [ ] **Étape 1** — Socle local
+- [x] **Étape 1** — Socle local — **fait le 2026-08-03**
+
+      `npm run duel:assets` récupère les données, `npm run duel:smoke` prouve que le
+      moteur tourne. Sortie du smoke test :
+
+      ```
+      cartes   : 14714 chargées depuis cards.cdb
+      moteur   : ocgcore 11.0
+      decks    : 40 cartes par joueur
+        3 × new_phase   2 × draw   1 × new_turn   1 × hint   1 × select_idlecmd
+        scripts Lua demandés : 40
+        le moteur attend une décision sur : select_idlecmd
+      ```
+
+      Le moteur distribue les mains d'ouverture, enchaîne les phases et s'arrête en
+      Main 1 pour demander sa commande au joueur. C'est exactement le comportement
+      attendu.
+
+      Fichiers : `server/scripts/fetchDuelAssets.ts`, `server/scripts/duelSmokeTest.ts`,
+      `server/src/services/duelEngine/{paths,cardStore,engineHost}.ts`.
+
+      **Ce qu'on a appris en le faisant** (et qui n'était pas dans le plan) :
+
+      - `cards.cdb` pèse **7,5 Mo**, pas 245 : on télécharge le seul fichier utile au
+        lieu de cloner BabelCDB. Les scripts, eux, sont 13 439 fichiers Lua — clone
+        superficiel.
+      - Le champ `setcode` dépasse `Number.MAX_SAFE_INTEGER` (0x1953008004110a4 dans la
+        base actuelle). Lu en `number`, les archétypes hauts sont silencieusement
+        corrompus. **Il doit être lu en `BigInt`.**
+      - `level` empaquette trois valeurs (niveau, échelle Pendule gauche et droite) et
+        `def` sert de masque de flèches pour les monstres Lien.
+      - `ocgcore-wasm` est **ESM pur** alors que le serveur compile en CommonJS : le
+        chargement passe par une indirection `new Function('s','return import(s)')`,
+        sinon TypeScript transpile le `import()` en `require()` et ça casse. Isolé dans
+        `engineHost.ts`, nulle part ailleurs.
+      - **Aucun module natif à compiler** : `node:sqlite` est intégré à Node 24. En
+        contrepartie `@types/node` est passé de 20 à 24 — le serveur typecheck toujours
+        proprement. *À vérifier avant l'étape 8 : le VPS doit tourner en Node 22+.*
+      - `CardScripts` est bien sous AGPL-3.0 (cf. §3.2, corrigé).
 - [ ] **Étape 2** — Pont moteur ↔ serveur
 - [ ] **Étape 3** — Traduction des messages
 - [ ] **Étape 4** — Cycle de vie
