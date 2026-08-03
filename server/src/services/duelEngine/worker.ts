@@ -82,8 +82,21 @@ function pump(lib: OcgCoreSync, mod: typeof import('ocgcore-wasm'), duelId: numb
   while (steps++ < MAX_STEPS_PER_TURN) {
     const status = lib.duelProcess(session.handle);
 
+    let won = false;
     for (const message of lib.duelGetMessage(session.handle)) {
-      if (message) messages.push(message);
+      if (!message) continue;
+      messages.push(message);
+      if (message.type === mod.OcgMessageType.WIN) won = true;
+    }
+
+    // C'est **l'hôte** qui arrête la partie, pas le moteur.
+    //
+    // Mesuré : le moteur émet `win` — ici sur un deck-out — puis redemande une
+    // décision comme si de rien n'était. Sans cette coupure, une partie gagnée
+    // continue : le relevé de l'étape 3 a tourné 409 tours et émis 338 `win`
+    // avant d'atteindre le garde-fou.
+    if (won) {
+      return { duelId, status: 'ended', messages, steps };
     }
 
     if (status === mod.OcgProcessResult.END) {
@@ -95,6 +108,47 @@ function pump(lib: OcgCoreSync, mod: typeof import('ocgcore-wasm'), duelId: numb
   }
 
   return { duelId, status: 'stalled', messages, steps };
+}
+
+/**
+ * Générateur pseudo-aléatoire déterministe (xorshift128), amorcé par la graine
+ * du duel. Deux duels de même graine donnent le même mélange — c'est ce qui
+ * rend une partie rejouable.
+ */
+function makeRng(seed: readonly bigint[]): () => number {
+  let x = Number(BigInt.asUintN(32, seed[0] ?? 1n)) || 1;
+  let y = Number(BigInt.asUintN(32, seed[1] ?? 2n)) || 2;
+  let z = Number(BigInt.asUintN(32, seed[2] ?? 3n)) || 3;
+  let w = Number(BigInt.asUintN(32, seed[3] ?? 4n)) || 4;
+
+  return () => {
+    const t = x ^ (x << 11);
+    x = y;
+    y = z;
+    z = w;
+    w = (w ^ (w >>> 19)) ^ (t ^ (t >>> 8));
+    return (w >>> 0) / 0x100000000;
+  };
+}
+
+/**
+ * Mélange le Main Deck **avant** de le donner au moteur.
+ *
+ * Mesuré, et contre-intuitif : `OCG_StartDuel` **ne mélange pas**. Le moteur
+ * pioche dans l'ordre d'insertion — quatre graines différentes donnaient la
+ * même main d'ouverture, à savoir la fin de la liste. C'est à l'hôte de
+ * mélanger, comme le fait le serveur d'EDOPro.
+ *
+ * Sans ça, chaque duel se jouerait avec le deck dans l'ordre de la base de
+ * données. L'Extra Deck n'est pas concerné : on n'y pioche pas.
+ */
+function shuffled(cards: readonly number[], rng: () => number): number[] {
+  const a = [...cards];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function createSession(req: Extract<EngineRequest, { type: 'create' }>): EngineTurnResult {
@@ -135,8 +189,12 @@ function createSession(req: Extract<EngineRequest, { type: 'create' }>): EngineT
     lib.loadScript(handle, name, readBootstrapScript(name));
   }
 
+  // Un générateur par joueur, dérivé de la même graine : les deux mélanges sont
+  // indépendants mais l'ensemble reste reproductible.
+  const rng = makeRng(req.seed);
+
   const addDeck = (team: 0 | 1, deck: EnginePlayerDeck): void => {
-    for (const code of deck.main) {
+    for (const code of shuffled(deck.main, rng)) {
       lib.duelNewCard(handle, {
         code,
         team,

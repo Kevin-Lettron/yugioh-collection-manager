@@ -329,7 +329,36 @@ Le vrai coût est le temps : **59 à 81 heures**. Selon le rythme :
         testés.
       - `GET /duels/engine/stats` doit être déclarée **avant** `/:id`, sinon la route
         paramétrée capte « engine » et tente de le lire comme un identifiant.
-- [ ] **Étape 3** — Traduction des messages
+- [ ] **Étape 3** — Traduction des messages — *en cours*
+
+      **3a. Relevé de terrain — fait le 2026-08-03.** `npm run duel:autoplay 10` fait jouer
+      le moteur contre lui-même avec une politique naïve, et compte ce qui arrive
+      réellement. Le moteur définit une centaine de types de messages ; couvrir au hasard
+      aurait été du gaspillage. Résultat sur 10 parties menées jusqu'à la victoire :
+
+      **35 types de messages**, **0 `retry`**, **0 demande non couverte**. Les cinq plus
+      fréquents concentrent l'essentiel : `select_chain` (3063), `hint` (2258),
+      `new_phase` (1040), `select_idlecmd` (562), `move` (398).
+
+      **Trois découvertes qui auraient chacune produit un jeu cassé :**
+
+      1. **`OCG_StartDuel` ne mélange pas le deck.** Quatre graines différentes donnaient
+         la même main d'ouverture — la fin de la liste d'insertion. C'est à l'hôte de
+         mélanger, comme le fait le serveur d'EDOPro. Sans ça, chaque duel se serait joué
+         avec le deck dans l'ordre de la base. Corrigé dans `worker.ts` par un
+         Fisher-Yates amorcé sur la graine du duel, donc reproductible.
+      2. **C'est l'hôte qui arrête la partie, pas le moteur.** Le moteur émet `win` puis
+         redemande une décision comme si de rien n'était : le relevé a tourné 409 tours et
+         émis 338 `win` avant d'atteindre le garde-fou. `pump()` coupe désormais sur `win`.
+      3. **Le masque de `select_place` est relatif au joueur interrogé**, et un bit **à 1
+         signifie indisponible**. Répondre en coordonnées absolues fait rejeter la réponse
+         par un `retry` muet — le moteur ne dit pas ce qui n'allait pas.
+
+      La leçon de méthode : ces trois points ne sont écrits nulle part dans la
+      documentation du paquet. Seul l'auto-joueur les a fait apparaître. Il reste dans le
+      dépôt comme test de non-régression.
+
+      **3b. Traduction proprement dite** — à faire.
 - [ ] **Étape 4** — Cycle de vie
 - [ ] **Étape 5** — Front web
 - [ ] **Étape 6** — Front mobile
