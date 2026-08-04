@@ -134,14 +134,6 @@ export default function EngineDuelRoom() {
     [prompt]
   );
 
-  const actionableCodes = useMemo(
-    () =>
-      (prompt?.options ?? [])
-        .filter((o) => o.code !== undefined)
-        .map((o) => o.code as number),
-    [prompt]
-  );
-
   /**
    * Répond automatiquement aux demandes sans réponse possible.
    *
@@ -204,6 +196,26 @@ export default function EngineDuelRoom() {
     const options = prompt.options.filter((o) => o.code === card.code);
     if (!options.length) return;
     setFocusedOptions({ title: label, options });
+  };
+
+  /**
+   * Une option a été choisie sur le plateau.
+   *
+   * Choix unique : on envoie tout de suite. Choix multiple — sacrifier deux
+   * monstres, par exemple : on accumule jusqu'à ce que le compte y soit, sinon
+   * le premier clic enverrait une réponse incomplète que le moteur refuserait.
+   */
+  const pickOption = (optionId: string) => {
+    if (!prompt) return;
+    if (prompt.max <= 1) {
+      void send([optionId]);
+      return;
+    }
+    setSelection((cur) =>
+      cur.includes(optionId)
+        ? cur.filter((x) => x !== optionId)
+        : [...cur, optionId].slice(0, prompt.max)
+    );
   };
 
   const toggleSelection = (optionId: string) => {
@@ -275,11 +287,13 @@ export default function EngineDuelRoom() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
           <DuelField
             board={board}
-            placeOptions={placeOptions}
-            actionableCodes={actionableCodes}
+            options={prompt?.options ?? []}
+            selectedIds={selection}
+            onOptionPicked={pickOption}
             onHover={setHovered}
-            onCardClick={(card) => openCardMenu(card, card.name ?? 'Carte')}
-            onPlace={(optionId) => send([optionId])}
+            onCardMenu={(card, opts) =>
+              setFocusedOptions({ title: card.name ?? 'Carte', options: opts })
+            }
             onOpenZone={(zone, side) => setOpenZone(side === 'me' ? zone : null)}
           />
           <ActionRail
