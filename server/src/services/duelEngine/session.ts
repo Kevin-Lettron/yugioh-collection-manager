@@ -24,6 +24,30 @@ type Ocg = typeof import('ocgcore-wasm');
 /** Au-delà, on ne garde que la fin : un journal sert à comprendre le coup précédent. */
 const LOG_LIMIT = 400;
 
+/**
+ * Noms de phases, en anglais.
+ *
+ * C'est la langue du jeu de compétition : « Main Phase 1 » et « Battle Phase »
+ * sont les termes qu'emploient les joueurs, y compris francophones. Les
+ * traduire ferait plus obstacle qu'aide.
+ *
+ * Les valeurs sont celles de `OcgPhase` ; on les code en dur plutôt que
+ * d'importer le module ESM du moteur, que ce fichier n'a pas d'autre raison de
+ * charger.
+ */
+const PHASE_NAMES: Record<number, string> = {
+  0x1: 'Draw Phase',
+  0x2: 'Standby Phase',
+  0x4: 'Main Phase 1',
+  0x8: 'Battle Phase',
+  0x10: 'Battle Step',
+  0x20: 'Damage Step',
+  0x40: 'Damage Calculation',
+  0x80: 'Battle Phase',
+  0x100: 'Main Phase 2',
+  0x200: 'End Phase',
+};
+
 const WIN_REASONS: Record<number, string> = {
   0: 'points de vie à zéro',
   1: 'points de vie à zéro',
@@ -107,11 +131,17 @@ export class DuelSession {
       case M.NEW_TURN:
         this.turn += 1;
         this.turnPlayer = message.player === 1 ? 1 : 0;
-        this.push({ kind: 'new_turn', text: `Tour ${this.turn}` });
+        this.push({ kind: 'new_turn', text: `Turn ${this.turn}` });
         return;
 
       case M.NEW_PHASE:
         this.phase = message.phase;
+        // Journalisé, et pas seulement mémorisé : entre deux consultations, le
+        // moteur peut traverser plusieurs phases d'un coup. Le front ne verrait
+        // alors que la dernière, et ne pourrait pas annoncer la séquence
+        // « nouveau tour, pioche, phase principale » que vit réellement le
+        // joueur.
+        this.push({ kind: 'new_phase', text: PHASE_NAMES[message.phase] ?? 'Phase' });
         return;
 
       case M.DAMAGE: {

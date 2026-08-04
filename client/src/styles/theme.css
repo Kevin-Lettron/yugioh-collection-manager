@@ -872,3 +872,17 @@ button[style*="isolation"]:not(:disabled):hover::before {
 @media (prefers-reduced-motion: reduce) {
   @keyframes san-slide-in { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* Annonce plein écran d'un duel : entrée franche, sortie en fondu. */
+@keyframes san-announce {
+  0%   { opacity: 0; transform: scale(1.12); }
+  18%  { opacity: 1; transform: scale(1); }
+  78%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes san-announce {
+    0%, 100% { opacity: 0; }
+    18%, 78% { opacity: 1; }
+  }
+}

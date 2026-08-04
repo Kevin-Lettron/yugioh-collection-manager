@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { duelEngineApi } from '../services/duelEngineApi';
 import DuelField from '../components/duel/DuelField';
+import PhaseAnnouncer from '../components/duel/PhaseAnnouncer';
 import type {
   DuelCardView,
   DuelPrompt,
@@ -24,17 +25,24 @@ import type {
  * refaire ygopro-core en moins bon.
  */
 
+/**
+ * Noms de phases, en anglais.
+ *
+ * C'est la langue du jeu de competition : « Main Phase 1 » et « Battle Phase »
+ * sont les termes qu'emploient les joueurs, francophones compris. Les traduire
+ * ferait obstacle plus qu'aide.
+ */
 const PHASE_LABELS: Record<string, string> = {
-  draw: 'Phase de Pioche',
-  standby: 'Phase de Standby',
-  main1: 'Phase Principale 1',
-  battle_start: 'Début de la Phase de Combat',
+  draw: 'Draw Phase',
+  standby: 'Standby Phase',
+  main1: 'Main Phase 1',
+  battle_start: 'Battle Phase',
   battle_step: 'Battle Step',
   damage: 'Damage Step',
-  damage_cal: 'Calcul des dégâts',
-  battle: 'Phase de Combat',
-  main2: 'Phase Principale 2',
-  end: 'Phase de Fin',
+  damage_cal: 'Damage Calculation',
+  battle: 'Battle Phase',
+  main2: 'Main Phase 2',
+  end: 'End Phase',
   unknown: '—',
 };
 
@@ -299,6 +307,7 @@ export default function EngineDuelRoom() {
           <ActionRail
             prompt={prompt}
             busy={busy}
+            currentPhase={PHASE_LABELS[board.phase] ?? board.phase}
             onOpenPhases={() => setPhasesOpen(true)}
           />
           </div>
@@ -490,6 +499,9 @@ export default function EngineDuelRoom() {
         </Overlay>
       )}
 
+      {/* Annonces de tour et de phase, par-dessus le plateau. */}
+      <PhaseAnnouncer log={log} />
+
       {/* ── Détail au survol */}
       {hovered && hovered.code > 0 && <HoverCard card={hovered} />}
     </div>
@@ -512,10 +524,12 @@ export default function EngineDuelRoom() {
 function ActionRail({
   prompt,
   busy,
+  currentPhase,
   onOpenPhases,
 }: {
   prompt: DuelPrompt | null;
   busy: boolean;
+  currentPhase: string;
   onOpenPhases: () => void;
 }) {
   const phaseCount = (prompt?.options ?? []).filter((o) => o.code === undefined).length;
@@ -537,7 +551,10 @@ function ActionRail({
           opacity: phaseCount === 0 ? 0.4 : 1,
           cursor: phaseCount === 0 ? 'not-allowed' : 'pointer',
         }}>
-        Phases{phaseCount > 0 ? ` · ${phaseCount}` : ''}
+        <span style={{ display: 'block', fontSize: 9, opacity: 0.75, letterSpacing: '0.1em' }}>
+          Phase actuelle
+        </span>
+        {currentPhase}
       </button>
 
     </div>
