@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { duelEngineApi } from '../services/duelEngineApi';
+import DuelField from '../components/duel/DuelField';
 import type {
   DuelCardView,
   DuelPrompt,
   DuelPromptOption,
   DuelStateResponse,
-  DuelZoneView,
 } from '../../../shared/duelView';
 
 /**
@@ -93,10 +93,24 @@ export default function EngineDuelRoom() {
 
   const prompt = state?.prompt ?? null;
 
-  // Les options sans carte associée sont les commandes de phase : elles vont
-  // dans la barre de commandes, pas sur le plateau.
-  const phaseOptions = useMemo(
-    () => (prompt?.options ?? []).filter((o) => o.code === undefined),
+  /**
+   * Répartition des options entre le plateau et la barre de commandes.
+   *
+   *   - `place` : les options désignent des cases. Elles ne doivent surtout pas
+   *     devenir des boutons texte « Zone Monstre 3 » — on clique la case.
+   *   - options portant une carte : c'est le menu contextuel de cette carte.
+   *   - le reste (passer en phase de combat, phase de fin) : la barre.
+   */
+  const placeOptions = useMemo(
+    () => (prompt?.kind === 'place' ? prompt.options : []),
+    [prompt]
+  );
+
+  const actionableCodes = useMemo(
+    () =>
+      (prompt?.options ?? [])
+        .filter((o) => o.code !== undefined)
+        .map((o) => o.code as number),
     [prompt]
   );
 
@@ -195,55 +209,40 @@ export default function EngineDuelRoom() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 20, padding: 20 }}>
         <div>
-          {/* ── Adversaire */}
-          <SideSummary side={board.opponent} label="Adversaire" onOpenZone={setOpenZone} foe />
-          <ZoneRows
-            side={board.opponent}
-            mirrored
+          <DuelField
+            board={board}
+            placeOptions={placeOptions}
+            actionableCodes={actionableCodes}
             onHover={setHovered}
-            onCardClick={() => undefined}
-            highlight={[]}
+            onCardClick={(card) => openCardMenu(card, card.name ?? 'Carte')}
+            onPlace={(optionId) => send([optionId])}
+            onOpenZone={(zone, side) => setOpenZone(side === 'me' ? zone : null)}
           />
 
-          <div style={separator}>
-            {prompt ? (
-              <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{prompt.message}</span>
-            ) : (
-              <span style={{ color: 'var(--text-muted)' }}>En attente de l'adversaire…</span>
-            )}
+          {/* Points de vie, de part et d'autre du plateau */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+            <LifePoints label="Adversaire" value={board.opponent.lp} />
+            <LifePoints label="Toi" value={board.me.lp} mine />
           </div>
 
-          {/* ── Mon côté */}
-          <ZoneRows
-            side={board.me}
-            onHover={setHovered}
-            onCardClick={(card, label) => openCardMenu(card, label)}
-            highlight={(prompt?.options ?? [])
-              .filter((o) => o.code !== undefined)
-              .map((o) => o.code as number)}
-          />
-          <SideSummary side={board.me} label="Toi" onOpenZone={setOpenZone} />
+          {/* ── Barre de commandes.
 
-          {/* ── Commandes de phase */}
-          {phaseOptions.length > 0 && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-              {phaseOptions.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => send([o.id])}
-                  style={btn('var(--violet)')}>
-                  {o.label}
-                </button>
-              ))}
-              {prompt?.canCancel && (
-                <button type="button" disabled={busy} onClick={() => send([], true)} style={ghostBtn}>
-                  Passer
-                </button>
-              )}
-            </div>
-          )}
+              Elle liste **toutes** les options de l'invite en cours, y compris
+              celles qui portent une carte. Le surlignage sur le plateau est un
+              confort ; cette barre est la garantie qu'aucune demande ne reste
+              sans réponse possible.
+
+              C'était le défaut de la version précédente : sur « Veux-tu
+              répondre en chaîne ? », toutes les options portaient une carte,
+              donc la barre était vide — et il n'y avait plus aucun moyen de
+              répondre, ni de passer son tour. */}
+          <CommandBar
+            prompt={prompt}
+            busy={busy}
+            hidePlaceOptions={placeOptions.length > 0}
+            onChoose={(id) => send([id])}
+            onPass={() => send([], true)}
+          />
 
           {/* ── Main */}
           <h3 style={sectionTitle}>Ma main · {board.me.hand.length}</h3>
@@ -345,164 +344,96 @@ export default function EngineDuelRoom() {
 
 // ─── Sous-composants ────────────────────────────────────────────────────────
 
-function SideSummary({
-  side,
-  label,
-  foe,
-  onOpenZone,
-}: {
-  side: DuelStateResponse['board']['me'];
-  label: string;
-  foe?: boolean;
-  onOpenZone: (z: 'extra' | 'grave' | 'banished') => void;
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 0' }}>
-      <strong style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 12, letterSpacing: '0.14em' }}>
-        {label}
-      </strong>
-      <span style={{ color: 'var(--gold)', fontWeight: 700, fontSize: 18 }}>{side.lp}</span>
-      <Counter label="Deck" value={side.deckCount} />
-      <Counter label="Main" value={side.handCount} />
-      <Counter
-        label="Extra"
-        value={side.extraCount}
-        onClick={foe ? undefined : () => onOpenZone('extra')}
-      />
-      <Counter
-        label="Cimetière"
-        value={side.graveyard.length}
-        onClick={foe ? undefined : () => onOpenZone('grave')}
-      />
-      <Counter
-        label="Bannies"
-        value={side.banished.length}
-        onClick={foe ? undefined : () => onOpenZone('banished')}
-      />
-    </div>
-  );
-}
-
-function Counter({
-  label,
-  value,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      style={{
-        background: 'var(--panel-2)',
-        border: '1px solid var(--border)',
-        padding: '4px 10px',
-        color: 'var(--text-muted)',
-        fontSize: 11,
-        cursor: onClick ? 'pointer' : 'default',
-      }}>
-      {label} <strong style={{ color: 'var(--text)' }}>{value}</strong>
-    </button>
-  );
-}
-
 /**
- * Les deux rangées du terrain.
+ * Barre de commandes, ancrée en bas de l'écran.
  *
- * Sept zones monstre et non cinq : le moteur expose les deux zones monstre
- * supplémentaires de la Master Rule 5, celles où atterrissent les monstres
- * Lien et les invocations depuis l'Extra Deck.
+ * Deux règles :
+ *   - elle est **toujours** visible quand le moteur attend quelque chose ;
+ *   - elle propose **toutes** les options, sans exception. Le plateau met en
+ *     valeur celles qui désignent une case ou une carte, mais rien n'y est
+ *     exclusif : un joueur doit pouvoir répondre même s'il n'a pas compris
+ *     qu'il fallait cliquer une carte.
+ *
+ * Seules les options « choisis un emplacement » en sont retirées, parce que
+ * les cases correspondantes clignotent sur le plateau et qu'une liste de
+ * « Zone Monstre 3 » n'aiderait personne.
  */
-function ZoneRows({
-  side,
-  mirrored,
-  onHover,
-  onCardClick,
-  highlight,
+function CommandBar({
+  prompt,
+  busy,
+  hidePlaceOptions,
+  onChoose,
+  onPass,
 }: {
-  side: DuelStateResponse['board']['me'];
-  mirrored?: boolean;
-  onHover: (c: DuelCardView | null) => void;
-  onCardClick: (card: DuelCardView, label: string) => void;
-  highlight: number[];
+  prompt: DuelPrompt | null;
+  busy: boolean;
+  hidePlaceOptions: boolean;
+  onChoose: (optionId: string) => void;
+  onPass: () => void;
 }) {
-  const rows = mirrored
-    ? [side.spells, side.monsters]
-    : [side.monsters, side.spells];
-
-  return (
-    <div style={{ display: 'grid', gap: 6, margin: '6px 0' }}>
-      {rows.map((row, ri) => (
-        <div key={ri} style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-          {row.map((zone, zi) => (
-            <Zone
-              key={zi}
-              zone={zone}
-              highlighted={!!zone && highlight.includes(zone.code)}
-              onHover={onHover}
-              onClick={() => zone && onCardClick(zone, zone.name ?? 'Carte')}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Zone({
-  zone,
-  highlighted,
-  onHover,
-  onClick,
-}: {
-  zone: DuelZoneView;
-  highlighted: boolean;
-  onHover: (c: DuelCardView | null) => void;
-  onClick: () => void;
-}) {
-  if (!zone) {
+  if (!prompt) {
     return (
-      <div
-        style={{
-          width: 62,
-          height: 90,
-          border: '1px dashed var(--border)',
-          background: 'var(--bg-elev)',
-        }}
-      />
+      <div style={commandBar}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+          En attente de l'adversaire…
+        </span>
+      </div>
     );
   }
 
+  const options = hidePlaceOptions ? [] : prompt.options;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseEnter={() => onHover(zone)}
-      onMouseLeave={() => onHover(null)}
-      style={{
-        width: 62,
-        height: 90,
-        padding: 0,
-        border: `1px solid ${highlighted ? 'var(--gold)' : 'var(--border)'}`,
-        boxShadow: highlighted ? '0 0 12px rgba(245,197,24,.4)' : 'none',
-        background: 'var(--panel-2)',
-        cursor: 'pointer',
-        overflow: 'hidden',
-      }}>
-      {zone.faceDown || zone.code === 0 ? (
-        <span style={{ color: 'var(--gold)', fontSize: 22, opacity: 0.6 }}>▨</span>
-      ) : (
-        <img
-          src={cardImage(zone.code)}
-          alt={zone.name ?? ''}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
+    <div style={commandBar}>
+      <strong style={{ color: 'var(--gold)', fontSize: 13, marginRight: 6 }}>
+        {prompt.message}
+      </strong>
+
+      {hidePlaceOptions && (
+        <span style={{ color: 'var(--cyan)', fontSize: 12 }}>
+          clique une case libre du plateau
+        </span>
       )}
-    </button>
+
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          disabled={busy}
+          onClick={() => onChoose(o.id)}
+          style={o.code === undefined ? btn('var(--violet)') : btn('var(--gold)')}>
+          {o.label}
+        </button>
+      ))}
+
+      {/* « Passer » n'apparaît que si le moteur l'autorise : sur une chaîne
+          obligatoire, il n'y a pas d'échappatoire, et proposer le bouton
+          reviendrait à mentir. */}
+      {prompt.canCancel && (
+        <button type="button" disabled={busy} onClick={onPass} style={ghostBtn}>
+          {prompt.kind === 'chain' ? 'Ne pas répondre' : 'Passer'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Points de vie, en gros : c'est l'information qu'on regarde le plus souvent. */
+function LifePoints({ label, value, mine }: { label: string; value: number; mine?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+      <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+        {label}
+      </span>
+      <strong
+        style={{
+          fontFamily: "'Orbitron', sans-serif",
+          fontSize: 26,
+          color: mine ? 'var(--gold)' : 'var(--text)',
+        }}>
+        {value}
+      </strong>
+    </div>
   );
 }
 
@@ -687,12 +618,27 @@ const panel: React.CSSProperties = {
   padding: 16,
 };
 
-const separator: React.CSSProperties = {
-  textAlign: 'center',
-  padding: '14px 0',
-  borderTop: '1px solid var(--border)',
-  borderBottom: '1px solid var(--border)',
-  margin: '10px 0',
+/**
+ * Barre de commandes collee en bas de la fenetre.
+ *
+ * Ancree, et non posee dans le flux : sur un plateau qui depasse la hauteur de
+ * l'ecran, une barre en fin de page oblige a faire defiler pour repondre. On
+ * doit toujours pouvoir passer une phase ou refuser une chaine sans chercher.
+ */
+const commandBar: React.CSSProperties = {
+  position: 'sticky',
+  bottom: 0,
+  zIndex: 100,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+  margin: '14px 0',
+  padding: '12px 16px',
+  background: 'var(--panel)',
+  border: '1px solid var(--gold)',
+  borderLeftWidth: 3,
+  boxShadow: 'var(--shadow-card-lg)',
 };
 
 const sectionTitle: React.CSSProperties = {
