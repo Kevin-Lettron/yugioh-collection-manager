@@ -79,8 +79,17 @@ export default defineConfig({
           },
         ],
       },
+      // Service worker DÉSACTIVÉ en développement.
+      //
+      // Il était actif, et c'est une source d'ennuis difficile à diagnostiquer :
+      // le worker précache l'application et **survit aux redémarrages du serveur
+      // de dev**. On se retrouve à déboguer un ancien bundle servi depuis le
+      // cache du navigateur pendant que le code sur disque, lui, est correct.
+      //
+      // Le worker reste évidemment actif en production (`npm run build`), où
+      // c'est tout son intérêt : c'est ce qui rend le site utilisable hors ligne.
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
       },
     }),
