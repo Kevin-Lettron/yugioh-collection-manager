@@ -105,7 +105,14 @@ export function DuelField({
     location: number,
     sequence: number,
     card: DuelZoneView,
-    extra?: { label?: string; accent?: string; field?: boolean; key?: string }
+    extra?: {
+      label?: string;
+      accent?: string;
+      field?: boolean;
+      key?: string;
+      /** Si posée, la case est une Pendulum Zone — bordure violette + affichage Scale. */
+      pendulum?: 'left' | 'right';
+    }
   ) => {
     const here = at(seat, location, sequence);
     // Une option sans carte sur une case désigne forcément une pose.
@@ -129,8 +136,9 @@ export function DuelField({
         key={extra?.key ?? `${seat}-${location}-${sequence}`}
         card={card}
         label={extra?.label}
-        accent={extra?.accent}
+        accent={extra?.accent ?? (extra?.pendulum ? 'var(--violet)' : undefined)}
         field={extra?.field}
+        pendulum={extra?.pendulum}
         placeable={!!place}
         actionable={targets.length > 0}
         selected={selected}
@@ -156,9 +164,19 @@ export function DuelField({
       {/* ── Camp adverse, retourné ── */}
       <Row>
         <Slot kind="deck" label="Deck" count={board.opponent.deckCount} />
+        {/* PZone droite adverse (retournée = à gauche) */}
+        {renderZone(foeSeat, LOCATION_SZONE, 7, board.opponent.spells[7] ?? null, {
+          pendulum: 'right',
+          key: `foe-pz-right`,
+        })}
         {[4, 3, 2, 1, 0].map((seq) =>
           renderZone(foeSeat, LOCATION_SZONE, seq, board.opponent.spells[seq] ?? null)
         )}
+        {/* PZone gauche adverse (retournée = à droite) */}
+        {renderZone(foeSeat, LOCATION_SZONE, 6, board.opponent.spells[6] ?? null, {
+          pendulum: 'left',
+          key: `foe-pz-left`,
+        })}
         <Slot
           kind="extra"
           label="Extra"
@@ -212,11 +230,35 @@ export function DuelField({
           count={board.me.extraCount}
           onClick={() => onOpenZone('extra', 'me')}
         />
+        {/* PZone gauche du joueur */}
+        {renderZone(board.seat, LOCATION_SZONE, 6, board.me.spells[6] ?? null, {
+          pendulum: 'left',
+          key: `me-pz-left`,
+        })}
         {[0, 1, 2, 3, 4].map((seq) =>
           renderZone(board.seat, LOCATION_SZONE, seq, board.me.spells[seq] ?? null)
         )}
+        {/* PZone droite du joueur */}
+        {renderZone(board.seat, LOCATION_SZONE, 7, board.me.spells[7] ?? null, {
+          pendulum: 'right',
+          key: `me-pz-right`,
+        })}
         <Slot kind="deck" label="Deck" count={board.me.deckCount} />
       </Row>
+      {/* Indication invocation Pendulum possible */}
+      {board.me.spells[6] && board.me.spells[7] && (
+        <div
+          style={{
+            textAlign: 'center',
+            fontSize: 10,
+            color: 'var(--violet)',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            marginTop: -4,
+          }}>
+          ⚊ Échelle Pendule complète — Invocation Pendulum possible ⚊
+        </div>
+      )}
     </div>
   );
 }
@@ -233,6 +275,7 @@ function Zone({
   actionable,
   selected,
   field,
+  pendulum,
   onHover,
   onClick,
 }: {
@@ -243,6 +286,7 @@ function Zone({
   actionable?: boolean;
   selected?: boolean;
   field?: boolean;
+  pendulum?: 'left' | 'right';
   onHover: (c: DuelCardView | null) => void;
   onClick: () => void;
 }) {
@@ -260,9 +304,16 @@ function Zone({
       ? '0 0 0 2px rgba(34,211,238,.35), 0 0 16px rgba(34,211,238,.45)'
       : actionable
         ? '0 0 0 2px rgba(245,197,24,.4), 0 0 14px rgba(245,197,24,.45)'
-        : 'none';
+        : pendulum
+          ? '0 0 0 1px rgba(139,92,246,.3)'
+          : 'none';
 
   const clickable = placeable || actionable;
+  const counters = card?.counters ?? null;
+  const totalCounters = counters
+    ? Object.values(counters).reduce((a, b) => a + b, 0)
+    : 0;
+  const materials = card?.materials ?? 0;
 
   return (
     <button
@@ -276,7 +327,7 @@ function Zone({
         height: ZONE_H,
         padding: 0,
         position: 'relative',
-        border: `1px ${card ? 'solid' : 'dashed'} ${border}`,
+        border: `${pendulum ? 2 : 1}px ${card ? 'solid' : 'dashed'} ${border}`,
         background: card ? 'var(--panel-2)' : 'var(--bg-elev)',
         boxShadow: glow,
         cursor: clickable ? 'pointer' : 'default',
@@ -316,13 +367,84 @@ function Zone({
           style={{
             fontSize: 8,
             lineHeight: 1.2,
-            color: placeable ? 'var(--cyan)' : 'var(--text-dim)',
+            color: placeable ? 'var(--cyan)' : pendulum ? 'var(--violet)' : 'var(--text-dim)',
             padding: 4,
             display: 'block',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
           }}>
-          {placeable ? '＋ Poser ici' : (label ?? (field ? 'Terrain' : ''))}
+          {placeable
+            ? '＋ Poser ici'
+            : pendulum
+              ? `Pendule ${pendulum === 'left' ? 'G' : 'D'}`
+              : (label ?? (field ? 'Terrain' : ''))}
+        </span>
+      )}
+      {/* Marqueurs (counters) — badge doré en bas-à-droite */}
+      {totalCounters > 0 && card && (
+        <span
+          title={`Marqueurs : ${totalCounters}`}
+          style={{
+            position: 'absolute',
+            bottom: -6,
+            right: -6,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            background: 'var(--gold)',
+            color: 'var(--onGold, #1a1207)',
+            fontSize: 10,
+            fontWeight: 800,
+            padding: '0 4px',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 3,
+            boxShadow: '0 0 6px rgba(245,197,24,.7)',
+          }}>
+          {totalCounters}
+        </span>
+      )}
+      {/* Matériaux Xyz — badge cyan en haut-à-gauche */}
+      {materials > 0 && card && (
+        <span
+          title={`Matériaux Xyz : ${materials}`}
+          style={{
+            position: 'absolute',
+            top: -6,
+            left: -6,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 4,
+            background: 'var(--cyan)',
+            color: '#0a1a1f',
+            fontSize: 9,
+            fontWeight: 800,
+            padding: '0 4px',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 3,
+            boxShadow: '0 0 6px rgba(34,211,238,.7)',
+          }}>
+          X{materials}
+        </span>
+      )}
+      {/* Scale Pendule — chiffre en surimpression */}
+      {pendulum && card && card.code && !card.faceDown && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 2,
+            [pendulum === 'left' ? 'left' : 'right']: 2,
+            padding: '1px 4px',
+            background: 'rgba(139,92,246,0.85)',
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 800,
+            borderRadius: 3,
+            zIndex: 4,
+          }}>
+          {/* Scale absente du snapshot pour l'instant — on affiche P au moins. */}
+          P
         </span>
       )}
     </button>

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { AppBackground } from '@/components/decor/AppBackground';
@@ -64,6 +65,22 @@ export default function DuelSpectateScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Verrou landscape à l'entrée — miroir de l'arène moteur.
+  useEffect(() => {
+    (async () => {
+      try {
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.LANDSCAPE
+        );
+      } catch {
+        /* dégradé accepté */
+      }
+    })();
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => undefined);
+    };
+  }, []);
 
   // Socket : refresh sur `duel:engine_update`, join la room.
   useEffect(() => {

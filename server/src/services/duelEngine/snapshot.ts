@@ -2,6 +2,7 @@ import type { OcgCoreSync, OcgDuelHandle, OcgLocation, OcgQueryFlags } from 'ocg
 import type {
   DuelBoardView,
   DuelCardView,
+  DuelChainEntry,
   DuelPhaseName,
   DuelSeat,
   DuelSideView,
@@ -207,6 +208,11 @@ export interface SnapshotContext {
   phase: number;
   turnPlayer: DuelSeat;
   lp: [number, number];
+  /**
+   * Rang du maillon en cours de résolution (`CHAIN_SOLVING` reçu), ou `null`
+   * si aucun. `session.ts` le tient à jour.
+   */
+  chainSolvingLink?: number | null;
 }
 
 /**
@@ -233,6 +239,30 @@ export function buildBoardView(
   const field = lib.duelQueryField(handle);
   const foe: DuelSeat = seat === 0 ? 1 : 0;
 
+  // Chaîne en cours — chaque OcgChain porte la carte activée. On expose une
+  // liste ordonnée que le front peut afficher tel un rail vertical d'invocations
+  // en attente de résolution. Cf. audit §5.2 gap n°8.
+  const chain: DuelChainEntry[] = field.chain.map((entry, i) => {
+    const controller: DuelSeat = entry.controller === 1 ? 1 : 0;
+    const name = store.names.get(entry.code);
+    const link: DuelChainEntry = {
+      link: i + 1,
+      code: entry.code,
+      controller,
+      location: entry.location,
+      sequence: entry.sequence,
+    };
+    if (name) link.name = name;
+    // description est un bigint côté moteur ; on tronque en Number pour
+    // sérialiser, le front n'en fait qu'un identifiant.
+    try {
+      link.description = Number(entry.description);
+    } catch {
+      /* ignore */
+    }
+    return link;
+  });
+
   return {
     turn: ctx.turn,
     phase: phaseName(ocg, ctx.phase),
@@ -250,5 +280,7 @@ export function buildBoardView(
     ),
     opponent: buildSide(lib, ocg, handle, foe, false, field.players[foe], ctx.lp[foe], store),
     chainLength: field.chain.length,
+    chain,
+    chainSolvingLink: ctx.chainSolvingLink ?? null,
   };
 }

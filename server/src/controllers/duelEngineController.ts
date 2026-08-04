@@ -9,7 +9,7 @@ import type { DuelChoice, DuelSeat, DuelPreGameState } from '../../../shared/due
 import { DuelEngineModel } from '../models/duelEngineModel';
 import { DuelPreGameModel } from '../models/duelPreGameModel';
 import { DuelClockModel } from '../models/duelClockModel';
-import { deckToEngine, checkEngineDeck, buildEngineDeckFromIds } from '../services/duelEngine/deckLoader';
+import { deckToEngine, checkEngineDeck, buildEngineDeckFromIds, checkEngineDeckStrict } from '../services/duelEngine/deckLoader';
 import { DuelMatchModel } from '../models/duelMatchModel';
 import { DuelSideDeckModel } from '../models/duelSideDeckModel';
 import type { DuelSeat as DuelSeatT } from '../../../shared/duelView';
@@ -183,11 +183,16 @@ export class DuelEngineController {
         conversions = [deckToEngine(challengerDeck), deckToEngine(opponentDeck)];
       }
 
-      const problems = conversions
-        .map((c, i) => {
-          const problem = checkEngineDeck(c as any);
-          return problem ? `${i === 0 ? 'Challenger' : 'Adversaire'} : ${problem}` : null;
-        })
+      // Validation stricte : tailles + banlist + max 3 exemplaires.
+      // Cf. `checkEngineDeckStrict` — un joueur ne peut plus soumettre 40× Pot
+      // of Greed ni glisser une carte Forbidden.
+      const strictResults = await Promise.all(
+        conversions.map((c) => checkEngineDeckStrict(c as any))
+      );
+      const problems = strictResults
+        .map((problem, i) =>
+          problem ? `${i === 0 ? 'Challenger' : 'Adversaire'} : ${problem}` : null
+        )
         .filter((p): p is string => p !== null);
 
       if (problems.length) throw new ValidationError(problems.join(' · '));
@@ -568,6 +573,44 @@ export class DuelEngineController {
         return;
       }
       res.json({ installed: true, ...(await engineStats()) });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /duels/:id/engine/validate-deck
+   *
+   * Bloc 6 · F7 — Vérifie qu'un deck est légal (tailles, banlist TCG, max 3
+   * exemplaires) SANS lancer de duel. Utile côté client pour un signal amont ;
+   * `start` refera la vérification au lancement, on ne peut pas s'y fier
+   * uniquement (bypass éventuel via appel direct).
+   *
+   * Le duel de l'URL est utilisé uniquement pour vérifier le seat du demandeur ;
+   * la validation elle-même porte sur le `deck_id` en body OU sur les decks du
+   * duel lui-même quand `deck_id` est absent.
+   */
+  static async validateDeck(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new ValidationError('Not authenticated');
+      const { duel, seat: _seat } = await loadParticipantDuel(req);
+      const deckId = req.body?.deck_id
+        ? Number(req.body.deck_id)
+        : req.user.id === duel.challenger_id
+          ? duel.challenger_deck_id
+          : duel.opponent_deck_id;
+      if (!deckId) throw new ValidationError('Deck introuvable');
+
+      const deck = await DeckModel.findById(deckId);
+      if (!deck) throw new NotFoundError('Deck introuvable');
+
+      const conversion = deckToEngine(deck);
+      const problem = await checkEngineDeckStrict(conversion);
+      res.json({
+        legal: !problem,
+        message: problem,
+        deckId,
+      });
     } catch (err) {
       next(err);
     }

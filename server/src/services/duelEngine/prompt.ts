@@ -39,10 +39,66 @@ function withHint(prompt: DuelPrompt, ctx?: PromptContext): DuelPrompt {
   if (!ctx?.hint) return prompt;
   const { title, note } = ctx.hint;
   if (!title && !note) return prompt;
-  return { ...prompt, hint: { title, note } };
+  // Fusion : on préserve le note posé par le prompt (ex : hint_timing de
+  // SELECT_CHAIN) et on écrase seulement les slots vides.
+  const existing = prompt.hint ?? {};
+  return {
+    ...prompt,
+    hint: {
+      title: title ?? existing.title,
+      note: [existing.note, note].filter(Boolean).join(' · ') || undefined,
+    },
+  };
 }
 
 const seatOf = (player: number): DuelSeat => (player === 1 ? 1 : 0);
+
+/**
+ * Décode un masque `OcgHintTiming` en libellé lisible.
+ *
+ * Chaque bit correspond à une fenêtre d'ouverture (destruction, envoi au
+ * cimetière, invocation Spéciale…). Le moteur envoie souvent plusieurs bits
+ * combinés — on les joint par virgule.
+ */
+const HINT_TIMING_LABELS: Array<[number, string]> = [
+  [0x1, 'Draw Phase'],
+  [0x2, 'Standby Phase'],
+  [0x4, 'Fin de la Main Phase'],
+  [0x8, 'Début de la Battle Phase'],
+  [0x10, 'Fin de la Battle Phase'],
+  [0x20, 'End Phase'],
+  [0x40, 'Après Invocation Normale'],
+  [0x80, 'Après Invocation Spéciale'],
+  [0x100, 'Après Flip Summon'],
+  [0x200, 'Après un monstre posé'],
+  [0x400, 'Après une magie/piège posée'],
+  [0x800, 'Après changement de position'],
+  [0x1000, 'Déclaration d\'attaque'],
+  [0x2000, 'Damage Step'],
+  [0x4000, 'Damage Calculation'],
+  [0x8000, 'Après résolution de chaîne'],
+  [0x10000, 'Après pioche'],
+  [0x20000, 'Après dégâts'],
+  [0x40000, 'Après récupération'],
+  [0x80000, 'Après destruction'],
+  [0x100000, 'Après retrait'],
+  [0x200000, 'Après envoi en main'],
+  [0x400000, 'Après retour au deck'],
+  [0x800000, 'Après envoi au cimetière'],
+  [0x1000000, 'Battle Phase'],
+  [0x2000000, 'Après équipement'],
+  [0x4000000, 'Fin de la Battle Step'],
+  [0x8000000, 'Après combat résolu'],
+];
+
+function hintTimingLabel(mask: number | undefined): string {
+  if (!mask) return '';
+  const hits: string[] = [];
+  for (const [bit, label] of HINT_TIMING_LABELS) {
+    if ((mask & bit) !== 0) hits.push(label);
+  }
+  return hits.join(', ');
+}
 
 /** Libellé lisible d'un emplacement, pour les invites qui désignent une zone. */
 function locationLabel(ocg: Ocg, location: number): string {
@@ -346,6 +402,11 @@ function translatePrompt(
 
     case M.SELECT_CHAIN: {
       const m = message;
+      // `hint_timing` est un masque OcgHintTiming — quelle fenêtre s'ouvre.
+      // Le joueur méta rate le missed timing sans cette info.
+      const timingLabel = hintTimingLabel(m.hint_timing);
+      const noteParts: string[] = [];
+      if (timingLabel) noteParts.push(`Fenêtre : ${timingLabel}`);
       return {
         kind: 'chain',
         seat: seatOf(m.player),
@@ -359,6 +420,9 @@ function translatePrompt(
         min: m.forced ? 1 : 0,
         max: 1,
         canCancel: !m.forced,
+        ...(noteParts.length
+          ? { hint: { note: noteParts.join(' · ') } }
+          : {}),
       };
     }
 

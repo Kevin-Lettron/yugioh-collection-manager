@@ -1,8 +1,189 @@
-import type { Deck, DeckCard } from '../../../../shared/types';
+import type { Card, Deck, DeckCard } from '../../../../shared/types';
 import { isExtraDeckCard } from '../../../../shared/cards';
 import { query } from '../../config/database';
 import { getCardStore, resolveCard } from './cardStore';
 import type { EnginePlayerDeck } from './protocol';
+
+/**
+ * Limite d'exemplaires selon la banlist TCG stockée sur la carte.
+ *
+ * `banlist_info.ban_tcg` vaut 'Banned', 'Limited', 'Semi-Limited', ou est
+ * absent. Le max 3 par carte du format YGO reste la règle par défaut.
+ *
+ * Miroir de `YgoprodeckService.getBanlistLimit` — dupliqué localement pour
+ * éviter d'importer un service HTTP dans une chaîne critique de démarrage.
+ */
+export function banlistLimit(banTcg?: string | null): number {
+  switch (banTcg) {
+    case 'Banned':
+      return 0;
+    case 'Limited':
+      return 1;
+    case 'Semi-Limited':
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+interface CountEntry {
+  code: number;
+  name: string;
+  count: number;
+  limit: number;
+  banStatus: 'Banned' | 'Limited' | 'Semi-Limited' | 'Unlimited';
+}
+
+/**
+ * Comptabilise les occurrences par passcode et compare à la limite banlist.
+ *
+ * On récupère le `banlist_info` en un seul SELECT par lot d'IDs internes ou
+ * de passcodes — l'appelant fournit l'un ou l'autre.
+ */
+async function tallyByCode(
+  codes: number[]
+): Promise<CountEntry[]> {
+  const counts = new Map<number, number>();
+  for (const c of codes) counts.set(c, (counts.get(c) ?? 0) + 1);
+  const unique = [...counts.keys()];
+  if (unique.length === 0) return [];
+
+  // Passcode est stocké en `cards.card_id` (colonne texte).
+  const strIds = unique.map((c) => String(c));
+  const res = await query(
+    `SELECT card_id, name, name_fr, banlist_info
+       FROM cards
+      WHERE card_id = ANY($1::text[])`,
+    [strIds]
+  );
+
+  const infoByCode = new Map<
+    number,
+    { name: string; banTcg?: string | null }
+  >();
+  for (const row of res.rows) {
+    const code = Number(row.card_id);
+    if (!Number.isInteger(code)) continue;
+    infoByCode.set(code, {
+      name: row.name_fr || row.name || `carte #${code}`,
+      banTcg: row.banlist_info?.ban_tcg ?? null,
+    });
+  }
+
+  const out: CountEntry[] = [];
+  for (const [code, count] of counts) {
+    const info = infoByCode.get(code);
+    const ban = info?.banTcg;
+    const limit = banlistLimit(ban);
+    const banStatus: CountEntry['banStatus'] =
+      ban === 'Banned'
+        ? 'Banned'
+        : ban === 'Limited'
+          ? 'Limited'
+          : ban === 'Semi-Limited'
+            ? 'Semi-Limited'
+            : 'Unlimited';
+    out.push({
+      code,
+      name: info?.name ?? `carte #${code}`,
+      count,
+      limit,
+      banStatus,
+    });
+  }
+  return out;
+}
+
+/**
+ * Vérifie le triplet Forbidden / Limité / max 3 pour un deck.
+ *
+ * `main`, `extra`, `side` sont des listes de passcodes (déjà aplaties pour le
+ * moteur). Renvoie la liste des violations pour affichage ; vide = OK.
+ */
+export async function validateDeckLegality(
+  main: number[],
+  extra: number[],
+  side: number[] = []
+): Promise<Array<{ code: number; name: string; reason: string }>> {
+  const all = [...main, ...extra, ...side];
+  const entries = await tallyByCode(all);
+  const violations: Array<{ code: number; name: string; reason: string }> = [];
+  for (const e of entries) {
+    if (e.banStatus === 'Banned') {
+      violations.push({
+        code: e.code,
+        name: e.name,
+        reason: `${e.name} : Forbidden (interdite)`,
+      });
+      continue;
+    }
+    if (e.count > e.limit) {
+      const label =
+        e.banStatus === 'Unlimited'
+          ? 'max 3'
+          : e.banStatus === 'Limited'
+            ? 'Limitée (max 1)'
+            : 'Semi-Limitée (max 2)';
+      violations.push({
+        code: e.code,
+        name: e.name,
+        reason: `${e.name} : ${label} — ${e.count} exemplaires trouvés`,
+      });
+    }
+  }
+  return violations;
+}
+
+/**
+ * Version synchrone quand la banlist est déjà connue via une liste `Card[]`.
+ *
+ * Utile côté client (le catalogue est en cache) pour un badge en temps réel
+ * dans le DeckEditor. La logique est la même que `validateDeckLegality` mais
+ * sans SQL.
+ */
+export function validateDeckLegalitySync(
+  main: Card[],
+  extra: Card[],
+  side: Card[] = []
+): Array<{ code: number; name: string; reason: string }> {
+  const all = [...main, ...extra, ...side];
+  const counts = new Map<number, { count: number; card: Card }>();
+  for (const c of all) {
+    const code = Number(c.card_id);
+    if (!Number.isInteger(code)) continue;
+    const cur = counts.get(code);
+    if (cur) cur.count += 1;
+    else counts.set(code, { count: 1, card: c });
+  }
+  const violations: Array<{ code: number; name: string; reason: string }> = [];
+  for (const { count, card } of counts.values()) {
+    const ban = card.banlist_info?.ban_tcg;
+    const limit = banlistLimit(ban);
+    const name = card.name_fr || card.name || `carte #${card.card_id}`;
+    if (ban === 'Banned') {
+      violations.push({
+        code: Number(card.card_id),
+        name,
+        reason: `${name} : Forbidden`,
+      });
+      continue;
+    }
+    if (count > limit) {
+      const label =
+        ban === 'Limited'
+          ? 'Limitée (max 1)'
+          : ban === 'Semi-Limited'
+            ? 'Semi-Limitée (max 2)'
+            : 'max 3';
+      violations.push({
+        code: Number(card.card_id),
+        name,
+        reason: `${name} : ${label} — ${count}× trouvée`,
+      });
+    }
+  }
+  return violations;
+}
 
 /**
  * Traduit un deck de la base en liste de passcodes pour le moteur.
@@ -199,4 +380,31 @@ export function checkEngineDeck(conversion: DeckConversion): string | null {
   if (extra.length > 15) return `Extra Deck trop grand : ${extra.length} cartes sur 15 maximum`;
 
   return null;
+}
+
+/**
+ * Check complet : tailles + banlist + max 3 exemplaires.
+ *
+ * À utiliser côté serveur avant `createEngineDuel` — bloque toute soumission
+ * illégale au tournoi. Retourne un message concaténé ou `null` si OK.
+ * `sideIds` : passcodes du side deck si Bo3 (compté ensemble pour le max 3).
+ */
+export async function checkEngineDeckStrict(
+  conversion: DeckConversion,
+  sideIds: number[] = []
+): Promise<string | null> {
+  const basic = checkEngineDeck(conversion);
+  if (basic) return basic;
+  if (sideIds.length > 15) {
+    return `Side Deck trop grand : ${sideIds.length} cartes sur 15 maximum`;
+  }
+  const violations = await validateDeckLegality(
+    conversion.deck.main,
+    conversion.deck.extra,
+    sideIds
+  );
+  if (!violations.length) return null;
+  const shown = violations.slice(0, 4).map((v) => v.reason).join(' · ');
+  const more = violations.length > 4 ? ` (+${violations.length - 4})` : '';
+  return `Deck illégal : ${shown}${more}`;
 }

@@ -252,6 +252,21 @@ const DeckEditor = () => {
     counts.forEach((c, n) => {
       if (c > 3) errs.push(`Max 3 copies de « ${n} » (actuellement ${c})`);
     });
+    // Banlist TCG : détecte Forbidden / Limited / Semi-Limited en local sur
+    // banlist_info.ban_tcg (déjà chargé avec chaque card). Bloque à l'affichage
+    // et pas seulement au save — indispensable pour le moteur qui refusera
+    // désormais les decks illégaux via `checkEngineDeckStrict`.
+    const cardsByName = new Map<string, Card>();
+    [...mainDeck, ...extraDeck].forEach((dc) => {
+      if (dc.card && !cardsByName.has(dc.card.name)) cardsByName.set(dc.card.name, dc.card);
+    });
+    counts.forEach((c, n) => {
+      const card = cardsByName.get(n);
+      const ban = card?.banlist_info?.ban_tcg;
+      if (ban === 'Banned') errs.push(`Banlist : « ${n} » est Forbidden`);
+      else if (ban === 'Limited' && c > 1) errs.push(`Banlist : « ${n} » est Limitée (max 1, actuellement ${c})`);
+      else if (ban === 'Semi-Limited' && c > 2) errs.push(`Banlist : « ${n } » est Semi-Limitée (max 2, actuellement ${c})`);
+    });
     if (respectBanlist && isEditing && deckId) {
       try {
         const response = await api.get(`/decks/${deckId}/validate`);

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
@@ -160,6 +161,32 @@ export default function EngineDuelScreen() {
     duelApi.get(duelId).then(setDuel).catch(() => undefined);
     start();
   }, [duelId, start]);
+
+  /**
+   * CHANTIER 2 — verrou landscape à l'entrée du duel + libération à la sortie.
+   *
+   * On lock uniquement le duel moteur (pas toute l'app) — le reste de l'app
+   * fonctionne en portrait, seul le plateau exige un format wide pour tenir
+   * les 5 zones monstre + PZones + EMZ des deux camps.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.LANDSCAPE
+        );
+      } catch {
+        // Certains devices refusent le lock — on continue en portrait, le
+        // layout reste utilisable même dégradé.
+      }
+    })();
+    return () => {
+      cancelled = true;
+      ScreenOrientation.unlockAsync().catch(() => undefined);
+      void cancelled;
+    };
+  }, []);
 
   // ── Refresh : `view` si moteur actif, sinon `preGame`.
   const refresh = useCallback(async () => {
@@ -380,24 +407,77 @@ export default function EngineDuelScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 260 }}>
-        {/* Plateau adverse */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
+        {/* Plateau adverse (miroir horizontal — spells au-dessus, monstres en-dessous) */}
         <BoardSide
           side={board.opponent}
+          seat={board.seat === 0 ? 1 : 0}
+          isFoe
           label="Adversaire"
+          promptOptions={prompt?.seat === board.seat ? (prompt?.options ?? []) : []}
           styles={styles}
           onCardTap={setDetailCard}
           onOpenZone={(kind) => setOpenZone({ kind, side: 'foe' })}
+          onCardMenu={(card, opts) =>
+            setCardMenu({
+              title: card.name ?? 'Carte',
+              card,
+              options: opts,
+              pickedId: null,
+            })
+          }
+          onOptionPicked={(id) => void send([id])}
+        />
+
+        {/* EMZ partagées, entre les deux camps (Master Rule 5) */}
+        <ExtraMonsterZones
+          meSide={board.me}
+          foeSide={board.opponent}
+          mySeat={board.seat}
+          promptOptions={prompt?.seat === board.seat ? (prompt?.options ?? []) : []}
+          onCardTap={setDetailCard}
+          onCardMenu={(card, opts) =>
+            setCardMenu({
+              title: card.name ?? 'Carte',
+              card,
+              options: opts,
+              pickedId: null,
+            })
+          }
+          onOptionPicked={(id) => void send([id])}
+          styles={styles}
         />
 
         {/* Plateau joueur */}
         <BoardSide
           side={board.me}
+          seat={board.seat}
+          isFoe={false}
           label="Toi"
+          promptOptions={prompt?.seat === board.seat ? (prompt?.options ?? []) : []}
           styles={styles}
           onCardTap={setDetailCard}
           onOpenZone={(kind) => setOpenZone({ kind, side: 'me' })}
+          onCardMenu={(card, opts) =>
+            setCardMenu({
+              title: card.name ?? 'Carte',
+              card,
+              options: opts,
+              pickedId: null,
+            })
+          }
+          onOptionPicked={(id) => void send([id])}
         />
+
+        {/* Rail chaîne — visible pendant qu'une chaîne est en cours */}
+        {board.chain && board.chain.length > 0 && (
+          <ChainPanelMobile
+            chain={board.chain}
+            solvingLink={board.chainSolvingLink ?? null}
+            mySeat={board.seat}
+            styles={styles}
+          />
+        )}
 
         {/* LP mis en avant */}
         <View style={styles.lpRow}>
@@ -768,74 +848,385 @@ function ClockPill({
   );
 }
 
+/** Constantes de zones du moteur — miroir de client/duel/DuelField. */
+const LOCATION_MZONE = 0x4;
+const LOCATION_SZONE = 0x8;
+const POSITION_DEFENSE = 0xc;
+const isDefense = (card: DuelCardView | null): boolean =>
+  !!card && ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
+
+/**
+ * BoardSide — un camp complet en landscape.
+ *
+ * Contient (dans l'ordre horizontal) : Extra Deck · PZone gauche · 5 zones
+ * monstre · PZone droite · Deck OU Field Spell selon la rangée. Les EMZ sont
+ * partagées et rendues UNE fois, entre les deux camps (par le composant
+ * parent). Miroir de `client/src/components/duel/DuelField.tsx`.
+ *
+ * `mySeat` désigne le siège local ; sert pour les options SELECT_PLACE / _DISFIELD
+ * dont l'indexation `controller` doit être comparée. `promptOptions` = les
+ * options du prompt courant ; les cases correspondant sont surlignées et
+ * cliquables directement.
+ */
 function BoardSide({
   side,
+  seat,
+  isFoe,
   label,
-  styles,
+  promptOptions,
   onCardTap,
   onOpenZone,
+  onCardMenu,
+  onOptionPicked,
+  styles,
 }: {
   side: DuelSideView;
+  /** Siège de ce camp (0 ou 1). */
+  seat: DuelSeat;
+  /** true si ce camp est celui de l'adversaire — inverse les rangées. */
+  isFoe: boolean;
   label: string;
-  styles: ReturnType<typeof makeStyles>;
+  promptOptions: DuelPromptOption[];
   onCardTap: (c: DuelCardView) => void;
   onOpenZone: (kind: 'extra' | 'grave' | 'banished') => void;
+  onCardMenu: (c: DuelCardView, opts: DuelPromptOption[]) => void;
+  onOptionPicked: (id: string) => void;
+  styles: ReturnType<typeof makeStyles>;
 }) {
+  // Filtre les options pointant sur ce camp / cette zone.
+  const optionsAt = (location: number, sequence: number) =>
+    promptOptions.filter(
+      (o) => o.controller === seat && o.location === location && o.sequence === sequence
+    );
+
+  const renderZone = (location: number, sequence: number, card: DuelCardView | null, extra?: {
+    field?: boolean;
+    pendulum?: 'left' | 'right';
+    emz?: boolean;
+  }) => {
+    const here = optionsAt(location, sequence);
+    const place = here.find((o) => o.code === undefined);
+    const targets = here.filter((o) => o.code !== undefined);
+    const onPress = () => {
+      if (place) return onOptionPicked(place.id);
+      if (targets.length >= 1 && card) return onCardMenu(card, targets);
+      if (card) return onCardTap(card);
+    };
+    return (
+      <ZoneSlot
+        key={`${location}-${sequence}`}
+        card={card}
+        placeable={!!place}
+        actionable={targets.length > 0}
+        field={extra?.field}
+        pendulum={extra?.pendulum}
+        emz={extra?.emz}
+        onPress={onPress}
+        styles={styles}
+      />
+    );
+  };
+
+  // Rangées : adversaire = pile inversée (spells au-dessus, monstres en-dessous)
+  // pour créer l'effet miroir naturel du plateau YGO.
+  const monsterRow = (
+    <View style={styles.zoneRow}>
+      {(isFoe ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]).map((seq) =>
+        renderZone(LOCATION_MZONE, seq, side.monsters[seq] ?? null)
+      )}
+    </View>
+  );
+  const spellRow = (
+    <View style={styles.zoneRow}>
+      {/* PZone gauche */}
+      {renderZone(LOCATION_SZONE, 6, side.spells[6] ?? null, { pendulum: 'left' })}
+      {(isFoe ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]).map((seq) =>
+        renderZone(LOCATION_SZONE, seq, side.spells[seq] ?? null)
+      )}
+      {/* PZone droite */}
+      {renderZone(LOCATION_SZONE, 7, side.spells[7] ?? null, { pendulum: 'right' })}
+    </View>
+  );
+  const fieldSlot = renderZone(LOCATION_SZONE, 5, side.spells[5] ?? null, { field: true });
+
   return (
     <View style={styles.boardSide}>
       <View style={styles.boardHeader}>
-        <Text style={styles.boardLabel}>{label}</Text>
+        <Text style={styles.boardLabel}>
+          {label} · {side.lp} LP
+        </Text>
         <Text style={styles.dim}>
-          {side.lp} LP · Main {side.handCount} · Deck {side.deckCount}
+          Main {side.handCount} · Deck {side.deckCount}
         </Text>
       </View>
-      <View style={styles.zoneRow}>
-        {side.monsters.slice(0, 5).map((z, i) => (
-          <Zone key={`m${i}`} zone={z} styles={styles} onTap={onCardTap} />
-        ))}
-      </View>
-      <View style={styles.zoneRow}>
-        {side.spells.slice(0, 5).map((z, i) => (
-          <Zone key={`s${i}`} zone={z} styles={styles} onTap={onCardTap} />
-        ))}
-      </View>
-      {/* Piles cliquables — extra / cimetière / bannies */}
-      <View style={styles.pileRow}>
-        <TouchableOpacity style={styles.pile} onPress={() => onOpenZone('extra')}>
-          <Text style={styles.pileLabel}>Extra</Text>
-          <Text style={styles.pileValue}>{side.extraCount}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.pile} onPress={() => onOpenZone('grave')}>
-          <Text style={styles.pileLabel}>Cimetière</Text>
-          <Text style={styles.pileValue}>{side.graveyard.length}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.pile} onPress={() => onOpenZone('banished')}>
-          <Text style={styles.pileLabel}>Bannies</Text>
-          <Text style={styles.pileValue}>{side.banished.length}</Text>
-        </TouchableOpacity>
+      {/* Piles latérales + rangées, tout sur une seule ligne pour un plateau landscape */}
+      <View style={styles.boardRow}>
+        {/* Colonne latérale gauche : Field + Extra + Bannies */}
+        <View style={styles.sideCol}>
+          {fieldSlot}
+          <TouchableOpacity style={styles.pileSmall} onPress={() => onOpenZone('extra')}>
+            <Text style={styles.pileLabel}>Extra</Text>
+            <Text style={styles.pileValue}>{side.extraCount}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pileSmall} onPress={() => onOpenZone('banished')}>
+            <Text style={styles.pileLabel}>Bannies</Text>
+            <Text style={styles.pileValue}>{side.banished.length}</Text>
+          </TouchableOpacity>
+        </View>
+        {/* Zones centrales — ordre inversé pour l'adversaire */}
+        <View style={styles.zoneStack}>
+          {isFoe ? (
+            <>
+              {spellRow}
+              {monsterRow}
+            </>
+          ) : (
+            <>
+              {monsterRow}
+              {spellRow}
+            </>
+          )}
+        </View>
+        {/* Colonne droite : Deck + Cimetière */}
+        <View style={styles.sideCol}>
+          <View style={styles.pileSmall}>
+            <Text style={styles.pileLabel}>Deck</Text>
+            <Text style={styles.pileValue}>{side.deckCount}</Text>
+          </View>
+          <TouchableOpacity style={styles.pileSmall} onPress={() => onOpenZone('grave')}>
+            <Text style={styles.pileLabel}>Cimetière</Text>
+            <Text style={styles.pileValue}>{side.graveyard.length}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 }
 
-function Zone({
-  zone,
+/**
+ * ZoneSlot — case interactive de plateau mobile.
+ *
+ * - `placeable` : SELECT_PLACE/DISFIELD peut poser ici — bordure cyan.
+ * - `actionable` : une option cible cette carte — bordure dorée.
+ * - `pendulum` : rendu spécial violet + Scale.
+ * - `field` : bordure verte "Terrain".
+ * - `emz` : bordure cyan spéciale (Extra Monster Zone).
+ * - Monstre en défense : rotation 90° pour lecture immédiate.
+ * - `counters` / `materials` : badges en surimpression.
+ */
+function ZoneSlot({
+  card,
+  placeable,
+  actionable,
+  field,
+  pendulum,
+  emz,
+  onPress,
   styles,
-  onTap,
 }: {
-  zone: DuelCardView | null;
+  card: DuelCardView | null;
+  placeable?: boolean;
+  actionable?: boolean;
+  field?: boolean;
+  pendulum?: 'left' | 'right';
+  emz?: boolean;
+  onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
-  onTap: (c: DuelCardView) => void;
 }) {
-  if (!zone) return <View style={styles.zone} />;
+  const clickable = placeable || actionable || !!card;
+  const border = placeable
+    ? '#22d3ee'
+    : actionable
+      ? '#f5c518'
+      : pendulum
+        ? '#8b5cf6'
+        : field
+          ? '#22c55e'
+          : emz
+            ? '#22d3ee'
+            : undefined;
+  const defense = isDefense(card);
+  const counters = card?.counters ?? null;
+  const totalCounters = counters
+    ? Object.values(counters).reduce((a, b) => a + b, 0)
+    : 0;
+  const materials = card?.materials ?? 0;
+
   return (
-    <TouchableOpacity style={styles.zone} onPress={() => onTap(zone)}>
-      {zone.code && !zone.faceDown ? (
-        <Image source={{ uri: cardImg(zone.code) }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+    <TouchableOpacity
+      style={[
+        styles.zone,
+        pendulum && { borderColor: '#8b5cf6', borderWidth: 2 },
+        (field || emz) && { borderColor: border, borderWidth: 1 },
+        border && !pendulum && !field && !emz && { borderColor: border, borderWidth: 2 },
+      ]}
+      onPress={onPress}
+      disabled={!clickable}
+    >
+      {card ? (
+        card.code && !card.faceDown ? (
+          <Image
+            source={{ uri: cardImg(card.code) }}
+            style={
+              defense
+                ? {
+                    width: '90%',
+                    height: '90%',
+                    transform: [{ rotate: '90deg' }],
+                  }
+                : { width: '100%', height: '100%' }
+            }
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.zoneCover}>{defense ? 'Verso DEF' : 'Verso'}</Text>
+        )
       ) : (
-        <Text style={styles.zoneCover}>{zone.faceDown ? 'Verso' : '?'}</Text>
+        <Text style={styles.zoneCover}>
+          {placeable
+            ? '＋'
+            : pendulum
+              ? pendulum === 'left'
+                ? 'PG'
+                : 'PD'
+              : field
+                ? 'Terrain'
+                : emz
+                  ? 'EMZ'
+                  : ''}
+        </Text>
+      )}
+      {totalCounters > 0 && card && (
+        <View style={styles.counterBadge}>
+          <Text style={styles.counterBadgeTxt}>{totalCounters}</Text>
+        </View>
+      )}
+      {materials > 0 && card && (
+        <View style={styles.materialBadge}>
+          <Text style={styles.materialBadgeTxt}>X{materials}</Text>
+        </View>
+      )}
+      {pendulum && card && card.code && !card.faceDown && (
+        <View
+          style={[
+            styles.scaleBadge,
+            pendulum === 'left' ? { left: 2 } : { right: 2 },
+          ]}
+        >
+          <Text style={styles.scaleBadgeTxt}>P</Text>
+        </View>
       )}
     </TouchableOpacity>
+  );
+}
+
+/**
+ * ExtraMonsterZones — les 2 EMZ partagées entre les deux joueurs, rendues
+ * une seule fois entre les deux camps. Chaque EMZ peut appartenir à l'un ou
+ * l'autre joueur (moteur : `monsters[5]` et `monsters[6]` sur le propriétaire).
+ */
+function ExtraMonsterZones({
+  meSide,
+  foeSide,
+  mySeat,
+  promptOptions,
+  onCardTap,
+  onCardMenu,
+  onOptionPicked,
+  styles,
+}: {
+  meSide: DuelSideView;
+  foeSide: DuelSideView;
+  mySeat: DuelSeat;
+  promptOptions: DuelPromptOption[];
+  onCardTap: (c: DuelCardView) => void;
+  onCardMenu: (c: DuelCardView, opts: DuelPromptOption[]) => void;
+  onOptionPicked: (id: string) => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const foeSeat: DuelSeat = mySeat === 0 ? 1 : 0;
+  const zones: Array<{ card: DuelCardView | null; owner: DuelSeat; sequence: number }> = [
+    {
+      card: meSide.monsters[5] ?? foeSide.monsters[5] ?? null,
+      owner: meSide.monsters[5] ? mySeat : foeSeat,
+      sequence: 5,
+    },
+    {
+      card: meSide.monsters[6] ?? foeSide.monsters[6] ?? null,
+      owner: meSide.monsters[6] ? mySeat : foeSeat,
+      sequence: 6,
+    },
+  ];
+  return (
+    <View style={styles.emzRow}>
+      {zones.map((z, i) => {
+        const here = promptOptions.filter(
+          (o) => o.location === LOCATION_MZONE && o.sequence === z.sequence
+        );
+        const place = here.find((o) => o.code === undefined);
+        const targets = here.filter((o) => o.code !== undefined);
+        return (
+          <ZoneSlot
+            key={`emz${i}`}
+            card={z.card}
+            placeable={!!place}
+            actionable={targets.length > 0}
+            emz
+            onPress={() => {
+              if (place) return onOptionPicked(place.id);
+              if (targets.length && z.card) return onCardMenu(z.card, targets);
+              if (z.card) return onCardTap(z.card);
+            }}
+            styles={styles}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── ChainPanel — miroir mobile du web §5.2 gap n°8 ─────────────────────────
+
+function ChainPanelMobile({
+  chain,
+  solvingLink,
+  mySeat,
+  styles,
+}: {
+  chain: import('@/types').DuelChainEntry[];
+  solvingLink: number | null;
+  mySeat: DuelSeat;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.chainPanel}>
+      <Text style={styles.chainTitle}>Chaîne · {chain.length}</Text>
+      <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingVertical: 4 }}>
+        {chain.map((link) => {
+          const solving = solvingLink === link.link;
+          const mine = link.controller === mySeat;
+          return (
+            <View
+              key={`chain-${link.link}`}
+              style={[styles.chainLink, solving && styles.chainLinkSolving]}
+            >
+              {link.code ? (
+                <Image
+                  source={{ uri: cardImg(link.code) }}
+                  style={{ width: 30, height: 44 }}
+                />
+              ) : null}
+              <Text style={styles.chainLinkTxt}>
+                #{link.link} {mine ? 'moi' : 'adv.'}
+              </Text>
+              <Text style={styles.chainLinkTxt} numberOfLines={1}>
+                {link.name ?? `#${link.code}`}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1685,22 +2076,32 @@ const makeStyles = (t: Theme) =>
     clockPillActive: { borderWidth: 1, borderColor: t.colors.gold },
     clockTxt: { fontSize: 9, color: t.colors.textDim },
     clockValue: { fontSize: 12, color: t.colors.text, fontWeight: '700' },
-    boardSide: { paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
-    boardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-    boardLabel: { color: t.colors.text, fontWeight: '700', fontSize: 12 },
-    zoneRow: { flexDirection: 'row', gap: 4, marginBottom: 4 },
+    boardSide: { paddingHorizontal: 6, paddingVertical: 4, marginBottom: 2 },
+    boardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+    boardLabel: { color: t.colors.text, fontWeight: '700', fontSize: 11 },
+    boardRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    zoneStack: { flex: 1, gap: 3 },
+    zoneRow: { flexDirection: 'row', gap: 3 },
+    sideCol: { width: 46, gap: 3 },
     zone: {
-      flex: 1,
+      width: 44,
       aspectRatio: 0.7,
       borderWidth: 1,
       borderColor: t.colors.border,
-      borderRadius: 4,
-      overflow: 'hidden',
+      borderRadius: 3,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: t.colors.panel,
+      position: 'relative',
     },
-    zoneCover: { color: t.colors.textDim, fontSize: 9 },
+    zoneCover: { color: t.colors.textDim, fontSize: 8 },
+    emzRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 24,
+      paddingVertical: 3,
+      backgroundColor: 'rgba(34,211,238,0.04)',
+    },
     pileRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
     pile: {
       flex: 1,
@@ -1711,8 +2112,88 @@ const makeStyles = (t: Theme) =>
       paddingVertical: 6,
       alignItems: 'center',
     },
-    pileLabel: { color: t.colors.textDim, fontSize: 9 },
-    pileValue: { color: t.colors.text, fontSize: 14, fontWeight: '700' },
+    pileSmall: {
+      backgroundColor: t.colors.panel,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 3,
+      paddingVertical: 4,
+      alignItems: 'center',
+      minHeight: 30,
+    },
+    pileLabel: { color: t.colors.textDim, fontSize: 8, letterSpacing: 0.5 },
+    pileValue: { color: t.colors.text, fontSize: 12, fontWeight: '700' },
+    counterBadge: {
+      position: 'absolute',
+      bottom: -6,
+      right: -6,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: t.colors.gold,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 3,
+      zIndex: 3,
+    },
+    counterBadgeTxt: { color: t.colors.onGold, fontSize: 9, fontWeight: '800' },
+    materialBadge: {
+      position: 'absolute',
+      top: -4,
+      left: -4,
+      minWidth: 16,
+      height: 14,
+      borderRadius: 3,
+      backgroundColor: t.colors.cyan,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 3,
+      zIndex: 3,
+    },
+    materialBadgeTxt: { color: '#0a1a1f', fontSize: 8, fontWeight: '800' },
+    scaleBadge: {
+      position: 'absolute',
+      top: 1,
+      backgroundColor: 'rgba(139,92,246,0.9)',
+      paddingHorizontal: 3,
+      paddingVertical: 1,
+      borderRadius: 2,
+      zIndex: 4,
+    },
+    scaleBadgeTxt: { color: '#fff', fontSize: 8, fontWeight: '800' },
+    chainPanel: {
+      marginHorizontal: 6,
+      marginTop: 4,
+      padding: 6,
+      borderWidth: 1,
+      borderColor: t.colors.magenta,
+      borderRadius: 4,
+      backgroundColor: 'rgba(184,46,133,0.08)',
+    },
+    chainTitle: {
+      color: t.colors.magenta,
+      fontSize: 9,
+      letterSpacing: 1,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      marginBottom: 2,
+    },
+    chainLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 3,
+      backgroundColor: t.colors.panel2,
+      maxWidth: 140,
+    },
+    chainLinkSolving: {
+      borderColor: t.colors.gold,
+      backgroundColor: 'rgba(245,197,24,0.18)',
+    },
+    chainLinkTxt: { color: t.colors.text, fontSize: 9 },
     lpRow: {
       flexDirection: 'row',
       gap: 24,

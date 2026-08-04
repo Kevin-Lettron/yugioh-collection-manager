@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
@@ -98,6 +99,22 @@ export default function DuelScreen() {
   useEffect(() => {
     fetchDuel();
   }, [fetchDuel]);
+
+  // Verrou landscape à l'entrée (mode manuel — miroir de l'arène moteur).
+  useEffect(() => {
+    (async () => {
+      try {
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.LANDSCAPE
+        );
+      } catch {
+        /* device refuse — dégradé accepté */
+      }
+    })();
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => undefined);
+    };
+  }, []);
 
   // Polling — refetch toutes les 2 s tant que status === active. Stop des que
   // le duel se termine ou que la vue est demontee.

@@ -370,6 +370,17 @@ export interface DuelSideView {
   graveyard: DuelCardView[];
   banished: DuelCardView[];
 }
+/** Un maillon de la chaîne — miroir mobile de `shared/duelView.ts`. */
+export interface DuelChainEntry {
+  link: number;
+  code: number;
+  name?: string;
+  controller: DuelSeat;
+  location: number;
+  sequence: number;
+  description?: number;
+}
+
 export interface DuelBoardView {
   turn: number;
   phase: DuelPhaseName;
@@ -378,6 +389,10 @@ export interface DuelBoardView {
   me: DuelSideView;
   opponent: DuelSideView;
   chainLength: number;
+  /** Pile ordonnée des maillons — cf. `shared/duelView.ts`. */
+  chain: DuelChainEntry[];
+  /** Indice du maillon en cours de résolution, ou null si aucun. */
+  chainSolvingLink?: number | null;
 }
 
 export type DuelPromptKind =

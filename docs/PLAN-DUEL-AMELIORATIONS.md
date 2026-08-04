@@ -618,3 +618,45 @@ réel :
   room. Avec beaucoup de spectateurs sur un duel, prévoir un throttle.
   Non critique tant que <10 spectateurs simultanés.
 
+---
+
+## 10. Bloc 6 · Combler les gaps de l'audit (2026-08-04)
+
+Consommation des recommandations §5.1 + §6 P1 de `AUDIT-DUEL-COMPLET.md`. Sept
+chantiers, livrés en un seul push.
+
+### 10.1. Livrables
+
+| Chantier | Portée | État |
+|---|---|:-:|
+| C1 · Pendulum Zones web + mobile | 2 PZones rendues, bordure violette + badge « P », indication invocation Pendulum active | ✅ |
+| C2 · Mobile landscape obligatoire | `expo-screen-orientation` installé, `lockAsync(LANDSCAPE)` posé sur les 3 écrans duel (moteur, manuel, spectateur), unlock en cleanup. Refonte layout : plateau miroir horizontal, EMZ centrales, Field/Extra/Deck/Cimetière/Bannies en colonnes latérales, PZones aux extrémités des spells, rotation 90° pour défense, ZoneSlot cliquable pour SELECT_PLACE | ✅ |
+| C3 · Marqueurs + Xyz + équipés | Badge doré compteur (bas-droite), badge cyan « Xn » matériaux (haut-gauche), scale Pendule (haut) sur web ET mobile. Trait équipement : les animations EQUIP restent transitoires (2 s), lien permanent = report v1.1 | ⚠ partiel |
+| C4 · ChainPanel | `snapshot.ts` remonte `field.chain` → `DuelBoardView.chain` (nouveau) + `chainSolvingLink`. Composant `ChainPanel` (web, rail à côté du plateau) et `ChainPanelMobile` (rail bas plateau). Maillon en résolution surligné doré | ✅ |
+| C5 · Banlist + max 3 | `deckLoader.ts` : `banlistLimit()`, `validateDeckLegality()`, `validateDeckLegalitySync()`, `checkEngineDeckStrict()`. Câblé dans `duelEngineController.start` — refuse le duel si Forbidden ou max copies dépassé. Endpoint `POST /duels/:id/engine/validate-deck` ajouté. Client `DeckEditor` : validation banlist en temps réel (Forbidden / Limited / Semi-Limited) | ✅ |
+| C6 · Messages narratifs | `session.ts` absorbe désormais : `START`, `SHOW_HINT`, `SWAP_GRAVE_DECK`, `SHUFFLE_SET_CARD`, `REVERSE_DECK`, `CARD_SELECTED`, `RANDOM_SELECTED`, `CANCEL_TARGET`, `REMOVE_CARDS`, `BE_CHAIN_TARGET`, `CREATE_RELATION`, `RELEASE_RELATION` — ligne journal + éventuelle anim | ✅ |
+| C7 · Hint types + hint_timing | HINT_EFFECT / CARD / ZONE / NUMBER / RACE / ATTRIB / CODE désormais journalisés (au lieu d'être ignorés silencieusement). `withHint` fusionne titre+note au lieu d'écraser. `SELECT_CHAIN` : `hint_timing` décodé et transmis comme note (« Fenêtre : Fin de la Battle Phase, Après destruction ») | ✅ |
+
+### 10.2. Validation
+
+- `cd server && npx tsc --noEmit` : clean
+- `cd client && npm run build` (tsc): clean
+- `cd mobile && npx tsc --noEmit` : clean
+- `npm run duel:autoplay` standard : **3/3 parties** — 1284 décisions,
+  0 fuite, 0 refus, 0 invite non couverte
+- `npm run duel:autoplay:snake-eye` : partiel — les erreurs Lua
+  `chain.lua:85 Passed invalid CHAININFO flag` sur `c23434538` / `c4280259`
+  sont **préexistantes** (déjà signalées §9.9), non liées à ce Bloc 6
+
+### 10.3. Reports v1.1
+
+- **Trait équipement permanent SVG** (C3 P2.c de l'audit) — 3-4 h · le badge
+  ne remplace pas le lien visuel, mais l'animation EQUIP couvre 90 % des cas.
+- **Matériaux Xyz cliquables individuellement** (P2.b) — 2 h · le compteur
+  est là, l'ouverture d'un modal avec les noms reste à ajouter.
+- **Position visuelle mobile face-verso ATK vs DEF** — le mode « Verso DEF »
+  est distingué mais pas de cadre spécifique.
+- **Menu long-press mobile pour changer position ATK↔DEF** — pris en charge
+  par le CardActionMenu quand le moteur propose l'action, pas encore par un
+  raccourci indépendant.
+

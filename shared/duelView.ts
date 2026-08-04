@@ -72,6 +72,32 @@ export interface DuelSideView {
   banished: DuelCardView[];
 }
 
+/**
+ * Un maillon de la chaîne en cours — ordre d'activation (LIFO à la résolution).
+ *
+ * Ce que le moteur expose : la carte activée (`code` + emplacement), qui la
+ * contrôle, et l'événement déclencheur (`triggeringLocation`/`triggeringSequence`)
+ * quand il s'agit d'un effet déclenché par un événement précis. Le tout permet
+ * au front d'afficher la pile en clair — un joueur voit enfin ce qui va
+ * résoudre plutôt qu'un simple compteur `chain · N`.
+ */
+export interface DuelChainEntry {
+  /** Rang du maillon dans la chaîne (1 = premier activé). */
+  link: number;
+  /** Passcode de la carte activée. */
+  code: number;
+  name?: string;
+  /** Siège du contrôleur de la carte activée. */
+  controller: DuelSeat;
+  location: number;
+  sequence: number;
+  /**
+   * Descripteur d'effet (indice interne au script YGO). Rare qu'on l'affiche
+   * en clair, mais on le remonte pour de futurs raffinements.
+   */
+  description?: number;
+}
+
 export interface DuelBoardView {
   turn: number;
   phase: DuelPhaseName;
@@ -83,6 +109,16 @@ export interface DuelBoardView {
   opponent: DuelSideView;
   /** Longueur de la chaîne en cours de résolution, 0 si aucune. */
   chainLength: number;
+  /**
+   * Pile ordonnée des maillons — bas de pile = premier activé. La résolution
+   * s'effectue en LIFO. Vide quand aucune chaîne n'est en cours.
+   */
+  chain: DuelChainEntry[];
+  /**
+   * Indice du maillon en cours de résolution (dans `chain`), quand un
+   * `MSG_CHAIN_SOLVING` vient de tomber. `null` sinon.
+   */
+  chainSolvingLink?: number | null;
 }
 
 // ─── Demandes ───────────────────────────────────────────────────────────────

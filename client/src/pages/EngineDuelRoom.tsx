@@ -604,6 +604,14 @@ export default function EngineDuelRoom() {
             currentPhase={PHASE_LABELS[board.phase] ?? board.phase}
             onOpenPhases={() => setPhasesOpen(true)}
           />
+          {/* Rail chaîne — §5.2 gap #8 : afficher la pile des maillons */}
+          {board.chain && board.chain.length > 0 && (
+            <ChainPanel
+              chain={board.chain}
+              solvingLink={board.chainSolvingLink ?? null}
+              mySeat={board.seat}
+            />
+          )}
           </div>
 
           {/* Points de vie, de part et d'autre du plateau */}
@@ -1748,6 +1756,108 @@ function ActionRail({
       </button>
 
     </div>
+  );
+}
+
+/**
+ * Rail de la chaîne active — pile ordonnée des maillons, avec le maillon en
+ * cours de résolution en surbrillance dorée.
+ *
+ * Ordre d'affichage : bas de la pile en haut de la liste (premier activé),
+ * dernier maillon en bas — ce que le joueur voit se résoudre par le sommet.
+ * En YGO la résolution est LIFO ; visuellement, on regarde donc de bas en haut.
+ */
+function ChainPanel({
+  chain,
+  solvingLink,
+  mySeat,
+}: {
+  chain: import('../../../shared/duelView').DuelChainEntry[];
+  solvingLink: number | null;
+  mySeat: 0 | 1;
+}) {
+  return (
+    <aside
+      style={{
+        display: 'grid',
+        gap: 6,
+        width: 128,
+        alignSelf: 'center',
+        padding: 8,
+        border: '1px solid var(--magenta)',
+        borderRadius: 6,
+        background: 'rgba(184, 46, 133, .08)',
+      }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'var(--magenta)',
+          fontWeight: 700,
+          textAlign: 'center',
+        }}>
+        Chaîne · {chain.length}
+      </div>
+      <div style={{ display: 'grid', gap: 4 }}>
+        {chain.map((link) => {
+          const solving = solvingLink === link.link;
+          const mine = link.controller === mySeat;
+          return (
+            <div
+              key={`chain-${link.link}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 6px',
+                border: `1px solid ${solving ? 'var(--gold)' : 'var(--border)'}`,
+                borderRadius: 4,
+                background: solving ? 'rgba(245,197,24,.18)' : 'var(--panel-2)',
+                boxShadow: solving ? '0 0 8px rgba(245,197,24,.5)' : 'none',
+              }}
+              title={`Maillon #${link.link} — ${mine ? 'toi' : 'adversaire'}`}>
+              <img
+                src={`https://images.ygoprodeck.com/images/cards_small/${link.code}.jpg`}
+                alt={link.name ?? ''}
+                style={{ width: 24, height: 35, objectFit: 'cover', flexShrink: 0 }}
+              />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: 'var(--text-muted)',
+                    letterSpacing: '0.06em',
+                  }}>
+                  #{link.link} {mine ? 'moi' : 'adv.'}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: solving ? 'var(--gold)' : 'var(--text)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                  {link.name ?? `Carte ${link.code}`}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {solvingLink !== null && (
+        <div
+          style={{
+            fontSize: 9,
+            color: 'var(--gold)',
+            textAlign: 'center',
+            letterSpacing: '0.06em',
+          }}>
+          Résolution en cours
+        </div>
+      )}
+    </aside>
   );
 }
 

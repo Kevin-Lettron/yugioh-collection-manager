@@ -42,5 +42,8 @@ router.post('/:id/engine/announce-card/search',
 router.get('/:id/engine/spectate',    authenticateToken, DuelEngineController.spectate);
 // ─── F6 · reprise manuelle (admin)
 router.post('/:id/engine/rehydrate',  authenticateToken, DuelEngineController.rehydrate);
+// ─── Bloc 6 P1 · validation banlist + max 3 exemplaires en amont
+router.post('/:id/engine/validate-deck',
+                                      authenticateToken, DuelEngineController.validateDeck);
 
 export default router;

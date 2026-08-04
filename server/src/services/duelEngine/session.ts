@@ -236,6 +236,13 @@ export class DuelSession {
    */
   private pendingOptionLabels: string[] = [];
 
+  /**
+   * Rang du maillon en cours de résolution (posé à `CHAIN_SOLVING`, retiré à
+   * `CHAIN_SOLVED` ou `CHAIN_END`). Le snapshot le remonte au front pour qu'il
+   * puisse mettre le maillon actif en surbrillance dans le ChainPanel.
+   */
+  private chainSolvingLink: number | null = null;
+
   constructor(handle: OcgDuelHandle, startingLP: number, duelId: number = 0) {
     this.handle = handle;
     this.duelId = duelId;
@@ -708,6 +715,7 @@ export class DuelSession {
         return;
 
       case M.CHAIN_SOLVING:
+        this.chainSolvingLink = message.chain_size;
         this.pushAnim({
           kind: 'chain_solving',
           description: `Résolution du maillon #${message.chain_size}`,
@@ -719,6 +727,9 @@ export class DuelSession {
         return;
 
       case M.CHAIN_SOLVED:
+        // Résolution terminée pour ce maillon : on ne surligne plus rien tant
+        // que le maillon suivant n'a pas commencé.
+        if (this.chainSolvingLink === message.chain_size) this.chainSolvingLink = null;
         this.pushAnim({
           kind: 'chain_solved',
           description: `Maillon #${message.chain_size} résolu`,
@@ -730,6 +741,7 @@ export class DuelSession {
         return;
 
       case M.CHAIN_END:
+        this.chainSolvingLink = null;
         this.pushAnim({
           kind: 'chain_end',
           description: 'Chaîne terminée',
@@ -932,17 +944,212 @@ export class DuelSession {
             // libellés d'options dans l'ordre.
             if (text) this.pendingOptionLabels.push(text);
             return;
-          case T.EFFECT:
-          case T.CODE:
-          case T.RACE:
-          case T.ATTRIB:
-          case T.NUMBER:
-          case T.CARD:
-          case T.ZONE:
+          case T.EFFECT: {
+            // Décoré : le texte est le nom de l'effet. Attaché à l'invite en
+            // cours comme note supplémentaire.
+            if (text) {
+              // Fusionne avec un hint titre déjà posé (SELECTMSG), sinon crée-en un.
+              if (this.pendingHint) {
+                this.pendingHint.note = text;
+              } else {
+                this.pendingHint = { note: text, seat };
+              }
+            }
+            return;
+          }
+          case T.CARD: {
+            // Le moteur pointe une carte concrète — passcode dans `hint`.
+            // On l'ajoute au journal côté joueur destinataire.
+            const code = Number(h.hint);
+            if (Number.isInteger(code) && code > 0) {
+              const nm = store.names.get(code) ?? `Carte ${code}`;
+              this.push({ kind: 'hint_card', text: `Carte visée : ${nm}`, codes: [code] });
+              this.pushAnim({
+                kind: 'card_hint',
+                description: `Carte visée : ${nm}`,
+                codes: [code],
+                controller: seat,
+                at: Date.now(),
+                ttl: ANIMATION_TTL_MS,
+                forPlayers: 'both',
+              });
+            }
+            return;
+          }
+          case T.ZONE: {
+            // Le moteur pointe une zone du plateau. `hint` est un masque de
+            // zones, on log juste que « zone visée : masque 0xNN ».
+            const mask = Number(h.hint);
+            if (Number.isFinite(mask)) {
+              this.push({
+                kind: 'hint_zone',
+                text: `Zone visée (masque 0x${mask.toString(16)})`,
+              });
+            }
+            return;
+          }
+          case T.NUMBER: {
+            const n = Number(h.hint);
+            if (Number.isFinite(n)) {
+              this.push({ kind: 'hint_number', text: `Valeur annoncée : ${n}` });
+            }
+            return;
+          }
+          case T.RACE: {
+            const mask = Number(h.hint);
+            this.push({ kind: 'hint_race', text: `Type visé (masque 0x${mask.toString(16)})` });
+            return;
+          }
+          case T.ATTRIB: {
+            const mask = Number(h.hint);
+            this.push({
+              kind: 'hint_attrib',
+              text: `Attribut visé (masque 0x${mask.toString(16)})`,
+            });
+            return;
+          }
+          case T.CODE: {
+            const code = Number(h.hint);
+            if (Number.isInteger(code) && code > 0) {
+              const nm = store.names.get(code) ?? `Carte ${code}`;
+              this.push({ kind: 'hint_code', text: `Carte annoncée : ${nm}`, codes: [code] });
+            }
+            return;
+          }
           default:
-            // Sans traduction utile pour l'affichage, on ignore silencieusement.
             return;
         }
+      }
+
+      // ── Messages non absorbés jusqu'ici — cf. audit §5.2 recommandations 14
+      case M.SHOW_HINT: {
+        // Bandeau texte libre — quelques cartes rares (Number 39 Utopia,
+        // Duel Terminal) l'utilisent pour un message explicite. Le champ
+        // `hint` est déjà une chaîne selon le .d.ts.
+        const text = message.hint || '(indice)';
+        this.pushCombat({
+          kind: 'waiting',
+          description: `Indice : ${text}`,
+          at: Date.now(),
+          forPlayers: 'both',
+        });
+        return;
+      }
+
+      case M.SWAP_GRAVE_DECK: {
+        const seat: DuelSeat = message.player === 1 ? 1 : 0;
+        this.push({
+          kind: 'swap_grave_deck',
+          text: `Le joueur ${seat + 1} échange son deck avec son cimetière`,
+        });
+        return;
+      }
+
+      case M.SHUFFLE_SET_CARD: {
+        // Mélange de cartes face verso sur le terrain (Necrovalley…). Le
+        // moteur envoie les emplacements ; on log l'événement.
+        this.push({
+          kind: 'shuffle_set_card',
+          text: 'Mélange des cartes posées face verso',
+        });
+        return;
+      }
+
+      case M.REVERSE_DECK: {
+        this.push({ kind: 'reverse_deck', text: 'Le deck est retourné (dessus / dessous inversés)' });
+        return;
+      }
+
+      case M.CARD_SELECTED: {
+        // Annonce publique qu'une carte a été retenue par un effet.
+        for (const c of message.cards) {
+          this.pushAnim({
+            kind: 'become_target',
+            description: 'Sélection par effet',
+            location: c.location,
+            sequence: c.sequence,
+            controller: c.controller,
+            at: Date.now(),
+            ttl: ANIMATION_TTL_MS,
+            forPlayers: 'both',
+          });
+        }
+        return;
+      }
+
+      case M.RANDOM_SELECTED: {
+        const seat: DuelSeat = message.player === 1 ? 1 : 0;
+        this.push({
+          kind: 'random_selected',
+          text: `Sélection aléatoire pour le joueur ${seat + 1}`,
+        });
+        for (const c of message.cards) {
+          this.pushAnim({
+            kind: 'become_target',
+            description: 'Sélection aléatoire',
+            location: c.location,
+            sequence: c.sequence,
+            controller: c.controller,
+            at: Date.now(),
+            ttl: ANIMATION_TTL_MS,
+            forPlayers: 'both',
+          });
+        }
+        return;
+      }
+
+      case M.CANCEL_TARGET: {
+        // Un ciblage devient invalide (Fissure sur un monstre qui a quitté le
+        // terrain, par exemple). Journalisé pour éviter que le halo reste
+        // orphelin à l'écran. On pousse aussi une anim invisible pour purger
+        // les halos actifs sur la cible.
+        this.push({ kind: 'cancel_target', text: 'Ciblage annulé' });
+        this.pushAnim({
+          kind: 'card_hint',
+          description: 'Ciblage annulé',
+          location: message.target.location,
+          sequence: message.target.sequence,
+          controller: message.target.controller,
+          at: Date.now(),
+          ttl: 500,
+          forPlayers: 'both',
+        });
+        return;
+      }
+
+      case M.REMOVE_CARDS: {
+        // Suppression massive de cartes (Harpie's Feather Duster, Raigeki,
+        // Dark Hole…). On log un compte global.
+        const n = message.cards?.length ?? 0;
+        this.pushCombat({
+          kind: 'attack_disabled',
+          description: `Retrait massif de ${n} carte${n > 1 ? 's' : ''}`,
+          at: Date.now(),
+          forPlayers: 'both',
+        });
+        return;
+      }
+
+      case M.BE_CHAIN_TARGET: {
+        // Une carte devient cible d'un maillon de chaîne — spécifique.
+        this.push({ kind: 'be_chain_target', text: 'Carte visée par un maillon' });
+        return;
+      }
+
+      case M.CREATE_RELATION: {
+        this.push({ kind: 'create_relation', text: 'Lien entre deux cartes établi' });
+        return;
+      }
+
+      case M.RELEASE_RELATION: {
+        this.push({ kind: 'release_relation', text: 'Lien entre deux cartes rompu' });
+        return;
+      }
+
+      case M.START: {
+        // Log discret de démarrage — pratique en rehydrate / spectateur.
+        this.push({ kind: 'start', text: 'Partie démarrée' });
+        return;
       }
 
       default:
@@ -1029,7 +1236,13 @@ export class DuelSession {
       ocg,
       this.handle,
       seat,
-      { turn: this.turn, phase: this.phase, turnPlayer: this.turnPlayer, lp: this.lp },
+      {
+        turn: this.turn,
+        phase: this.phase,
+        turnPlayer: this.turnPlayer,
+        lp: this.lp,
+        chainSolvingLink: this.chainSolvingLink,
+      },
       store
     );
 
@@ -1102,7 +1315,13 @@ export class DuelSession {
       ocg,
       this.handle,
       0,
-      { turn: this.turn, phase: this.phase, turnPlayer: this.turnPlayer, lp: this.lp },
+      {
+        turn: this.turn,
+        phase: this.phase,
+        turnPlayer: this.turnPlayer,
+        lp: this.lp,
+        chainSolvingLink: this.chainSolvingLink,
+      },
       store,
       true
     );
