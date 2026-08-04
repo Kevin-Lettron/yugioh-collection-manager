@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import type { OcgCardData } from 'ocgcore-wasm';
 import { CARD_DB_PATH, MISSING_ASSETS_HINT, assetsInstalled } from './paths';
 
@@ -19,8 +19,11 @@ import { CARD_DB_PATH, MISSING_ASSETS_HINT, assetsInstalled } from './paths';
  *     hauts sont silencieusement corrompus et les cartes concernées cessent de
  *     se reconnaître entre elles.
  *
- * `node:sqlite` est utilisé plutôt que `better-sqlite3` : c'est un module natif
- * intégré à Node 24, donc aucun binaire à compiler sur le VPS.
+ * `better-sqlite3` est utilisé plutôt que `node:sqlite` : ce dernier est un
+ * module expérimental qui exige `--experimental-sqlite` sur Node 22 et n'est
+ * pas disponible sur les Node < 22.5. `better-sqlite3` est stable, natif, et
+ * `npm ci` le compile au déploiement (build-essential + python3 déjà en place
+ * sur le VPS).
  */
 
 /** TYPE_LINK dans ocgcore. Défini ici pour ne pas dépendre de l'ESM au chargement. */
@@ -98,13 +101,15 @@ export function loadCardStore(dbPath: string = CARD_DB_PATH): CardStore {
     throw new Error(MISSING_ASSETS_HINT);
   }
 
-  const db = new DatabaseSync(dbPath, { readOnly: true });
+  const db = new Database(dbPath, { readonly: true });
   try {
+    // Sans safeIntegers, `setcode` (INT64) perd ses bits hauts (cf. l'en-tête).
+    // better-sqlite3 renvoie alors des BigInt pour toutes les colonnes numériques,
+    // ce que `rowToCardData` gère déjà via son typage `DataRow`.
     const dataStmt = db.prepare(
       'SELECT id, alias, setcode, type, atk, def, level, race, attribute FROM datas'
     );
-    // Sans cela, `setcode` perd ses bits hauts (cf. l'en-tête).
-    dataStmt.setReadBigInts(true);
+    dataStmt.safeIntegers(true);
 
     const data = new Map<number, OcgCardData>();
     for (const row of dataStmt.all() as unknown as DataRow[]) {
@@ -114,11 +119,9 @@ export function loadCardStore(dbPath: string = CARD_DB_PATH): CardStore {
 
     const names = new Map<number, string>();
     const descriptions = new Map<number, string>();
-    for (const row of db.prepare('SELECT id, name, desc FROM texts').all() as Array<{
-      id: number;
-      name: string;
-      desc: string | null;
-    }>) {
+    for (const row of db
+      .prepare('SELECT id, name, desc FROM texts')
+      .all() as Array<{ id: number; name: string; desc: string | null }>) {
       const code = Number(row.id);
       names.set(code, row.name);
       if (row.desc) descriptions.set(code, row.desc);
