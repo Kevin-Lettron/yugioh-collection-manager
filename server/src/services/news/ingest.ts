@@ -15,6 +15,7 @@ import { query } from '../../config/database';
 import { fetchFeed } from './fetcher';
 import { parseFeed } from './parser';
 import { classifyArticle } from './classify';
+import { translatePendingArticles } from './translate';
 import type { NewsSourceRow } from './types';
 
 export interface IngestReport {
@@ -164,6 +165,15 @@ export async function ingestAllSources(): Promise<Record<string, IngestReport>> 
     );
     // Pause entre chaque source (sauf après la dernière) pour éviter les 429.
     if (i < sources.length - 1) await delay(DELAY_BETWEEN_SOURCES_MS);
+  }
+
+  // Traduction FR des nouveaux articles (best-effort, ne bloque pas l'ingest si echec).
+  // On limite a 40 par cycle pour capper le cout Claude et laisser le backfill respirer.
+  try {
+    const trad = await translatePendingArticles(40);
+    console.log(`[news:translate] ${trad.ok} traduit(s), ${trad.ko} echec(s)`);
+  } catch (err) {
+    console.error('[news:translate] batch failed', err);
   }
 
   return bilan;

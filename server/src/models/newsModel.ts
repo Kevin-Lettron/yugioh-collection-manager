@@ -34,17 +34,21 @@ const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
 function parseRow(row: any): NewsItemWithSource {
+  // Sortie prioritairement en FR (title_fr / summary_fr posees par le service
+  // translate.ts). Si la trad n'a pas encore eu lieu, fallback sur l'EN.
+  // Le champ `lang` reflete la version reellement retournee ('fr' ou 'en').
+  const hasFr = !!row.title_fr;
   return {
     id: row.id,
     source_id: row.source_id,
     guid: row.guid,
     url: row.url,
-    title: row.title,
-    summary: row.summary,
+    title: row.title_fr || row.title,
+    summary: row.summary_fr || row.summary,
     image_url: row.image_url,
     published_at: row.published_at,
     topics: row.topics ?? [],
-    lang: row.lang,
+    lang: hasFr ? 'fr' : row.lang,
     source: {
       key: row.source_key,
       name: row.source_name,
@@ -80,7 +84,7 @@ export const NewsModel = {
     params.push(offset);
 
     const itemsResult = await query(
-      `SELECT i.id, i.source_id, i.guid, i.url, i.title, i.summary,
+      `SELECT i.id, i.source_id, i.guid, i.url, i.title, i.title_fr, i.summary, i.summary_fr,
               i.image_url, i.published_at, i.topics, i.lang,
               s.key AS source_key, s.name AS source_name, s.homepage AS source_homepage
        FROM news_items i
