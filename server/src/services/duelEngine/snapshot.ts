@@ -118,6 +118,8 @@ function toView(card: QueriedCard, visible: boolean, store: CardStore): DuelCard
   if (code) {
     const name = store.names.get(code);
     if (name) view.name = name;
+    const description = store.descriptions.get(code);
+    if (description) view.description = description;
     if (card.attack !== undefined) view.attack = card.attack;
     if (card.defense !== undefined) view.defense = card.defense;
     if (card.level !== undefined) view.level = card.level;

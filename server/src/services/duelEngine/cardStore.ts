@@ -31,6 +31,15 @@ export interface CardStore {
   data: Map<number, OcgCardData>;
   /** Noms anglais, pour les journaux et le débogage. */
   names: Map<number, string>;
+  /**
+   * Textes de carte, tels que le moteur les connaît.
+   *
+   * Ils viennent de la table `texts` de `cards.cdb` : la base du moteur les
+   * porte déjà. Inutile d'appeler YGOProDeck pour afficher un effet au survol,
+   * et surtout, c'est **le texte que le moteur applique réellement** — pas une
+   * autre source qui pourrait diverger.
+   */
+  descriptions: Map<number, string>;
 }
 
 /** Découpe un `setcode` 64 bits en ses archétypes de 16 bits, zéros exclus. */
@@ -104,14 +113,18 @@ export function loadCardStore(dbPath: string = CARD_DB_PATH): CardStore {
     }
 
     const names = new Map<number, string>();
-    for (const row of db.prepare('SELECT id, name FROM texts').all() as Array<{
+    const descriptions = new Map<number, string>();
+    for (const row of db.prepare('SELECT id, name, desc FROM texts').all() as Array<{
       id: number;
       name: string;
+      desc: string | null;
     }>) {
-      names.set(Number(row.id), row.name);
+      const code = Number(row.id);
+      names.set(code, row.name);
+      if (row.desc) descriptions.set(code, row.desc);
     }
 
-    return { data, names };
+    return { data, names, descriptions };
   } finally {
     db.close();
   }

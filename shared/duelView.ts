@@ -37,6 +37,8 @@ export interface DuelCardView {
   code: number;
   /** Nom, résolu côté serveur. Absent si la carte est cachée. */
   name?: string;
+  /** Texte de la carte, tel que le moteur l applique. Pour le survol. */
+  description?: string;
   /** Masque de position du moteur (1 attaque face visible, 8 défense face cachée, …). */
   position?: number;
   faceDown: boolean;

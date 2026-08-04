@@ -23,6 +23,7 @@ import News from './pages/News';
 import Admin from './pages/Admin';
 import Duels from './pages/Duels';
 import DuelRoom from './pages/DuelRoom';
+import EngineDuelRoom from './pages/EngineDuelRoom';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -159,6 +160,17 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <DuelRoom />
+          </ProtectedRoute>
+        }
+      />
+      {/* Arène pilotée par ygopro-core : règles, phases et effets appliqués par
+          le moteur. Le mode manuel ci-dessus reste disponible comme tapis de
+          jeu libre, pour les cartes non scriptées. */}
+      <Route
+        path="/duel/:id/moteur"
+        element={
+          <ProtectedRoute>
+            <EngineDuelRoom />
           </ProtectedRoute>
         }
       />

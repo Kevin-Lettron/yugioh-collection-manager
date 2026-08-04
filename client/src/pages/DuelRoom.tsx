@@ -812,6 +812,29 @@ const TopBar = ({
       )}
     </div>
 
+    {/* Bascule vers l'arène du moteur. Ce mode-ci est un tapis de jeu libre :
+        il n'applique aucune règle, ne connaît pas les phases et n'active aucun
+        effet. Le moteur, lui, fait tout cela. */}
+    <a
+      href={`/duel/${duel.id}/moteur`}
+      style={{
+        padding: '8px 14px',
+        background: 'var(--gold)',
+        color: 'var(--on-gold)',
+        border: 'none',
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: 10,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        fontWeight: 700,
+        textDecoration: 'none',
+        marginRight: 10,
+        clipPath: CUT_SM,
+      }}
+      title="Jouer avec les règles appliquées par ygopro-core">
+      Mode moteur
+    </a>
+
     <button
       onClick={onSurrender}
       style={{
