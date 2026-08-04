@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
+import DuelChallengeWatcher from './components/DuelChallengeWatcher';
 import AdminTopbar from './components/AdminTopbar';
 
 // Pages (will be created next)
@@ -177,6 +178,9 @@ function App() {
           <NotificationProvider>
             <AdminTopbar />
             <AppRoutes />
+            {/* Surveille les defis depuis n'importe quelle page : un duel recu doit
+                se voir meme en pleine consultation de sa collection. */}
+            <DuelChallengeWatcher />
             <Toaster
               position="top-right"
               toastOptions={{

@@ -77,6 +77,20 @@ export const duelApi = {
   },
 
   /**
+   * Ecoute l'acceptation d'un defi qu'on a lance.
+   *
+   * Le serveur emet `duel:accepted` dans la salle du duel ET dans celle du
+   * challenger. C'est ce second envoi qui compte : le challenger n'a pas encore
+   * rejoint la salle du duel, il attendrait donc indefiniment sans le savoir.
+   */
+  subscribeToAcceptance: (handler: (data: { duel: Duel }) => void): (() => void) => {
+    const socket = socketService.getSocket();
+    if (!socket) return () => {};
+    socket.on('duel:accepted', handler);
+    return () => socket.off('duel:accepted', handler);
+  },
+
+  /**
    * Ecoute les nouveaux defis recus (room user:${myId} rejointe automatiquement au login).
    */
   subscribeToChallenges: (

@@ -863,3 +863,12 @@ button[style*="isolation"]:not(:disabled):hover::before {
   .card-tile:hover .card-tile__inner { transform: none; }
 }
 
+
+/* Entrée des notifications ancrées en bas à droite (défi reçu, duel accepté). */
+@keyframes san-slide-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes san-slide-in { from { opacity: 0; } to { opacity: 1; } }
+}
