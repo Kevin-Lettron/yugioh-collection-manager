@@ -207,7 +207,7 @@ export default function EngineDuelRoom() {
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Moteur ygopro-core</span>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 20, padding: 20 }}>
+      <div style={{ padding: '20px 20px 20px', maxWidth: 1100, margin: '0 auto' }}>
         <div>
           <DuelField
             board={board}
@@ -220,7 +220,7 @@ export default function EngineDuelRoom() {
           />
 
           {/* Points de vie, de part et d'autre du plateau */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 14 }}>
             <LifePoints label="Adversaire" value={board.opponent.lp} />
             <LifePoints label="Toi" value={board.me.lp} mine />
           </div>
@@ -245,8 +245,8 @@ export default function EngineDuelRoom() {
           />
 
           {/* ── Main */}
-          <h3 style={sectionTitle}>Ma main · {board.me.hand.length}</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <h3 style={{ ...sectionTitle, textAlign: 'center' }}>Ma main · {board.me.hand.length}</h3>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {board.me.hand.map((card, i) => {
               const actionable = (prompt?.options ?? []).some((o) => o.code === card.code);
               return (
@@ -278,8 +278,21 @@ export default function EngineDuelRoom() {
         </div>
 
         {/* ── Journal */}
-        <aside style={panel}>
-          <h3 style={sectionTitle}>Journal</h3>
+        {/* Journal flottant : il ne doit plus prendre une colonne de la mise en
+            page, sinon le plateau se retrouve décalé sur la gauche au lieu
+            d'occuper le centre de l'écran. */}
+        <aside
+          style={{
+            ...panel,
+            position: 'fixed',
+            top: 78,
+            right: 16,
+            width: 290,
+            maxHeight: '46vh',
+            overflow: 'hidden',
+            clipPath: 'polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)',
+          }}>
+          <h3 style={{ ...sectionTitle, marginTop: 0 }}>Journal</h3>
           <div style={{ display: 'grid', gap: 4, maxHeight: '60vh', overflowY: 'auto' }}>
             {log.length === 0 && (
               <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Rien encore.</span>

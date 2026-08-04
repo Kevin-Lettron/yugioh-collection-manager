@@ -32,12 +32,32 @@ import type {
 const LOCATION_MZONE = 0x4;
 const LOCATION_SZONE = 0x8;
 
-const ZONE_W = 62;
-const ZONE_H = 90;
-const GAP = 5;
+const ZONE_W = 64;
+const ZONE_H = 93;
+/**
+ * Ecart entre les cases.
+ *
+ * Il n'est pas cosmetique : un monstre en defense est couche, sa largeur
+ * devient donc la hauteur de la carte. Il deborde de (93 - 64) / 2 = 15 px de
+ * chaque cote. L'ecart doit absorber ce debordement, sinon la carte se fait
+ * rogner par la case voisine.
+ */
+const GAP = 18;
 
 const cardImage = (code: number): string =>
   `https://images.ygoprodeck.com/images/cards_small/${code}.jpg`;
+
+/** Dos de carte officiel — servi par la meme source que les illustrations. */
+const CARD_BACK = 'https://images.ygoprodeck.com/images/cards/back.jpg';
+
+/**
+ * Masque de position du moteur : 0x4 defense face visible, 0x8 defense face
+ * cachee. Un monstre en defense se pose **couche**, c'est ce qui permet de lire
+ * sa position d'un coup d'oeil.
+ */
+const POSITION_DEFENSE = 0xc;
+const isDefense = (card: DuelCardView): boolean =>
+  ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
 
 export interface FieldProps {
   board: DuelBoardView;
@@ -251,18 +271,42 @@ function Zone({
             ? '0 0 10px rgba(245,197,24,.35)'
             : 'none',
         cursor: card || placeable ? 'pointer' : 'default',
-        overflow: 'hidden',
+        // Volontairement pas de `overflow: hidden` : une carte couchee deborde
+        // dans l'ecart, et c'est ce debordement qui la rend lisible en entier.
+        overflow: 'visible',
+        zIndex: card && isDefense(card) ? 2 : 1,
       }}>
       {card ? (
-        card.faceDown || card.code === 0 ? (
-          <CardBack />
-        ) : (
-          <img
-            src={cardImage(card.code)}
-            alt={card.name ?? ''}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )
+        // Une carte en défense est **couchée**, face visible comme face cachée.
+        // On pivote l'image dans la case plutôt que la case elle-même : la
+        // grille du plateau doit rester alignée.
+        <img
+          src={card.faceDown || card.code === 0 ? CARD_BACK : cardImage(card.code)}
+          alt={card.faceDown ? 'Carte face cachée' : (card.name ?? '')}
+          style={
+            isDefense(card)
+              ? {
+                  // La carte garde ses proportions de portrait AVANT rotation :
+                  // c'est le `rotate(90deg)` qui la couche. Pré-échanger la
+                  // largeur et la hauteur en plus de la rotation annulait
+                  // l'effet et redonnait une carte debout, simplement rognée.
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: ZONE_W - 6,
+                  height: ZONE_H - 6,
+                  // Les marges compensent avec les dimensions de la boîte non
+                  // pivotée : `transform` ne change pas la boîte de mise en page.
+                  marginTop: -(ZONE_H - 6) / 2,
+                  marginLeft: -(ZONE_W - 6) / 2,
+                  transform: 'rotate(90deg)',
+                  transformOrigin: 'center',
+                  objectFit: 'cover',
+                  boxShadow: '0 3px 10px rgba(0,0,0,.6)',
+                }
+              : { width: '100%', height: '100%', objectFit: 'cover' }
+          }
+        />
       ) : (
         <span
           style={{
@@ -327,21 +371,6 @@ function Slot({
   );
 }
 
-function CardBack() {
-  return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'grid',
-        placeItems: 'center',
-        background: 'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
-      }}>
-      <span style={{ color: 'var(--gold)', opacity: 0.55, fontSize: 20 }}>▨</span>
-    </div>
-  );
-}
-
 /**
  * Main adverse : on n'en montre que le volume, jamais le contenu.
  * Le dos des cartes rend l'information immédiate, là où un compteur oblige à
@@ -351,13 +380,18 @@ function HiddenHand({ count }: { count: number }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, height: 42 }}>
       {Array.from({ length: Math.min(count, 12) }, (_, i) => (
-        <div
+        <img
           key={i}
+          src={CARD_BACK}
+          alt=""
           style={{
-            width: 26,
-            height: 38,
+            width: 27,
+            height: 39,
+            objectFit: 'cover',
             border: '1px solid var(--border)',
-            background: 'linear-gradient(135deg, var(--panel-2), var(--bg-elev))',
+            // Legere superposition : une main se tient en eventail, pas etalee.
+            marginLeft: i === 0 ? 0 : -8,
+            boxShadow: '0 2px 6px rgba(0,0,0,.5)',
           }}
         />
       ))}
