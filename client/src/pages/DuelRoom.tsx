@@ -812,11 +812,25 @@ const TopBar = ({
       )}
     </div>
 
-    {/* Bascule vers l'arène du moteur. Ce mode-ci est un tapis de jeu libre :
-        il n'applique aucune règle, ne connaît pas les phases et n'active aucun
-        effet. Le moteur, lui, fait tout cela. */}
+    {/* On est ici dans le tapis de jeu libre : aucune règle n'est appliquée.
+        Le dire explicitement évite de croire à un moteur défaillant. */}
+    <span
+      style={{
+        padding: '8px 12px',
+        border: '1px solid var(--magenta)',
+        color: 'var(--magenta)',
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: 9,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        fontWeight: 700,
+        marginRight: 10,
+      }}
+      title="Ce mode n'applique aucune règle : ni phases, ni limites d'invocation, ni effets.">
+      Mode libre · sans règles
+    </span>
     <a
-      href={`/duel/${duel.id}/moteur`}
+      href={`/duel/${duel.id}`}
       style={{
         padding: '8px 14px',
         background: 'var(--gold)',
@@ -832,7 +846,7 @@ const TopBar = ({
         clipPath: CUT_SM,
       }}
       title="Jouer avec les règles appliquées par ygopro-core">
-      Mode moteur
+      Passer au moteur
     </a>
 
     <button

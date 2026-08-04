@@ -155,22 +155,27 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {/* Un duel, c'est le moteur. ygopro-core applique les règles, les phases,
+          les limites d'invocation et les effets de cartes.
+
+          C'était l'inverse jusqu'ici — l'ancien mode manuel occupait cette
+          adresse — et personne ne trouvait le moteur, ce qui donnait
+          l'impression qu'il n'existait pas. */}
       <Route
         path="/duel/:id"
         element={
           <ProtectedRoute>
-            <DuelRoom />
+            <EngineDuelRoom />
           </ProtectedRoute>
         }
       />
-      {/* Arène pilotée par ygopro-core : règles, phases et effets appliqués par
-          le moteur. Le mode manuel ci-dessus reste disponible comme tapis de
-          jeu libre, pour les cartes non scriptées. */}
+      {/* Tapis de jeu libre : aucune règle appliquée, les joueurs s'arrangent
+          entre eux. Utile pour les cartes non scriptées et les formats maison. */}
       <Route
-        path="/duel/:id/moteur"
+        path="/duel/:id/libre"
         element={
           <ProtectedRoute>
-            <EngineDuelRoom />
+            <DuelRoom />
           </ProtectedRoute>
         }
       />
