@@ -56,6 +56,7 @@ export default function EngineDuelRoom() {
   } | null>(null);
   const [openZone, setOpenZone] = useState<'extra' | 'grave' | 'banished' | null>(null);
   const [selection, setSelection] = useState<string[]>([]);
+  const [phasesOpen, setPhasesOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -114,10 +115,20 @@ export default function EngineDuelRoom() {
     [prompt]
   );
 
+  /** Options sans carte : ce sont les changements de phase. */
+  const phaseOptions = useMemo(
+    () =>
+      prompt?.kind === 'place'
+        ? []
+        : (prompt?.options ?? []).filter((o) => o.code === undefined),
+    [prompt]
+  );
+
   const send = async (optionIds: string[], cancel = false) => {
     if (busy) return;
     setBusy(true);
     setFocusedOptions(null);
+    setPhasesOpen(false);
     setSelection([]);
     try {
       setState(await duelEngineApi.choose(duelId, { optionIds, cancel }));
@@ -225,24 +236,23 @@ export default function EngineDuelRoom() {
             <LifePoints label="Toi" value={board.me.lp} mine />
           </div>
 
-          {/* ── Barre de commandes.
-
-              Elle liste **toutes** les options de l'invite en cours, y compris
-              celles qui portent une carte. Le surlignage sur le plateau est un
-              confort ; cette barre est la garantie qu'aucune demande ne reste
-              sans réponse possible.
-
-              C'était le défaut de la version précédente : sur « Veux-tu
-              répondre en chaîne ? », toutes les options portaient une carte,
-              donc la barre était vide — et il n'y avait plus aucun moyen de
-              répondre, ni de passer son tour. */}
-          <CommandBar
-            prompt={prompt}
-            busy={busy}
-            hidePlaceOptions={placeOptions.length > 0}
-            onChoose={(id) => send([id])}
-            onPass={() => send([], true)}
-          />
+          {/* Une seule ligne : ce que le moteur demande. Les actions elles-mêmes
+              se prennent sur les cartes — c'est là qu'on les cherche. */}
+          <div
+            style={{
+              textAlign: 'center',
+              margin: '14px 0 6px',
+              fontSize: 13,
+              color: prompt ? 'var(--gold)' : 'var(--text-muted)',
+              fontWeight: 600,
+            }}>
+            {prompt ? prompt.message : "En attente de l'adversaire…"}
+            {placeOptions.length > 0 && (
+              <span style={{ color: 'var(--cyan)', marginLeft: 8 }}>
+                — clique une case libre
+              </span>
+            )}
+          </div>
 
           {/* ── Main */}
           <h3 style={{ ...sectionTitle, textAlign: 'center' }}>Ma main · {board.me.hand.length}</h3>
@@ -349,6 +359,41 @@ export default function EngineDuelRoom() {
         </Overlay>
       )}
 
+      <ActionRail
+        prompt={prompt}
+        busy={busy}
+        onOpenPhases={() => setPhasesOpen(true)}
+        onPass={() => send([], true)}
+      />
+
+      {/* Choix de la phase suivante, parmi celles que le moteur autorise. */}
+      {phasesOpen && (
+        <Overlay onClose={() => setPhasesOpen(false)}>
+          <h4 style={{ margin: '0 0 4px', color: 'var(--violet)' }}>Aller à quelle phase ?</h4>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-muted)' }}>
+            Seules les phases atteignables depuis {PHASE_LABELS[board.phase] ?? board.phase} sont
+            proposées.
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {phaseOptions.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                disabled={busy}
+                onClick={() => send([o.id])}
+                style={btn('var(--violet)')}>
+                {o.label}
+              </button>
+            ))}
+            {phaseOptions.length === 0 && (
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                Aucun changement de phase possible pour le moment.
+              </span>
+            )}
+          </div>
+        </Overlay>
+      )}
+
       {/* ── Détail au survol */}
       {hovered && hovered.code > 0 && <HoverCard card={hovered} />}
     </div>
@@ -358,71 +403,60 @@ export default function EngineDuelRoom() {
 // ─── Sous-composants ────────────────────────────────────────────────────────
 
 /**
- * Barre de commandes, ancrée en bas de l'écran.
+ * Rail d'actions, ancré à droite.
  *
- * Deux règles :
- *   - elle est **toujours** visible quand le moteur attend quelque chose ;
- *   - elle propose **toutes** les options, sans exception. Le plateau met en
- *     valeur celles qui désignent une case ou une carte, mais rien n'y est
- *     exclusif : un joueur doit pouvoir répondre même s'il n'a pas compris
- *     qu'il fallait cliquer une carte.
+ * Il ne contient **que** ce qui ne se prend pas sur une carte : le changement
+ * de phase et le refus de répondre. Tout le reste — invoquer, poser, activer —
+ * se déclenche en cliquant la carte concernée, qui est mise en surbrillance.
  *
- * Seules les options « choisis un emplacement » en sont retirées, parce que
- * les cases correspondantes clignotent sur le plateau et qu'une liste de
- * « Zone Monstre 3 » n'aiderait personne.
+ * La version précédente listait toutes les actions dans une grande barre. Ça
+ * marchait, mais ça déportait le jeu hors du plateau : on lisait des boutons
+ * texte au lieu de regarder ses cartes.
  */
-function CommandBar({
+function ActionRail({
   prompt,
   busy,
-  hidePlaceOptions,
-  onChoose,
+  onOpenPhases,
   onPass,
 }: {
   prompt: DuelPrompt | null;
   busy: boolean;
-  hidePlaceOptions: boolean;
-  onChoose: (optionId: string) => void;
+  onOpenPhases: () => void;
   onPass: () => void;
 }) {
-  if (!prompt) {
-    return (
-      <div style={commandBar}>
-        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-          En attente de l'adversaire…
-        </span>
-      </div>
-    );
-  }
-
-  const options = hidePlaceOptions ? [] : prompt.options;
+  const phaseCount = (prompt?.options ?? []).filter((o) => o.code === undefined).length;
 
   return (
-    <div style={commandBar}>
-      <strong style={{ color: 'var(--gold)', fontSize: 13, marginRight: 6 }}>
-        {prompt.message}
-      </strong>
-
-      {hidePlaceOptions && (
-        <span style={{ color: 'var(--cyan)', fontSize: 12 }}>
-          clique une case libre du plateau
-        </span>
-      )}
-
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          disabled={busy}
-          onClick={() => onChoose(o.id)}
-          style={o.code === undefined ? btn('var(--violet)') : btn('var(--gold)')}>
-          {o.label}
-        </button>
-      ))}
+    <div
+      style={{
+        position: 'fixed',
+        right: 20,
+        top: '52%',
+        display: 'grid',
+        gap: 10,
+        zIndex: 500,
+        width: 150,
+      }}>
+      <button
+        type="button"
+        disabled={busy || phaseCount === 0}
+        onClick={onOpenPhases}
+        title={
+          phaseCount === 0
+            ? 'Aucun changement de phase possible pour le moment'
+            : 'Choisir la phase suivante'
+        }
+        style={{
+          ...btn('var(--violet)'),
+          opacity: phaseCount === 0 ? 0.4 : 1,
+          cursor: phaseCount === 0 ? 'not-allowed' : 'pointer',
+        }}>
+        Phases{phaseCount > 0 ? ` · ${phaseCount}` : ''}
+      </button>
 
       {/* « Passer » n'apparaît que si le moteur l'autorise : sur une chaîne
-          obligatoire, il n'y a pas d'échappatoire, et proposer le bouton
-          reviendrait à mentir. */}
-      {prompt.canCancel && (
+          obligatoire il n'y a pas d'échappatoire, et l'afficher mentirait. */}
+      {prompt?.canCancel && (
         <button type="button" disabled={busy} onClick={onPass} style={ghostBtn}>
           {prompt.kind === 'chain' ? 'Ne pas répondre' : 'Passer'}
         </button>
@@ -629,29 +663,6 @@ const panel: React.CSSProperties = {
   background: 'var(--panel)',
   border: '1px solid var(--border)',
   padding: 16,
-};
-
-/**
- * Barre de commandes collee en bas de la fenetre.
- *
- * Ancree, et non posee dans le flux : sur un plateau qui depasse la hauteur de
- * l'ecran, une barre en fin de page oblige a faire defiler pour repondre. On
- * doit toujours pouvoir passer une phase ou refuser une chaine sans chercher.
- */
-const commandBar: React.CSSProperties = {
-  position: 'sticky',
-  bottom: 0,
-  zIndex: 100,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  flexWrap: 'wrap',
-  margin: '14px 0',
-  padding: '12px 16px',
-  background: 'var(--panel)',
-  border: '1px solid var(--gold)',
-  borderLeftWidth: 3,
-  boxShadow: 'var(--shadow-card-lg)',
 };
 
 const sectionTitle: React.CSSProperties = {
