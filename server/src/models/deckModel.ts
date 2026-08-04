@@ -46,7 +46,7 @@ export class DeckModel {
 
     // Get main deck and extra deck cards
     const cardsResult = await query(
-      `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.created_at,
+      `SELECT dc.id, dc.deck_id, dc.card_id as deck_card_card_id, dc.quantity, dc.is_extra_deck, dc.is_side_deck, dc.created_at,
               c.id as card_db_id, c.card_id as card_api_id, c.name, c.name_fr, c.type, c.frame_type, c.description, c.description_fr,
               c.atk, c.def, c.level, c.race, c.attribute, c.archetype,
               c.card_sets, c.card_images, c.card_prices, c.banlist_info,
@@ -60,10 +60,13 @@ export class DeckModel {
 
     const mainDeck: DeckCard[] = [];
     const extraDeck: DeckCard[] = [];
+    const sideDeck: DeckCard[] = [];
 
     cardsResult.rows.forEach((row) => {
       const deckCard = this.parseDeckCard(row);
-      if (row.is_extra_deck) {
+      if (row.is_side_deck) {
+        sideDeck.push(deckCard);
+      } else if (row.is_extra_deck) {
         extraDeck.push(deckCard);
       } else {
         mainDeck.push(deckCard);
@@ -108,6 +111,7 @@ export class DeckModel {
       },
       main_deck: mainDeck,
       extra_deck: extraDeck,
+      side_deck: sideDeck,
       likes_count: parseInt(deck.likes_count || 0),
       dislikes_count: parseInt(deck.dislikes_count || 0),
       comments_count: parseInt(deck.comments_count || 0),
@@ -884,6 +888,7 @@ export class DeckModel {
       card_id: row.deck_card_card_id, // FK to cards.id (number) - used for saving
       quantity: row.quantity,
       is_extra_deck: row.is_extra_deck,
+      is_side_deck: row.is_side_deck === true,
       created_at: row.created_at,
       card: {
         id: row.card_db_id, // cards.id (number) - the database ID

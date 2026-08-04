@@ -1,4 +1,9 @@
-import type { DuelChoice, DuelSeat, DuelStateResponse } from '../../../../shared/duelView';
+import type {
+  DuelAnnounceSearchResult,
+  DuelChoice,
+  DuelSeat,
+  DuelStateResponse,
+} from '../../../../shared/duelView';
 
 /**
  * Protocole entre le fil principal et le worker qui héberge le moteur.
@@ -36,8 +41,15 @@ export type EngineRequest =
   | { id: number; type: 'choose'; duelId: number; seat: DuelSeat; choice: DuelChoice }
   /** État courant, sans rien changer — pour un rechargement de page. */
   | { id: number; type: 'view'; duelId: number; seat: DuelSeat }
+  /**
+   * Vue spectateur (F7) — aucune main visible, aucun prompt, aucun reveal
+   * privé. Réservée aux users qui ont le droit HTTP de regarder le duel.
+   */
+  | { id: number; type: 'spectate'; duelId: number }
   | { id: number; type: 'destroy'; duelId: number }
-  | { id: number; type: 'stats' };
+  | { id: number; type: 'stats' }
+  /** Recherche des cartes déclarables pour l'invite ANNOUNCE_CARD en cours. */
+  | { id: number; type: 'announce_search'; duelId: number; seat: DuelSeat; query: string };
 
 /**
  * `Omit` appliqué à une union ne garde que les clés communes — ici, il ne
@@ -60,7 +72,11 @@ export interface EngineStats {
 }
 
 export type EngineResponse =
-  | { id: number; ok: true; result: DuelStateResponse | EngineStats | null }
+  | {
+      id: number;
+      ok: true;
+      result: DuelStateResponse | EngineStats | DuelAnnounceSearchResult[] | null;
+    }
   | { id: number; ok: false; error: string };
 
 /** Émis spontanément par le worker, hors cycle requête/réponse. */

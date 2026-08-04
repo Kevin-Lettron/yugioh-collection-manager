@@ -24,6 +24,8 @@ import Admin from './pages/Admin';
 import Duels from './pages/Duels';
 import DuelRoom from './pages/DuelRoom';
 import EngineDuelRoom from './pages/EngineDuelRoom';
+import DuelMatchLobby from './pages/DuelMatchLobby';
+import DuelSpectate from './pages/DuelSpectate';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -176,6 +178,24 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <DuelRoom />
+          </ProtectedRoute>
+        }
+      />
+      {/* F4 · Match Bo3 : lobby entre deux manches pour recomposer son deck. */}
+      <Route
+        path="/duel/matches/:id"
+        element={
+          <ProtectedRoute>
+            <DuelMatchLobby />
+          </ProtectedRoute>
+        }
+      />
+      {/* F7 · Spectateur : vue en lecture seule d'un duel en cours. */}
+      <Route
+        path="/duel/:id/spectate"
+        element={
+          <ProtectedRoute>
+            <DuelSpectate />
           </ProtectedRoute>
         }
       />

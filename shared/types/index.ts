@@ -131,6 +131,8 @@ export interface Deck {
   user?: User;
   main_deck?: DeckCard[];
   extra_deck?: DeckCard[];
+  /** Side Deck (migration 012). Optionnel — les decks legacy n'en ont pas. */
+  side_deck?: DeckCard[];
   likes_count?: number;
   dislikes_count?: number;
   comments_count?: number;
@@ -144,6 +146,8 @@ export interface DeckCard {
   card_id: number;
   quantity: number;
   is_extra_deck: boolean;
+  /** Migration 012 — carte du Side Deck (mutuellement exclusive avec `is_extra_deck`). */
+  is_side_deck?: boolean;
   created_at: Date;
   card?: Card;
 }
@@ -286,7 +290,10 @@ export interface PaginatedResponse<T> {
 
 // ─── Duel types ─────────────────────────────────────────────────────────
 
-export type DuelStatus = 'pending' | 'active' | 'finished' | 'cancelled';
+export type DuelStatus = 'pending' | 'pre_game' | 'active' | 'finished' | 'cancelled';
+
+/** Etats de la mini-séquence pile ou face + choix, avant que le moteur ne démarre. */
+export type DuelPreGamePhase = 'awaiting_flip' | 'awaiting_choice' | 'resolved';
 export type DuelPhase = 'draw' | 'main1' | 'battle' | 'main2' | 'end';
 export type DuelZone =
   | 'monster'
@@ -353,6 +360,51 @@ export interface Duel {
   created_at: Date;
   updated_at: Date;
   finished_at?: Date | null;
+  // ─── Pile ou face (migration 010) ─────────────────────────────────────
+  coin_flip_winner_id?: number | null;
+  coin_flip_choice?: 'P1' | 'P2' | null;
+  phase_pre_game?: DuelPreGamePhase | null;
+  // ─── Chronomètre par joueur (migration 011) ───────────────────────────
+  p1_clock_ms?: number;
+  p2_clock_ms?: number;
+  clock_started_at?: Date | null;
+  clock_running_for?: number | null;
+  // ─── Match Bo3 (migration 012) ────────────────────────────────────────
+  match_id?: number | null;
+  game_number?: number;
+  // ─── Mode moteur ygopro-core (migration 009) ──────────────────────────
+  engine_mode?: boolean;
+}
+
+// ─── Match multi-manches (Bo3) ─────────────────────────────────────────
+
+export type DuelMatchStatus =
+  | 'pending'
+  | 'active'
+  | 'sideboard'
+  | 'finished'
+  | 'cancelled';
+
+/**
+ * Match Bo1/Bo2/Bo3 — chapeau qui regroupe 1 à 3 duels. Sert au format
+ * compétition YGO où chaque duel individuel est appelé « manche » et le
+ * gagnant est celui qui atteint le premier `winsNeeded(best_of)` victoires.
+ */
+export interface DuelMatch {
+  id: number;
+  challenger_id: number;
+  opponent_id: number;
+  challenger?: Partial<User>;
+  opponent?: Partial<User>;
+  best_of: 1 | 2 | 3;
+  status: DuelMatchStatus;
+  challenger_wins: number;
+  opponent_wins: number;
+  winner_id?: number | null;
+  created_at: Date;
+  finished_at?: Date | null;
+  /** Duels enfants — chargés à la demande via `GET /duels/matches/:id`. */
+  games?: Array<{ id: number; game_number: number; status: DuelStatus; winner_id?: number | null }>;
 }
 
 export type DuelActionType =

@@ -1,6 +1,11 @@
 import path from 'path';
 import { Worker } from 'worker_threads';
-import type { DuelChoice, DuelSeat, DuelStateResponse } from '../../../../shared/duelView';
+import type {
+  DuelAnnounceSearchResult,
+  DuelChoice,
+  DuelSeat,
+  DuelStateResponse,
+} from '../../../../shared/duelView';
 import logger from '../../utils/logger';
 import { assetsInstalled, MISSING_ASSETS_HINT } from './paths';
 import {
@@ -234,6 +239,14 @@ export function viewEngineDuel(duelId: number, seat: DuelSeat): Promise<DuelStat
   return send<DuelStateResponse>({ type: 'view', duelId, seat }, `view ${duelId}`);
 }
 
+/**
+ * Vue spectateur (F7) — aucune main visible, aucun prompt, aucun reveal privé.
+ * L'appelant est responsable du contrôle d'accès HTTP en amont.
+ */
+export function spectateEngineDuel(duelId: number): Promise<DuelStateResponse> {
+  return send<DuelStateResponse>({ type: 'spectate', duelId }, `spectate ${duelId}`);
+}
+
 export async function destroyEngineDuel(duelId: number): Promise<void> {
   knownDuels.delete(duelId);
   if (!worker) return; // rien à détruire : le worker est déjà mort
@@ -242,6 +255,25 @@ export async function destroyEngineDuel(duelId: number): Promise<void> {
 
 export function engineStats(): Promise<EngineStats> {
   return send<EngineStats>({ type: 'stats' }, 'stats');
+}
+
+/**
+ * Cherche des cartes déclarables pour l'invite ANNOUNCE_CARD en cours.
+ *
+ * La liste est filtrée dans le worker par les opcodes du moteur — le résultat
+ * ne contient donc que des cartes que le moteur acceptera. Sans ce garde-fou,
+ * l'utilisateur proposerait des cartes que le moteur rejetterait par un
+ * `retry` muet.
+ */
+export function announceCardSearch(
+  duelId: number,
+  seat: DuelSeat,
+  query: string
+): Promise<DuelAnnounceSearchResult[]> {
+  return send<DuelAnnounceSearchResult[]>(
+    { type: 'announce_search', duelId, seat, query },
+    `announce_search ${duelId}`
+  );
 }
 
 export function isDuelLive(duelId: number): boolean {

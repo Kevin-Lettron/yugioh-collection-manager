@@ -146,6 +146,12 @@ import adminRoutes from './routes/adminRoutes';
 import duelRoutes from './routes/duelRoutes';
 import newsRoutes from './routes/newsRoutes';
 import { onWorkerLost, shutdownEngine } from './services/duelEngine/engineClient';
+import { loadHintStrings } from './services/duelEngine/hintStrings';
+import { rehydrateActiveDuels } from './services/duelEngine/rehydrate';
+
+// Charge les textes d'EDOPro (strings.conf) une fois pour toutes. Fichier
+// optionnel : en son absence, les invites tombent sur des libellés génériques.
+loadHintStrings();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
@@ -182,6 +188,24 @@ httpServer.listen(PORT, () => {
 ╚══════════════════════════════════════════════════╝
   `);
   logger.info('Server started successfully');
+
+  // ─── F6 · Reprise après redémarrage ───────────────────────────
+  // Rejoue automatiquement les duels `active` — le moteur perd son tas au
+  // reboot, mais le journal + la graine suffisent à reconstruire chaque partie.
+  // Décalé pour laisser le worker s'initialiser (le moteur met ~1 s à charger).
+  setTimeout(() => {
+    rehydrateActiveDuels()
+      .then((bilan) => {
+        if (bilan.total > 0) {
+          logger.info(
+            `[duel:rehydrate] ${bilan.ok}/${bilan.total} duels actifs rejoués (${bilan.ko} échec(s))`
+          );
+        }
+      })
+      .catch((err) =>
+        logger.error(`[duel:rehydrate] KO — ${err instanceof Error ? err.message : err}`)
+      );
+  }, 3_000);
 
   // ─── Cron actualités ────────────────────────────────────────
   // Ingestion : une fois au démarrage puis toutes les 30 minutes.

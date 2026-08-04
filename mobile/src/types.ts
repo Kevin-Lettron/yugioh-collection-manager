@@ -256,7 +256,8 @@ export interface AIStatus {
 // ─── Duel types ────────────────────────────────────────
 // Duplication mobile de shared/types/index.ts — sync a la main.
 
-export type DuelStatus = 'pending' | 'active' | 'finished' | 'cancelled';
+export type DuelStatus = 'pending' | 'pre_game' | 'active' | 'finished' | 'cancelled';
+export type DuelPreGamePhase = 'awaiting_flip' | 'awaiting_choice' | 'resolved';
 export type DuelPhase = 'draw' | 'main1' | 'battle' | 'main2' | 'end';
 export type DuelZone =
   | 'monster'
@@ -312,6 +313,189 @@ export interface Duel {
   created_at: string;
   updated_at: string;
   finished_at?: string | null;
+  // Pile ou face (migration 010)
+  coin_flip_winner_id?: number | null;
+  coin_flip_choice?: 'P1' | 'P2' | null;
+  phase_pre_game?: DuelPreGamePhase | null;
+  // Chess-clock (migration 011)
+  p1_clock_ms?: number;
+  p2_clock_ms?: number;
+  clock_started_at?: string | null;
+  clock_running_for?: number | null;
+  // Match Bo3 (migration 012)
+  match_id?: number | null;
+  game_number?: number;
+  // Mode moteur (ygopro-core)
+  engine_mode?: boolean;
+}
+
+// ─── Duel moteur (miroir de shared/duelView.ts) ────────────────────────
+
+export type DuelSeat = 0 | 1;
+export type DuelPhaseName =
+  | 'draw'
+  | 'standby'
+  | 'main1'
+  | 'battle_start'
+  | 'battle_step'
+  | 'damage'
+  | 'damage_cal'
+  | 'battle'
+  | 'main2'
+  | 'end'
+  | 'unknown';
+
+export interface DuelCardView {
+  code: number;
+  name?: string;
+  description?: string;
+  position?: number;
+  faceDown: boolean;
+  attack?: number;
+  defense?: number;
+  level?: number;
+  materials?: number;
+  counters?: Record<number, number>;
+}
+export type DuelZoneView = DuelCardView | null;
+
+export interface DuelSideView {
+  lp: number;
+  monsters: DuelZoneView[];
+  spells: DuelZoneView[];
+  hand: DuelCardView[];
+  handCount: number;
+  deckCount: number;
+  extraCount: number;
+  graveyard: DuelCardView[];
+  banished: DuelCardView[];
+}
+export interface DuelBoardView {
+  turn: number;
+  phase: DuelPhaseName;
+  turnPlayer: DuelSeat;
+  seat: DuelSeat;
+  me: DuelSideView;
+  opponent: DuelSideView;
+  chainLength: number;
+}
+
+export type DuelPromptKind =
+  | 'main' | 'battle' | 'cards' | 'place' | 'position' | 'confirm' | 'option'
+  | 'chain' | 'sort' | 'announce' | 'select_counter' | 'announce_card'
+  | 'select_card_codes' | 'unsupported';
+
+export interface DuelPromptOption {
+  id: string;
+  label: string;
+  code?: number;
+  location?: number;
+  sequence?: number;
+  controller?: DuelSeat;
+}
+export interface DuelPrompt {
+  kind: DuelPromptKind;
+  seat: DuelSeat;
+  message: string;
+  options: DuelPromptOption[];
+  min: number;
+  max: number;
+  canCancel: boolean;
+  hint?: { title?: string; note?: string };
+  counter?: {
+    counterType: number;
+    counterName: string;
+    count: number;
+    targets: Array<{
+      targetIdx: number;
+      cardCode: number;
+      cardName: string;
+      location?: number;
+      sequence?: number;
+      controller?: DuelSeat;
+      currentCount: number;
+    }>;
+  };
+  announce?: { hint?: string; searchable: boolean };
+}
+export interface DuelChoice {
+  optionIds: string[];
+  cancel?: boolean;
+  counters?: Array<{ targetIdx: number; take: number }>;
+  announcedCode?: number;
+  cardCodes?: number[];
+}
+
+export interface DuelLogEntry { kind: string; text: string; codes?: number[]; }
+export interface DuelCombatLogEntry {
+  kind: string;
+  description: string;
+  at: number;
+  forPlayers: DuelSeat | 'both';
+  codes?: number[];
+}
+export interface DuelAnimationEvent {
+  kind: string;
+  description: string;
+  codes?: number[];
+  location?: number;
+  sequence?: number;
+  controller?: DuelSeat;
+  toLocation?: number;
+  toSequence?: number;
+  toController?: DuelSeat;
+  variant?: string;
+  count?: number;
+  forPlayers: DuelSeat | 'both';
+  at: number;
+  ttl: number;
+}
+export interface DuelReveal {
+  code: number;
+  name?: string;
+  from: 'hand' | 'deck' | 'grave' | 'field' | 'extra' | 'decktop' | 'extratop' | 'unknown';
+}
+export interface DuelRevealBatch {
+  forPlayer: DuelSeat;
+  cards: DuelReveal[];
+  at: number;
+  ttl: number;
+}
+export interface DuelTossEvent {
+  kind: 'coin' | 'dice';
+  results: number[];
+  byPlayer: DuelSeat;
+  at: number;
+  ttl: number;
+}
+export interface DuelClocks {
+  p1Ms: number;
+  p2Ms: number;
+  runningFor: DuelSeat | null;
+  serverNow: number;
+}
+export interface DuelStateResponse {
+  duelId: number;
+  status: 'awaiting_response' | 'ended' | 'stalled';
+  board: DuelBoardView;
+  prompt: DuelPrompt | null;
+  log: DuelLogEntry[];
+  winner?: DuelSeat | null;
+  winReason?: string;
+  lastRetry?: { at: number; note?: string };
+  reveals?: DuelRevealBatch[];
+  tosses?: DuelTossEvent[];
+  combatLog?: DuelCombatLogEntry[];
+  animations?: DuelAnimationEvent[];
+  clocks?: DuelClocks;
+}
+export interface DuelPreGameState {
+  phase: DuelPreGamePhase;
+  playersReady: number[];
+  winnerId: number | null;
+  choice: 'P1' | 'P2' | null;
+  firstPlayerId: number | null;
+  choiceDeadlineAt: number | null;
 }
 
 export type DuelActionType =

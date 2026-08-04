@@ -73,7 +73,22 @@ function rowToDuel(row: any): Duel {
     created_at: row.created_at,
     updated_at: row.updated_at,
     finished_at: row.finished_at,
-  };
+    // Migration 010 — pile ou face.
+    coin_flip_winner_id: row.coin_flip_winner_id ?? null,
+    coin_flip_choice: (row.coin_flip_choice as 'P1' | 'P2' | null) ?? null,
+    phase_pre_game: row.phase_pre_game ?? null,
+    // Migration 011 — chess-clock. Les valeurs par défaut sont posées en base.
+    p1_clock_ms: row.p1_clock_ms ?? 1500000,
+    p2_clock_ms: row.p2_clock_ms ?? 1500000,
+    clock_started_at: row.clock_started_at ?? null,
+    clock_running_for: row.clock_running_for ?? null,
+    // Migration 012 — match Bo3.
+    match_id: row.match_id ?? null,
+    game_number: row.game_number ?? 1,
+    // Migration 009 — engine_mode : drapeau qui indique que ce duel se joue
+    // par ygopro-core (côté mobile, ça détermine vers quelle arène rediriger).
+    engine_mode: row.engine_mode === true,
+  } as Duel;
 
   if (row.challenger_username) {
     duel.challenger = {
@@ -313,6 +328,26 @@ export class DuelModel {
     );
 
     return this.findById(id);
+  }
+
+  /**
+   * Fait basculer un duel de `pre_game` (pile ou face résolu) vers `active`.
+   *
+   * On n'écrase pas `first_player_id`, `coin_flip_*` ni `phase_pre_game` —
+   * `seatOf` en dépend pour toute la partie. Idempotent : si le duel est déjà
+   * `active` on ne fait rien.
+   */
+  static async setActiveAfterPreGame(id: number): Promise<void> {
+    await query(
+      `UPDATE duels
+          SET status = 'active',
+              current_phase = COALESCE(current_phase, 'draw'),
+              current_turn_player_id = first_player_id,
+              turn_number = COALESCE(NULLIF(turn_number, 0), 1),
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND status IN ('pre_game', 'pending')`,
+      [id]
+    );
   }
 
   /**

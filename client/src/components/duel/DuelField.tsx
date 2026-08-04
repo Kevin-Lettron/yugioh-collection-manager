@@ -114,9 +114,14 @@ export function DuelField({
     const selected = here.some((o) => selectedIds.includes(o.id));
 
     const onClick = () => {
+      // Une pose sur case vide reste directe : elle résout un SELECT_PLACE
+      // faisant suite à un choix déjà validé — pas de risque de fuite ni
+      // d'irréversibilité tactique.
       if (place) return onOptionPicked(place.id);
-      if (targets.length === 1) return onOptionPicked(targets[0].id);
-      if (targets.length > 1 && card) return onCardMenu(card, targets);
+      // Toute cible sur une carte passe désormais par le menu bufferisé
+      // (§4bis), même une seule option : le joueur voit ce qu'il fait, et
+      // rien ne part au serveur avant Valider.
+      if (targets.length >= 1 && card) return onCardMenu(card, targets);
     };
 
     return (

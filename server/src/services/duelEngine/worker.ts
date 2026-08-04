@@ -10,6 +10,8 @@ import {
 } from './engineHost';
 import { getCardStore, resolveCard, type CardStore } from './cardStore';
 import { DuelSession } from './session';
+import { searchAnnounceCards } from './prompt';
+import { loadHintStrings } from './hintStrings';
 import type {
   EngineRequest,
   EngineResponse,
@@ -93,6 +95,10 @@ async function ensureReady(): Promise<{
     ocg = await getOcgModule();
     core = await getCore();
     store = getCardStore();
+    // Le fil principal charge aussi `strings.conf` au boot, mais le worker
+    // vit dans son propre espace mémoire — on le fait donc ici aussi. Fichier
+    // optionnel : sans lui, les invites retombent sur les libellés génériques.
+    loadHintStrings();
   }
   return { core, ocg, store };
 }
@@ -212,7 +218,7 @@ function createSession(req: Extract<EngineRequest, { type: 'create' }>): DuelSta
   addDeck(0, req.players[0]);
   addDeck(1, req.players[1]);
 
-  const session = new DuelSession(handle, req.startingLP);
+  const session = new DuelSession(handle, req.startingLP, req.duelId);
   sessions.set(req.duelId, session);
 
   lib.startDuel(handle);
@@ -303,11 +309,43 @@ async function handle(req: EngineRequest): Promise<EngineResponse> {
         };
       }
 
+      case 'spectate': {
+        // F7 — vue en lecture seule, sans main détaillée. Ne touche pas l'activité
+        // du duel : les spectateurs ne doivent pas le maintenir en vie.
+        const session = requireSession(req.duelId);
+        return {
+          id: req.id,
+          ok: true,
+          result: session.spectate(lib, mod, req.duelId, cards),
+        };
+      }
+
       case 'destroy':
         return { id: req.id, ok: true, result: destroySession(req.duelId) };
 
       case 'stats':
         return { id: req.id, ok: true, result: stats() };
+
+      case 'announce_search': {
+        const session = requireSession(req.duelId);
+        session.touch();
+        const pending = session.peekPendingMessage();
+        if (!pending) {
+          throw new Error("Le moteur n'attend pas de décision pour ce duel");
+        }
+        // Refuse si l'invite n'est pas adressée à ce siège : sans ça, un
+        // joueur pourrait sonder les cartes légales pendant que l'autre
+        // réfléchit à ANNOUNCE_CARD, ce qui trahirait qu'un tel choix va
+        // arriver.
+        if ('player' in pending && (pending.player === 1 ? 1 : 0) !== req.seat) {
+          throw new Error("Cette recherche n'est pas destinée à ce joueur");
+        }
+        return {
+          id: req.id,
+          ok: true,
+          result: searchAnnounceCards(mod, pending, cards, req.query),
+        };
+      }
     }
   } catch (err) {
     return {

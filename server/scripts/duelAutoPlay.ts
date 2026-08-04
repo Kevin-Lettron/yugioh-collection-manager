@@ -123,6 +123,13 @@ function decide(
 
     case 'unsupported':
     case 'announce':
+    case 'select_counter':
+    case 'announce_card':
+    case 'select_card_codes':
+      // Ces invites requièrent une réponse structurée que l'auto-joueur ne sait
+      // pas fabriquer (sliders de compteurs, recherche typeahead d'une carte).
+      // Elles ne devraient pas apparaître avec le deck de test — le fait de les
+      // compter comme non couvertes permet à `duel:autoplay` de le vérifier.
       tally.unsupported.set(prompt.kind, (tally.unsupported.get(prompt.kind) ?? 0) + 1);
       return null;
   }
@@ -143,6 +150,75 @@ function auditVisibility(state: DuelStateResponse, tally: Tally): void {
   if (state.prompt && state.prompt.seat !== board.seat) {
     tally.leaks.push(`invite du siège ${state.prompt.seat} servie au siège ${board.seat}`);
   }
+
+  // §3.2 : les animations « privées » (SHUFFLE_HAND, DECK_TOP, DRAW avec
+  // codes) ne doivent jamais arriver côté adversaire avec les passcodes.
+  // On ne peut pas trancher `forPlayers` depuis la vue filtrée, mais on peut
+  // vérifier que les codes d'une animation SHUFFLE_HAND / DECK_TOP visible
+  // par ce joueur correspondent bien à son propre côté (via controller).
+  for (const a of state.animations ?? []) {
+    if (
+      (a.kind === 'shuffle_hand' || a.kind === 'deck_top') &&
+      a.codes &&
+      a.codes.length > 0 &&
+      a.controller !== undefined &&
+      a.controller !== board.seat
+    ) {
+      tally.leaks.push(`animation ${a.kind} du siège adverse avec codes révélés`);
+    }
+    if (
+      a.kind === 'draw' &&
+      a.codes &&
+      a.codes.length > 0 &&
+      a.controller !== undefined &&
+      a.controller !== board.seat
+    ) {
+      tally.leaks.push(`animation draw du siège adverse avec codes de main révélés`);
+    }
+  }
+}
+
+/**
+ * §4bis A.3 — test de non-fuite pendant l'ouverture d'un menu d'activation.
+ *
+ * Simule : joueur A a un prompt, on lit son état (menu potentiellement
+ * ouvert), on attend 500 ms sans rien envoyer, on relit l'état du joueur B
+ * et on vérifie qu'il est **inchangé** (même prompt null, mêmes counts,
+ * mêmes animations). C'est la garantie forte du §4bis : contrairement à
+ * Master Duel, l'adversaire ne voit rien tant que le joueur n'a pas validé.
+ */
+async function auditNoLeakDuringActivationMenu(
+  duelId: number,
+  playerSeat: DuelSeat,
+  tally: Tally
+): Promise<void> {
+  const foeSeat: DuelSeat = playerSeat === 0 ? 1 : 0;
+  const before = await viewEngineDuel(duelId, foeSeat);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const after = await viewEngineDuel(duelId, foeSeat);
+
+  // Le prompt adverse doit rester null (l'invite est chez l'autre joueur).
+  if (before.prompt !== null || after.prompt !== null) {
+    tally.leaks.push(`prompt côté adversaire pendant menu (${before.prompt?.kind}/${after.prompt?.kind})`);
+  }
+  // Le nombre de cartes en main, monstres, S/T ne doit pas avoir bougé.
+  if (before.board.me.handCount !== after.board.me.handCount) {
+    tally.leaks.push('handCount adverse a changé pendant menu ouvert');
+  }
+  if (
+    JSON.stringify(before.board.me.monsters.map((m) => (m ? m.code : null))) !==
+    JSON.stringify(after.board.me.monsters.map((m) => (m ? m.code : null)))
+  ) {
+    tally.leaks.push('monstres adverses ont changé pendant menu ouvert');
+  }
+  // Aucun nouveau reveal / combat log / animation ne doit être apparu du
+  // seul fait qu'un menu était ouvert côté joueur (rien n'a été envoyé au
+  // serveur, donc rien ne doit avoir bougé).
+  const beforeCombat = before.combatLog?.length ?? 0;
+  const afterCombat = after.combatLog?.length ?? 0;
+  if (afterCombat > beforeCombat) {
+    tally.leaks.push(`combatLog adverse ++${afterCombat - beforeCombat} pendant menu ouvert`);
+  }
 }
 
 async function playOne(duelId: number, tally: Tally): Promise<string> {
@@ -150,6 +226,9 @@ async function playOne(duelId: number, tally: Tally): Promise<string> {
   // pour pouvoir rejouer la partie. Le test n'en a pas l'usage.
   let state = (await createEngineDuel({ duelId, seat: 0, players: [DECK, DECK] })).state;
   auditVisibility(state, tally);
+  // §4bis A.3 : lance le test de non-fuite une fois dès qu'un prompt s'affiche
+  // (typiquement dès le tour 1, phase principale).
+  let leakTestDone = false;
 
   let local = 0;
   while (local++ < MAX_DECISIONS) {
@@ -176,6 +255,14 @@ async function playOne(duelId: number, tally: Tally): Promise<string> {
     }
 
     tally.prompts.set(prompt.kind, (tally.prompts.get(prompt.kind) ?? 0) + 1);
+
+    // Test de non-fuite : une seule fois par partie, sur le premier prompt
+    // rencontré. Sinon on multiplierait le temps d'exécution par 500 ms ×
+    // ~500 décisions = ~4 minutes de rab pour rien.
+    if (!leakTestDone) {
+      await auditNoLeakDuringActivationMenu(duelId, seat, tally);
+      leakTestDone = true;
+    }
 
     const choice = decide(prompt, tally);
     if (!choice) return `invite sans réponse possible : ${prompt.kind}`;

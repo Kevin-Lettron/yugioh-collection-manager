@@ -26,6 +26,7 @@ type ChipStatus = DuelStatus;
 const STATUS_ORDER: ChipStatus[] = ['pending', 'active', 'finished'];
 const STATUS_LABEL: Record<ChipStatus, string> = {
   pending: 'En attente',
+  pre_game: 'Pile ou face',
   active: 'En cours',
   finished: 'Termines',
   cancelled: 'Annules',

@@ -214,6 +214,12 @@ export interface SnapshotContext {
  *
  * Le tour, la phase et les points de vie ne sont pas interrogeables : le moteur
  * ne les expose que par messages. L'appelant les tient à jour et les passe ici.
+ *
+ * F7 · Mode spectateur — quand `spectator` est vrai, le siège perd son
+ * privilège d'own : les deux mains reviennent avec `handCount` seul, aucune
+ * carte face verso n'est révélée, seules les zones publiques (cimetière, Extra
+ * Deck) et les cartes face visible sont détaillées. `seat` reste posé pour ne
+ * pas casser la géométrie du plateau, mais aucun côté n'est « propriétaire ».
  */
 export function buildBoardView(
   lib: OcgCoreSync,
@@ -221,7 +227,8 @@ export function buildBoardView(
   handle: OcgDuelHandle,
   seat: DuelSeat,
   ctx: SnapshotContext,
-  store: CardStore
+  store: CardStore,
+  spectator = false
 ): DuelBoardView {
   const field = lib.duelQueryField(handle);
   const foe: DuelSeat = seat === 0 ? 1 : 0;
@@ -231,7 +238,16 @@ export function buildBoardView(
     phase: phaseName(ocg, ctx.phase),
     turnPlayer: ctx.turnPlayer,
     seat,
-    me: buildSide(lib, ocg, handle, seat, true, field.players[seat], ctx.lp[seat], store),
+    me: buildSide(
+      lib,
+      ocg,
+      handle,
+      seat,
+      spectator ? false : true,
+      field.players[seat],
+      ctx.lp[seat],
+      store
+    ),
     opponent: buildSide(lib, ocg, handle, foe, false, field.players[foe], ctx.lp[foe], store),
     chainLength: field.chain.length,
   };

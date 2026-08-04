@@ -1,5 +1,6 @@
 import type { Deck, DeckCard } from '../../../../shared/types';
 import { isExtraDeckCard } from '../../../../shared/cards';
+import { query } from '../../config/database';
 import { getCardStore, resolveCard } from './cardStore';
 import type { EnginePlayerDeck } from './protocol';
 
@@ -82,6 +83,109 @@ export function deckToEngine(deck: Deck): DeckConversion {
  * elle viendra à l'étape 7. On vérifie seulement ce sans quoi le moteur ne peut
  * pas démarrer.
  */
+/**
+ * Traduit une **soumission de side-deck** en `EnginePlayerDeck`.
+ *
+ * `mainIds` / `extraIds` sont des `cards.id` (la clé interne du catalogue), pas
+ * des passcodes. On les résout d'un seul `SELECT ... IN (…)` pour éviter N
+ * requêtes, puis on aplatit selon le nombre d'occurrences dans la liste (une
+ * carte peut apparaître plusieurs fois dans une composition en tant qu'entrées
+ * atomiques).
+ *
+ * F4 · le format de compétition YGO — chaque manche redémarre avec la
+ * composition retenue par le joueur, main + side confondus.
+ */
+export async function buildEngineDeckFromIds(
+  mainIds: number[],
+  extraIds: number[]
+): Promise<DeckConversion> {
+  const store = getCardStore();
+  const uniqueIds = [...new Set([...mainIds, ...extraIds])];
+  if (uniqueIds.length === 0) {
+    return {
+      deck: { main: [], extra: [] },
+      rejected: [{ name: '(vide)', code: '-', reason: 'aucune carte soumise' }],
+    };
+  }
+  const res = await query(
+    `SELECT id, card_id, name, name_fr, frame_type, type
+       FROM cards
+      WHERE id = ANY($1::int[])`,
+    [uniqueIds]
+  );
+  // Table des cartes par id interne, avec passcode et frameType nécessaires.
+  const byId = new Map<number, { code: number; name: string; frame_type?: string; type?: string }>();
+  for (const r of res.rows) {
+    const code = Number(r.card_id);
+    byId.set(r.id, {
+      code: Number.isInteger(code) && code > 0 ? code : 0,
+      name: r.name_fr || r.name || `carte #${r.id}`,
+      frame_type: r.frame_type,
+      type: r.type,
+    });
+  }
+
+  const main: number[] = [];
+  const extra: number[] = [];
+  const rejected: DeckConversion['rejected'] = [];
+
+  const push = (
+    id: number,
+    forcedExtra: boolean
+  ): void => {
+    const row = byId.get(id);
+    if (!row) {
+      rejected.push({
+        name: `carte #${id}`,
+        code: String(id),
+        reason: 'carte introuvable en base',
+      });
+      return;
+    }
+    if (!row.code) {
+      rejected.push({
+        name: row.name,
+        code: String(id),
+        reason: 'passcode absent en base',
+      });
+      return;
+    }
+    if (!resolveCard(row.code, store)) {
+      rejected.push({
+        name: row.name,
+        code: String(row.code),
+        reason: 'inconnue du moteur',
+      });
+      return;
+    }
+    // Sécurité : on vérifie que le classement soumis correspond bien au type
+    // réel. Un side-deck qui rangerait un Fusion dans le Main planterait le moteur.
+    const actuallyExtra = isExtraDeckCard(row);
+    if (forcedExtra && !actuallyExtra) {
+      rejected.push({
+        name: row.name,
+        code: String(row.code),
+        reason: 'carte non-Extra rangée dans l\'Extra',
+      });
+      return;
+    }
+    if (!forcedExtra && actuallyExtra) {
+      rejected.push({
+        name: row.name,
+        code: String(row.code),
+        reason: 'carte Extra rangée dans le Main',
+      });
+      return;
+    }
+    (forcedExtra ? extra : main).push(row.code);
+  };
+
+  for (const id of mainIds) push(id, false);
+  for (const id of extraIds) push(id, true);
+
+  return { deck: { main, extra }, rejected };
+}
+
 export function checkEngineDeck(conversion: DeckConversion): string | null {
   const { main, extra } = conversion.deck;
 

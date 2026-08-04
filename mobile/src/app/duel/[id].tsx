@@ -75,6 +75,13 @@ export default function DuelScreen() {
   const fetchDuel = useCallback(async () => {
     try {
       const d = await duelApi.get(duelId);
+      // F8 · si le duel est en mode moteur, on redirige vers l'arène engine
+      // dédiée. Le mode manuel reste dispo pour les duels historiques créés
+      // avant l'intégration moteur.
+      if (d.engine_mode || d.phase_pre_game) {
+        router.replace(`/duel/engine/${duelId}`);
+        return;
+      }
       setDuel((prev) => {
         if (!prev) return d;
         if (prev.updated_at === d.updated_at) return prev;

@@ -1,6 +1,13 @@
 import type { OcgMessage, OcgResponse, SelectFieldPlace } from 'ocgcore-wasm';
-import type { DuelPrompt, DuelPromptOption, DuelSeat, DuelChoice } from '../../../../shared/duelView';
+import type {
+  DuelChoice,
+  DuelCounterTarget,
+  DuelPrompt,
+  DuelPromptOption,
+  DuelSeat,
+} from '../../../../shared/duelView';
 import type { CardStore } from './cardStore';
+import { counterString, systemString } from './hintStrings';
 
 /**
  * Normalise les demandes du moteur, et retraduit les réponses du joueur.
@@ -23,6 +30,17 @@ type Ocg = typeof import('ocgcore-wasm');
 
 const nameOf = (store: CardStore, code: number): string =>
   store.names.get(code) || `Carte ${code}`;
+
+/**
+ * Attache le hint courant à un prompt, en évitant l'écrasement des invites où
+ * un titre local a plus de valeur que le texte système générique.
+ */
+function withHint(prompt: DuelPrompt, ctx?: PromptContext): DuelPrompt {
+  if (!ctx?.hint) return prompt;
+  const { title, note } = ctx.hint;
+  if (!title && !note) return prompt;
+  return { ...prompt, hint: { title, note } };
+}
 
 const seatOf = (player: number): DuelSeat => (player === 1 ? 1 : 0);
 
@@ -168,12 +186,45 @@ const cardOptions = (
   }));
 
 /**
+ * Contexte optionnel pour enrichir une invite.
+ *
+ * `hint` vient d'un `MSG_HINT · SELECTMSG / MESSAGE` reçu juste avant la
+ * demande — le texte est celui d'EDOPro (`strings.conf`). `optionLabels` est
+ * la suite ordonnée des libellés d'effets accumulés depuis les
+ * `HINT · OPSELECTED` : utile pour transformer « Effet 1 » en le vrai texte
+ * de l'effet.
+ */
+export interface PromptContext {
+  hint?: { title?: string; note?: string };
+  optionLabels?: string[];
+}
+
+/**
  * Traduit une demande du moteur en invite exploitable.
  *
  * Renvoie `null` si le message n'est pas une demande — l'appelant ne doit
  * appeler cette fonction que sur le dernier message d'un cycle bloqué.
  */
-export function buildPrompt(ocg: Ocg, message: OcgMessage, store: CardStore): DuelPrompt | null {
+export function buildPrompt(
+  ocg: Ocg,
+  message: OcgMessage,
+  store: CardStore,
+  ctx?: PromptContext
+): DuelPrompt | null {
+  // On construit d'abord l'invite « nue » puis on lui attache le hint courant
+  // en sortie. `SELECT_COUNTER` et `SELECT_OPTION` gèrent leur titre
+  // eux-mêmes — pour les autres, `withHint` suffit à mettre le SELECTMSG
+  // en avant.
+  const result = translatePrompt(ocg, message, store, ctx);
+  return result ? withHint(result, ctx) : result;
+}
+
+function translatePrompt(
+  ocg: Ocg,
+  message: OcgMessage,
+  store: CardStore,
+  ctx?: PromptContext
+): DuelPrompt | null {
   const M = ocg.OcgMessageType;
 
   switch (message.type) {
@@ -352,17 +403,31 @@ export function buildPrompt(ocg: Ocg, message: OcgMessage, store: CardStore): Du
 
     case M.SELECT_OPTION: {
       const m = message;
-      return {
-        kind: 'option',
-        seat: seatOf(m.player),
-        message: 'Choisis un effet',
-        // Les libellés d'effets sont des identifiants vers les textes d'EDOPro,
-        // que nous n'embarquons pas. On numérote donc, faute de mieux.
-        options: m.options.map((_, i) => ({ id: `option:${i}`, label: `Effet ${i + 1}` })),
-        min: 1,
-        max: 1,
-        canCancel: false,
-      };
+      // Deux sources possibles pour les libellés d'effets :
+      //   1. Les `HINT · OPSELECTED` que le moteur a émis juste avant nous
+      //      accumule le vrai texte des effets (via strings.conf).
+      //   2. Le tableau `m.options` porte des `bigint` : chacun est aussi un ID
+      //      vers strings.conf, qu'on résout via `systemString`.
+      // On préfère la source 2, plus fiable (les OPSELECTED peuvent manquer
+      // pour certains scripts), et on retombe sur 1 puis sur « Effet N ».
+      const labels = ctx?.optionLabels ?? [];
+      const options = m.options.map((code, i) => {
+        const fromStrings = systemString(code);
+        const label = fromStrings ?? labels[i] ?? `Effet ${i + 1}`;
+        return { id: `option:${i}`, label };
+      });
+      return withHint(
+        {
+          kind: 'option',
+          seat: seatOf(m.player),
+          message: ctx?.hint?.title ?? 'Choisis un effet',
+          options,
+          min: 1,
+          max: 1,
+          canCancel: false,
+        },
+        ctx
+      );
     }
 
     case M.SELECT_EFFECTYN: {
@@ -487,6 +552,64 @@ export function buildPrompt(ocg: Ocg, message: OcgMessage, store: CardStore): Du
         canCancel: false,
       };
 
+    case M.SELECT_COUNTER: {
+      const m = message;
+      const targets: DuelCounterTarget[] = m.cards.map((c, i) => ({
+        targetIdx: i,
+        cardCode: c.code,
+        cardName: nameOf(store, c.code),
+        location: c.location,
+        sequence: c.sequence,
+        controller: seatOf(c.controller),
+        currentCount: c.count,
+      }));
+      // Nom lisible du marqueur (« Spell Counter », « Ice Counter », …) via
+      // `!counter` de strings.conf. Fallback : le numéro brut, qui a
+      // au moins l'avantage de rester déterministe pour les tests.
+      const counterName =
+        counterString(m.counter_type) ?? `Marqueur #${m.counter_type}`;
+      return withHint(
+        {
+          kind: 'select_counter',
+          seat: seatOf(m.player),
+          message:
+            ctx?.hint?.title ?? `Retire ${m.count} marqueur${m.count > 1 ? 's' : ''}`,
+          // Les options restent vides — l'UI utilise `counter` pour un curseur
+          // par carte, et la réponse arrive dans `DuelChoice.counters`.
+          options: [],
+          min: 1,
+          max: 1,
+          canCancel: false,
+          counter: {
+            counterType: m.counter_type,
+            counterName,
+            count: m.count,
+            targets,
+          },
+        },
+        ctx
+      );
+    }
+
+    case M.ANNOUNCE_CARD: {
+      const m = message;
+      // La liste des cartes légales pouvant être immense, on ne l'énumère pas
+      // dans l'invite : le front fait une recherche typeahead et le serveur
+      // rejoue les opcodes du moteur sur la carte proposée.
+      return {
+        kind: 'announce_card',
+        seat: seatOf(m.player),
+        message: 'Déclare le nom d\'une carte',
+        options: [],
+        min: 1,
+        max: 1,
+        canCancel: false,
+        announce: {
+          searchable: true,
+        },
+      };
+    }
+
     default: {
       // Le front doit pouvoir afficher « le moteur demande quelque chose que je
       // ne sais pas présenter » plutôt que de rester bloqué sans rien dire.
@@ -511,11 +634,18 @@ export function buildPrompt(ocg: Ocg, message: OcgMessage, store: CardStore): Du
  *
  * Lève si un identifiant ne correspond à rien dans la demande d'origine : c'est
  * exactement le cas qu'on veut attraper — un client qui invente une option.
+ *
+ * `prompt` est fourni pour les invites dont la réponse ne se réduit pas à des
+ * identifiants (SELECT_COUNTER : la somme des retraits doit valoir `count` ;
+ * ANNOUNCE_CARD : la carte proposée doit vraiment passer les opcodes du
+ * moteur). Le pass-through pour les autres invites reste inchangé.
  */
 export function buildResponse(
   ocg: Ocg,
   message: OcgMessage,
-  choice: DuelChoice
+  prompt: DuelPrompt,
+  choice: DuelChoice,
+  store?: CardStore
 ): OcgResponse {
   const R = ocg.OcgResponseType;
   const M = ocg.OcgMessageType;
@@ -573,6 +703,16 @@ export function buildResponse(
 
     case M.SELECT_CARD: {
       if (choice.cancel) return { type: R.SELECT_CARD, indicies: null };
+      // Cas SELECT_CARD_CODES : la traduction est identique côté prompt, mais
+      // la réponse porte des passcodes plutôt que des indices. Le flag transite
+      // via `DuelChoice.cardCodes` — le front l'a construit à partir de la même
+      // liste d'options, il n'a pas à en connaître la sérialisation.
+      if (choice.cardCodes !== undefined) {
+        if (!Array.isArray(choice.cardCodes) || choice.cardCodes.some((c) => !Number.isInteger(c))) {
+          return reject();
+        }
+        return { type: R.SELECT_CARD_CODES, codes: choice.cardCodes };
+      }
       const indices = ids.map((id) => indexOf(id, 'card'));
       if (indices.some((i) => i === null)) return reject();
       return { type: R.SELECT_CARD, indicies: indices as number[] };
@@ -691,10 +831,103 @@ export function buildResponse(
       return { type: R.ANNOUNCE_NUMBER, value: index };
     }
 
+    case M.SELECT_COUNTER: {
+      const m = message;
+      const takes = choice.counters;
+      if (!Array.isArray(takes)) {
+        throw new Error('SELECT_COUNTER attend un tableau `counters`');
+      }
+      // Un tableau de la taille exacte du message : le moteur lit un `u16` par
+      // carte, y compris quand on retire zéro marqueur dessus.
+      const buffer = new Array<number>(m.cards.length).fill(0);
+      let total = 0;
+      for (const { targetIdx, take } of takes) {
+        if (!Number.isInteger(targetIdx) || targetIdx < 0 || targetIdx >= m.cards.length) {
+          throw new Error(`Cible ${targetIdx} hors du message SELECT_COUNTER`);
+        }
+        if (!Number.isInteger(take) || take < 0) {
+          throw new Error('Le nombre de marqueurs à retirer doit être un entier positif');
+        }
+        if (take > m.cards[targetIdx].count) {
+          throw new Error(
+            `Impossible de retirer ${take} marqueurs sur ${m.cards[targetIdx].count} disponibles`
+          );
+        }
+        buffer[targetIdx] += take;
+        total += take;
+      }
+      if (total !== m.count) {
+        throw new Error(
+          `Le total des marqueurs retirés (${total}) doit valoir ${m.count}`
+        );
+      }
+      return { type: R.SELECT_COUNTER, counters: buffer };
+    }
+
+    case M.ANNOUNCE_CARD: {
+      const code = choice.announcedCode;
+      if (typeof code !== 'number' || !Number.isInteger(code) || code <= 0) {
+        throw new Error('ANNOUNCE_CARD attend un passcode entier positif');
+      }
+      // On revérifie côté serveur — le front est déjà censé ne proposer que des
+      // cartes qui passent, mais un client mal intentionné pourrait envoyer un
+      // passcode arbitraire. `cardMatchesOpcode` est la fonction exportée par
+      // `ocgcore-wasm` faite exactement pour ça.
+      if (store) {
+        const card = store.data.get(code);
+        if (!card) {
+          throw new Error(`Passcode ${code} inconnu de la base de cartes`);
+        }
+        if (!ocg.cardMatchesOpcode(card, message.opcodes)) {
+          throw new Error(
+            `La carte ${store.names.get(code) ?? code} ne passe pas le filtre du moteur`
+          );
+        }
+      }
+      return { type: R.ANNOUNCE_CARD, card: code };
+    }
+
     default:
       throw new Error(
         `Le moteur attend une réponse que la traduction ne couvre pas encore ` +
           `(${ocg.ocgMessageTypeStrings.get(message.type) ?? message.type})`
       );
   }
+}
+
+/**
+ * Recherche les cartes déclarables pour l'invite ANNOUNCE_CARD en cours.
+ *
+ * Renvoie les 20 premières cartes dont le nom contient la requête (case
+ * insensitive) ET qui passent tous les opcodes du moteur. Sans le second
+ * filtre, le joueur proposerait des cartes que le moteur refuserait par un
+ * `retry` muet.
+ */
+export function searchAnnounceCards(
+  ocg: Ocg,
+  message: OcgMessage,
+  store: CardStore,
+  query: string,
+  limit: number = 20
+): Array<{ code: number; name: string }> {
+  // On garde le contrôle explicite plutôt qu'un cast : si le message pending
+  // n'est pas ANNOUNCE_CARD (parce que le joueur a envoyé sa recherche après
+  // qu'une chaîne d'effets a changé l'invite), le worker doit refuser.
+  if (!('opcodes' in message)) {
+    throw new Error("Le moteur n'attend pas d'annonce de carte");
+  }
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+
+  const opcodes = (message as { opcodes: Parameters<typeof ocg.cardMatchesOpcode>[1] }).opcodes;
+  const results: Array<{ code: number; name: string }> = [];
+  for (const [code, name] of store.names) {
+    if (!name.toLowerCase().includes(needle)) continue;
+    const card = store.data.get(code);
+    if (!card) continue;
+    if (!ocg.cardMatchesOpcode(card, opcodes)) continue;
+    results.push({ code, name });
+    if (results.length >= limit) break;
+  }
+  return results;
 }
