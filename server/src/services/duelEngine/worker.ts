@@ -48,6 +48,42 @@ const scriptReader = createScriptReader();
  */
 const MAX_STEPS_PER_TURN = 10_000;
 
+/**
+ * Durée d'inactivité au-delà de laquelle un duel est libéré.
+ *
+ * Le moteur n'a pas de ramasse-miettes : un duel abandonné — onglet fermé,
+ * joueur parti déjeuner, réseau coupé — garde son tas WebAssembly jusqu'au
+ * redémarrage du worker. Sans cette purge, la mémoire ne fait que monter.
+ *
+ * 30 minutes : assez pour une pause, trop court pour qu'un duel oublié survive
+ * la journée.
+ *
+ * Les trois seuils sont surchargeables par variable d'environnement. Ce n'est
+ * pas de la configuration pour la configuration : sans cela, vérifier la purge
+ * demanderait d'attendre une demi-heure, donc personne ne la vérifierait.
+ */
+const num = (name: string, fallback: number): number => {
+  const raw = Number(process.env[name]);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallback;
+};
+
+const IDLE_TTL_MS = num('DUEL_IDLE_TTL_MS', 30 * 60 * 1000);
+
+/** Une partie terminée n'a plus rien à faire en mémoire, on la garde moins longtemps. */
+const ENDED_TTL_MS = num('DUEL_ENDED_TTL_MS', 5 * 60 * 1000);
+
+const SWEEP_INTERVAL_MS = num('DUEL_SWEEP_INTERVAL_MS', 60 * 1000);
+
+/**
+ * Plafond de duels simultanés.
+ *
+ * Mesuré à l'étape 2 : ~2,3 Mio par duel actif. 200 duels font donc environ
+ * 460 Mio de tas — au-delà, on préfère refuser proprement plutôt que laisser
+ * le worker se faire tuer par le système, ce qui emporterait **toutes** les
+ * parties en cours et pas seulement celle de trop.
+ */
+const MAX_CONCURRENT_DUELS = 200;
+
 async function ensureReady(): Promise<{
   core: OcgCoreSync;
   ocg: typeof import('ocgcore-wasm');
@@ -108,6 +144,12 @@ function createSession(req: Extract<EngineRequest, { type: 'create' }>): DuelSta
   const cards = store!;
 
   if (sessions.has(req.duelId)) destroySession(req.duelId);
+
+  if (sessions.size >= MAX_CONCURRENT_DUELS) {
+    throw new Error(
+      `Le serveur héberge déjà ${sessions.size} duels — réessaie dans un moment`
+    );
+  }
 
   const handle = lib.createDuel({
     flags: mod.OcgDuelMode.MODE_MR5,
@@ -195,6 +237,27 @@ function requireSession(duelId: number): DuelSession {
   return session;
 }
 
+/**
+ * Libère les duels inactifs.
+ *
+ * Le fil principal est prévenu pour qu'il puisse annuler ces duels en base et
+ * avertir les joueurs — sinon ils resteraient « actifs » à l'écran alors que
+ * le moteur ne les connaît plus.
+ */
+function sweepIdleSessions(): void {
+  const now = Date.now();
+  const expired: number[] = [];
+
+  for (const [duelId, session] of sessions) {
+    const ttl = session.ended ? ENDED_TTL_MS : IDLE_TTL_MS;
+    if (now - session.lastActivityAt > ttl) expired.push(duelId);
+  }
+
+  if (!expired.length) return;
+  for (const duelId of expired) destroySession(duelId);
+  port.postMessage({ id: 0, notice: 'duels_expired', duelIds: expired });
+}
+
 function stats(): EngineStats {
   const m = process.memoryUsage();
   return {
@@ -218,6 +281,7 @@ async function handle(req: EngineRequest): Promise<EngineResponse> {
 
       case 'choose': {
         const session = requireSession(req.duelId);
+        session.touch();
         session.applyChoice(lib, mod, req.seat as DuelSeat, req.choice, cards);
         session.pump(lib, mod, cards, MAX_STEPS_PER_TURN);
         return {
@@ -229,6 +293,9 @@ async function handle(req: EngineRequest): Promise<EngineResponse> {
 
       case 'view': {
         const session = requireSession(req.duelId);
+        // Consulter compte comme une activité : un joueur qui regarde son
+        // plateau en attendant l'adversaire ne doit pas voir son duel purgé.
+        session.touch();
         return {
           id: req.id,
           ok: true,
@@ -250,6 +317,10 @@ async function handle(req: EngineRequest): Promise<EngineResponse> {
     };
   }
 }
+
+// Balayage des duels abandonnes.  : ce minuteur ne doit pas empecher
+// le worker de s'arreter quand on le termine.
+setInterval(sweepIdleSessions, SWEEP_INTERVAL_MS).unref();
 
 port.on('message', (req: EngineRequest) => {
   handle(req).then((res) => port.postMessage(res));

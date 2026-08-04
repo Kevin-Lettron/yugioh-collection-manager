@@ -16,7 +16,8 @@
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
-    "news:probe": "ts-node scripts/newsProbe.ts"
+    "news:probe": "ts-node scripts/newsProbe.ts",
+    "duel:lifecycle": "ts-node scripts/duelLifecycleTest.ts"
   },
   "keywords": [
     "yugioh",

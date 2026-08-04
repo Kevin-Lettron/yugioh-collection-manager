@@ -63,7 +63,7 @@ async function main(): Promise<void> {
 
   for (let i = 1; i <= count; i++) {
     const duelId = 900_000 + i;
-    const result = await createEngineDuel({
+    const { state: result } = await createEngineDuel({
       duelId,
       seat: 0,
       players: [DECK, DECK],

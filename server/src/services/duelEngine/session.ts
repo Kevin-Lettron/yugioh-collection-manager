@@ -35,6 +35,12 @@ const WIN_REASONS: Record<number, string> = {
 export class DuelSession {
   readonly handle: OcgDuelHandle;
   readonly createdAt = Date.now();
+  /** Dernière interaction. Sert à repérer les duels abandonnés (cf. worker.ts). */
+  lastActivityAt = Date.now();
+
+  touch(): void {
+    this.lastActivityAt = Date.now();
+  }
 
   turn = 1;
   phase = 0;

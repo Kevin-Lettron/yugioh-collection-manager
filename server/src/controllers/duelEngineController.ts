@@ -6,6 +6,7 @@ import { DuelModel } from '../models/duelModel';
 import { DeckModel } from '../models/deckModel';
 import { Duel } from '../../../shared/types';
 import type { DuelChoice, DuelSeat } from '../../../shared/duelView';
+import { DuelEngineModel } from '../models/duelEngineModel';
 import { deckToEngine, checkEngineDeck } from '../services/duelEngine/deckLoader';
 import {
   createEngineDuel,
@@ -108,11 +109,16 @@ export class DuelEngineController {
 
       if (problems.length) throw new ValidationError(problems.join(' · '));
 
-      const state = await createEngineDuel({
+      const { state, seed } = await createEngineDuel({
         duelId: duel.id,
         seat,
         players: [conversions[0].deck, conversions[1].deck],
       });
+
+      // La graine est figée en base **avant** que quiconque puisse jouer : sans
+      // elle, le journal des décisions ne suffirait pas à rejouer la partie,
+      // puisque le mélange du deck en dépend.
+      await DuelEngineModel.markEngineDuel(duel.id, seed);
 
       logger.info(`[DUEL_ENGINE] duel ${duel.id} ouvert (statut ${state.status})`);
       notifySeats(req, duel);
@@ -166,10 +172,28 @@ export class DuelEngineController {
         throw new ValidationError('Aucune option choisie');
       }
 
-      const state = await chooseInEngine(duel.id, seat, {
-        optionIds,
-        cancel: body?.cancel === true,
-      });
+      const choice = { optionIds, cancel: body?.cancel === true };
+      const state = await chooseInEngine(duel.id, seat, choice);
+
+      // Journalisé **après** que le moteur l'ait acceptée : une décision
+      // refusée n'a pas eu lieu, et l'écrire fausserait le rejeu.
+      await DuelEngineModel.appendAction(duel.id, seat, choice);
+
+      // Fin de partie : c'est ici qu'on l'acte en base. Le moteur, lui, oubliera
+      // le duel au prochain balayage.
+      if (state.status === 'ended') {
+        const winnerId =
+          state.winner === null || state.winner === undefined
+            ? null
+            : state.winner === 0
+              ? duel.challenger_id
+              : duel.opponent_id;
+
+        if (winnerId) {
+          await DuelModel.finish(duel.id, winnerId);
+          logger.info(`[DUEL_ENGINE] duel ${duel.id} terminé — vainqueur ${winnerId}`);
+        }
+      }
 
       notifySeats(req, duel);
       res.json(state);

@@ -55,6 +55,17 @@ export function onWorkerLost(handler: WorkerLostHandler): void {
   lostHandlers.push(handler);
 }
 
+/** Prévient les mêmes abonnés : un duel purgé est perdu comme un worker mort. */
+function notifyLost(duelIds: number[], reason: string): void {
+  for (const handler of lostHandlers) {
+    try {
+      handler(duelIds, reason);
+    } catch (err) {
+      logger.error(`[DUEL_ENGINE] handler onWorkerLost en échec : ${err}`);
+    }
+  }
+}
+
 function workerEntrypoint(): { spec: string; eval: boolean } {
   // En développement le serveur tourne sous ts-node et ce fichier est un `.ts` :
   // `new Worker()` ne sait pas charger du TypeScript. On amorce alors le worker
@@ -89,13 +100,7 @@ function handleWorkerDeath(reason: string): void {
     logger.warn(`[DUEL_ENGINE] worker perdu (${reason})`);
   }
 
-  for (const handler of lostHandlers) {
-    try {
-      handler(lost, reason);
-    } catch (err) {
-      logger.error(`[DUEL_ENGINE] handler onWorkerLost en échec : ${err}`);
-    }
-  }
+  notifyLost(lost, reason);
 }
 
 function ensureWorker(): Worker {
@@ -112,6 +117,16 @@ function ensureWorker(): Worker {
     if (isEngineNotice(msg)) {
       if (msg.notice === 'ready') {
         logger.info('[DUEL_ENGINE] moteur prêt');
+      } else if (msg.notice === 'duels_expired') {
+        // Duels libérés faute d'activité. La conséquence est la même qu'un
+        // worker perdu : le moteur ne connaît plus la partie, il faut
+        // l'annuler proprement au lieu de la laisser « active » à l'écran.
+        const ids = msg.duelIds ?? [];
+        for (const id of ids) knownDuels.delete(id);
+        if (ids.length) {
+          logger.info(`[DUEL_ENGINE] ${ids.length} duel(s) purgé(s) pour inactivité`);
+          notifyLost(ids, 'inactivité');
+        }
       } else {
         // Erreur remontée par un script Lua : le duel continue, mais c'est le
         // premier endroit où regarder quand une carte se comporte mal.
@@ -181,12 +196,19 @@ function defaultSeed(duelId: number): [bigint, bigint, bigint, bigint] {
   return [now, base, now ^ base, base * 6364136223846793005n];
 }
 
-export async function createEngineDuel(params: CreateDuelParams): Promise<DuelStateResponse> {
+export interface CreatedDuel {
+  state: DuelStateResponse;
+  /** La graine réellement employée — à persister pour pouvoir rejouer la partie. */
+  seed: [bigint, bigint, bigint, bigint];
+}
+
+export async function createEngineDuel(params: CreateDuelParams): Promise<CreatedDuel> {
+  const seed = params.seed ?? defaultSeed(params.duelId);
   const result = await send<DuelStateResponse>(
     {
       type: 'create',
       duelId: params.duelId,
-      seed: params.seed ?? defaultSeed(params.duelId),
+      seed,
       players: params.players,
       seat: params.seat,
       startingLP: params.startingLP ?? 8000,
@@ -196,7 +218,7 @@ export async function createEngineDuel(params: CreateDuelParams): Promise<DuelSt
     `create ${params.duelId}`
   );
   knownDuels.add(params.duelId);
-  return result;
+  return { state: result, seed };
 }
 
 export function chooseInEngine(

@@ -146,7 +146,9 @@ function auditVisibility(state: DuelStateResponse, tally: Tally): void {
 }
 
 async function playOne(duelId: number, tally: Tally): Promise<string> {
-  let state = await createEngineDuel({ duelId, seat: 0, players: [DECK, DECK] });
+  // `createEngineDuel` rend aussi la graine employée, que le serveur persiste
+  // pour pouvoir rejouer la partie. Le test n'en a pas l'usage.
+  let state = (await createEngineDuel({ duelId, seat: 0, players: [DECK, DECK] })).state;
   auditVisibility(state, tally);
 
   let local = 0;

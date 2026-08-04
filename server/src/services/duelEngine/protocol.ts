@@ -66,8 +66,10 @@ export type EngineResponse =
 /** Émis spontanément par le worker, hors cycle requête/réponse. */
 export interface EngineNotice {
   id: 0;
-  notice: 'ready' | 'engine_error';
+  notice: 'ready' | 'engine_error' | 'duels_expired';
   detail?: string;
+  /** Renseigné pour `duels_expired` : les duels libérés faute d'activité. */
+  duelIds?: number[];
 }
 
 export function isEngineNotice(msg: EngineResponse | EngineNotice): msg is EngineNotice {

@@ -229,10 +229,23 @@ httpServer.listen(PORT, () => {
 // ygopro-core n'expose aucune sérialisation d'un duel en cours : on ne peut pas
 // les reprendre, seulement prévenir les joueurs. Politique retenue : le duel est
 // annulé, sans défaite pour personne (cf. docs/PLAN-MOTEUR-DUEL.md, étape 4).
+// Vaut aussi pour les duels purgés faute d'activité : dans les deux cas le
+// moteur ne connaît plus la partie.
 onWorkerLost((lostDuelIds, reason) => {
   for (const duelId of lostDuelIds) {
     io.to(`duel:${duelId}`).emit('duel:engine_lost', { duelId, reason });
   }
+
+  // Sans ça, ces duels resteraient « actifs » en base indéfiniment : la liste
+  // des duels en cours se remplirait de parties que plus rien ne fait avancer.
+  import('./models/duelEngineModel')
+    .then(({ DuelEngineModel }) => DuelEngineModel.cancelLostDuels(lostDuelIds))
+    .then((n) => {
+      if (n > 0) logger.info(`[DUEL_ENGINE] ${n} duel(s) annulé(s) en base (${reason})`);
+    })
+    .catch((err) =>
+      logger.error(`[DUEL_ENGINE] annulation en base impossible : ${err}`)
+    );
 });
 
 // Handle graceful shutdown
