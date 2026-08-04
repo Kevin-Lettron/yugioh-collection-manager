@@ -143,6 +143,30 @@ export default function EngineDuelRoom() {
   );
 
   /**
+   * Faut-il une fenêtre centrale pour répondre ?
+   *
+   * Règle : **oui dès qu'une option n'est atteignable ni sur le plateau ni dans
+   * la main.** C'est le cas de la position d'invocation, d'un type ou d'un
+   * attribut à annoncer, d'une carte à chercher dans le deck ou le cimetière.
+   *
+   * Ces demandes n'avaient nulle part où s'afficher, et la partie restait
+   * bloquée sur un message sans bouton — « Position de Cyber Dragon » sans
+   * moyen de choisir. Baser la règle sur l'emplacement plutôt que sur une liste
+   * de types d'invite évite d'avoir à la rallonger à chaque cas oublié.
+   */
+  const needsDialog = useMemo(() => {
+    if (!prompt || prompt.options.length === 0) return false;
+    if (prompt.kind === 'place' || prompt.kind === 'main' || prompt.kind === 'battle') {
+      return false;
+    }
+    // Emplacements que le plateau et la main rendent cliquables.
+    const REACHABLE = [0x2, 0x4, 0x8]; // HAND, MZONE, SZONE
+    return prompt.options.some(
+      (o) => o.location === undefined || !REACHABLE.includes(o.location)
+    );
+  }, [prompt]);
+
+  /**
    * Répond automatiquement aux demandes sans réponse possible.
    *
    * Le moteur demande parfois « veux-tu répondre en chaîne ? » alors qu'aucune
@@ -190,20 +214,6 @@ export default function EngineDuelRoom() {
       busyRef.current = false;
       setBusy(false);
     }
-  };
-
-  /**
-   * Ouvre le menu contextuel d'une carte.
-   *
-   * C'est ici que se matérialise « cliquer une carte propose ce qu'on peut en
-   * faire » : on ne devine pas les actions possibles, on filtre celles que le
-   * moteur a déjà déclarées légales pour cette carte.
-   */
-  const openCardMenu = (card: DuelCardView, label: string) => {
-    if (!prompt) return;
-    const options = prompt.options.filter((o) => o.code === card.code);
-    if (!options.length) return;
-    setFocusedOptions({ title: label, options });
   };
 
   /**
@@ -340,14 +350,30 @@ export default function EngineDuelRoom() {
           <h3 style={{ ...sectionTitle, textAlign: 'center' }}>Ma main · {board.me.hand.length}</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {board.me.hand.map((card, i) => {
-              const actionable = (prompt?.options ?? []).some((o) => o.code === card.code);
+              /**
+               * Les options d'une carte de la main se retrouvent par sa
+               * **place** dans la main, pas par son passcode.
+               *
+               * Avec deux exemplaires de la même carte, filtrer par passcode
+               * ramenait les options des deux — d'où le menu qui proposait
+               * « Invoquer Ghost Ogre » deux fois de suite. La position, elle,
+               * est unique.
+               */
+              const options = (prompt?.options ?? []).filter(
+                (o) => o.location === 0x2 && o.sequence === i
+              );
               return (
                 <HandCard
                   key={`${card.code}-${i}`}
                   card={card}
-                  actionable={actionable}
+                  actionable={options.length > 0}
                   onHover={setHovered}
-                  onClick={() => openCardMenu(card, card.name ?? 'Carte')}
+                  onClick={() =>
+                    options.length === 1
+                      ? pickOption(options[0].id)
+                      : options.length > 1 &&
+                        setFocusedOptions({ title: card.name ?? 'Carte', options })
+                  }
                 />
               );
             })}
@@ -448,20 +474,71 @@ export default function EngineDuelRoom() {
           coin : la partie est suspendue tant qu'on n'a pas répondu, et un
           bouton discret sur le côté laissait le joueur bloqué sans comprendre
           ce qu'on attendait de lui. */}
-      {prompt && ['chain', 'confirm', 'option'].includes(prompt.kind) && prompt.options.length > 0 && (
+      {prompt && needsDialog && (
         <Overlay onClose={() => undefined}>
-          <h4 style={{ margin: '0 0 14px', color: 'var(--gold)' }}>{prompt.message}</h4>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {prompt.options.map((o) => (
+          <h4 style={{ margin: '0 0 4px', color: 'var(--gold)' }}>{prompt.message}</h4>
+          {prompt.max > 1 && (
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+              {selection.length} / {prompt.min === prompt.max ? prompt.min : `${prompt.min}–${prompt.max}`}
+            </p>
+          )}
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              maxHeight: '52vh',
+              overflowY: 'auto',
+              marginBottom: 14,
+            }}>
+            {prompt.options.map((o) => {
+              const picked = selection.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => pickOption(o.id)}
+                  onMouseEnter={() =>
+                    o.code ? setHovered({ code: o.code, name: o.label, faceDown: false }) : undefined
+                  }
+                  onMouseLeave={() => setHovered(null)}
+                  style={{
+                    display: 'grid',
+                    gap: 6,
+                    justifyItems: 'center',
+                    padding: 8,
+                    background: picked ? 'var(--success)' : 'var(--panel-2)',
+                    color: picked ? 'var(--on-gold)' : 'var(--text)',
+                    border: `1px solid ${picked ? 'var(--success)' : 'var(--border)'}`,
+                    cursor: 'pointer',
+                    maxWidth: 120,
+                  }}>
+                  {/* Les cartes cherchées dans le deck ou le cimetière ne sont
+                      nulle part sur le plateau : sans leur illustration, on
+                      choisirait à l'aveugle depuis une liste de noms. */}
+                  {o.code ? (
+                    <img src={cardImage(o.code)} alt="" style={{ width: 72, display: 'block' }} />
+                  ) : null}
+                  <span style={{ fontSize: 11, lineHeight: 1.3, textAlign: 'center' }}>
+                    {o.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            {prompt.max > 1 && (
               <button
-                key={o.id}
                 type="button"
-                disabled={busy}
-                onClick={() => send([o.id])}
-                style={btn('var(--gold)')}>
-                {o.label}
+                disabled={busy || selection.length < prompt.min}
+                onClick={() => send(selection)}
+                style={btn('var(--cyan)')}>
+                Valider
               </button>
-            ))}
+            )}
             {prompt.canCancel && (
               <button type="button" disabled={busy} onClick={() => send([], true)} style={ghostBtn}>
                 {prompt.kind === 'chain' ? 'Ne pas répondre' : 'Passer'}

@@ -53,6 +53,61 @@ function locationLabel(ocg: Ocg, location: number): string {
   }
 }
 
+/**
+ * Types de monstre et attributs, par bit.
+ *
+ * Le moteur les annonce sous forme de **masque** : chaque bit levé est une
+ * valeur autorisée. Certaines cartes en interdisent une partie, d'où le
+ * décodage plutôt qu'une liste figée.
+ */
+const RACE_NAMES: Array<[bigint, string]> = [
+  [1n, 'Guerrier'],
+  [2n, 'Magicien'],
+  [4n, 'Elfe'],
+  [8n, 'Bête'],
+  [16n, 'Bête-Guerrier'],
+  [32n, 'Dragon'],
+  [64n, 'Zombie'],
+  [128n, 'Aqua'],
+  [256n, 'Pyro'],
+  [512n, 'Rocher'],
+  [1024n, 'Bête Ailée'],
+  [2048n, 'Plante'],
+  [4096n, 'Insecte'],
+  [8192n, 'Tonnerre'],
+  [16384n, 'Serpent de Mer'],
+  [32768n, 'Serpent'],
+  [65536n, 'Machine'],
+  [131072n, 'Poisson'],
+  [262144n, 'Dinosaure'],
+  [524288n, 'Psychique'],
+  [1048576n, 'Bête Divine'],
+  [2097152n, 'Créature Divine'],
+  [4194304n, 'Cyberse'],
+  [8388608n, 'Illusion'],
+];
+
+const ATTRIBUTE_NAMES: Array<[bigint, string]> = [
+  [1n, 'TERRE'],
+  [2n, 'EAU'],
+  [4n, 'FEU'],
+  [8n, 'VENT'],
+  [16n, 'LUMIÈRE'],
+  [32n, 'TÉNÈBRES'],
+  [64n, 'DIVIN'],
+];
+
+/** Décode un masque en options, en ne gardant que les bits autorisés. */
+function maskOptions(
+  table: Array<[bigint, string]>,
+  mask: bigint,
+  prefix: string
+): DuelPromptOption[] {
+  return table
+    .filter(([bit]) => (mask & bit) !== 0n)
+    .map(([bit, label]) => ({ id: `${prefix}:${bit}`, label }));
+}
+
 /** Les positions d'invocation possibles, décodées depuis leur masque. */
 function positionOptions(ocg: Ocg, mask: number): DuelPromptOption[] {
   const P = ocg.OcgPosition;
@@ -372,6 +427,51 @@ export function buildPrompt(ocg: Ocg, message: OcgMessage, store: CardStore): Du
       };
     }
 
+    case M.ANNOUNCE_RACE: {
+      const m = message;
+      // `available` est un masque : chaque bit encore levé est un type qu'on a
+      // le droit d'annoncer. Certaines cartes en interdisent une partie.
+      return {
+        kind: 'announce',
+        seat: seatOf(m.player),
+        message:
+          m.count > 1 ? `Annonce ${m.count} types de monstre` : 'Annonce un type de monstre',
+        options: maskOptions(RACE_NAMES, BigInt(m.available), 'race'),
+        min: m.count,
+        max: m.count,
+        canCancel: false,
+      };
+    }
+
+    case M.ANNOUNCE_ATTRIB: {
+      const m = message;
+      return {
+        kind: 'announce',
+        seat: seatOf(m.player),
+        message: m.count > 1 ? `Annonce ${m.count} attributs` : 'Annonce un attribut',
+        options: maskOptions(ATTRIBUTE_NAMES, BigInt(m.available), 'attrib'),
+        min: m.count,
+        max: m.count,
+        canCancel: false,
+      };
+    }
+
+    case M.ANNOUNCE_NUMBER: {
+      const m = message;
+      return {
+        kind: 'announce',
+        seat: seatOf(m.player),
+        message: 'Annonce un nombre',
+        options: m.options.map((value, i) => ({
+          id: `number:${i}`,
+          label: String(value),
+        })),
+        min: 1,
+        max: 1,
+        canCancel: false,
+      };
+    }
+
     case M.ROCK_PAPER_SCISSORS:
       return {
         kind: 'option',
@@ -568,6 +668,27 @@ export function buildResponse(
       const value = first ? indexOf(first, 'rps') : null;
       if (value !== 1 && value !== 2 && value !== 3) return reject();
       return { type: R.ROCK_PAPER_SCISSORS, value };
+    }
+
+    case M.ANNOUNCE_RACE: {
+      // L'identifiant porte le bit lui-même, pas un rang : c'est ce que le
+      // moteur attend, et ça évite de refaire le décodage à l'envers.
+      const races = ids.map((id) => Number(indexOf(id, 'race')));
+      if (races.some((r) => !Number.isFinite(r) || r <= 0)) return reject();
+      return { type: R.ANNOUNCE_RACE, races: races as never[] };
+    }
+
+    case M.ANNOUNCE_ATTRIB: {
+      const attributes = ids.map((id) => Number(indexOf(id, 'attrib')));
+      if (attributes.some((a) => !Number.isFinite(a) || a <= 0)) return reject();
+      return { type: R.ANNOUNCE_ATTRIB, attributes: attributes as never[] };
+    }
+
+    case M.ANNOUNCE_NUMBER: {
+      const index = first ? indexOf(first, 'number') : null;
+      if (index === null) return reject();
+      // Le moteur attend l'indice dans la liste qu'il a proposée, pas la valeur.
+      return { type: R.ANNOUNCE_NUMBER, value: index };
     }
 
     default:

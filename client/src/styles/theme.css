@@ -886,3 +886,14 @@ button[style*="isolation"]:not(:disabled):hover::before {
     18%, 78% { opacity: 1; }
   }
 }
+
+/* Pioche : la carte glisse du deck vers la main. Les positions de départ et
+   d'arrivée sont posées en variables par le composant, la trajectoire est ici. */
+@keyframes san-draw-card {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.7) rotate(-8deg); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--draw-dx), var(--draw-dy)) scale(1) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes san-draw-card { 0%, 100% { opacity: 0; } }
+}
