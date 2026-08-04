@@ -33,6 +33,11 @@ jobs:
             cd /home/deploy/apps/yugioh
 
             echo "▶ Pulling latest code..."
+            # server/dist/ est gitignore mais les anciens deploys ont
+            # committe des artefacts en local sur le VPS — ils bloquent le
+            # pull ("would be overwritten by merge"). On les jarte avant.
+            git checkout -- . 2>/dev/null || true
+            git clean -fd server/dist client/dist 2>/dev/null || true
             git pull origin master
 
             echo "▶ Installing server deps..."
