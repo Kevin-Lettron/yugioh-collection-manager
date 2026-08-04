@@ -461,7 +461,7 @@ const DeckEditor = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
         <div
           className="animate-spin"
           style={{
@@ -498,7 +498,7 @@ const DeckEditor = () => {
   });
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />

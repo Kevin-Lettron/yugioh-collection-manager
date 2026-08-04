@@ -65,7 +65,7 @@ const DeckShare = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
         <div
           className="animate-spin"
           style={{
@@ -82,7 +82,7 @@ const DeckShare = () => {
 
   if (error || !deck) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)', padding: 32 }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent', padding: 32 }}>
         <div
           style={{
             maxWidth: 460,
@@ -131,7 +131,7 @@ const DeckShare = () => {
   const extraCount = deck.extra_deck?.reduce((s, c) => s + c.quantity, 0) || 0;
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
 

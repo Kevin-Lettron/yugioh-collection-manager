@@ -39,6 +39,8 @@ export interface Palette {
   grid: string;
   /** Halo violet radial du haut de page */
   halo: string;
+  /** Contre-halo or, en bas de page */
+  haloGold: string;
   /** Halos par rareté (rgba pour blend inline) */
   rarityCommon: string;
   rarityRare: string;
@@ -68,8 +70,9 @@ export const darkPalette: Palette = {
   onGold: '#0B0906',
   scrim: 'rgba(0, 0, 0, 0.72)',
   camera: '#000000',
-  grid: 'rgba(245, 197, 24, 0.05)',
-  halo: 'rgba(168, 85, 247, 0.16)',
+  grid: 'rgba(245, 197, 24, 0.07)',
+  halo: 'rgba(168, 85, 247, 0.22)',
+  haloGold: 'rgba(245, 197, 24, 0.08)',
   rarityCommon: 'rgba(255, 255, 255, 0.05)',
   rarityRare: 'rgba(59, 130, 246, 0.4)',
   raritySuper: 'rgba(168, 85, 247, 0.5)',
@@ -99,8 +102,9 @@ export const lightPalette: Palette = {
   onGold: '#FFFFFF',
   scrim: 'rgba(26, 18, 6, 0.55)',
   camera: '#000000',
-  grid: 'rgba(138, 109, 11, 0.06)',
-  halo: 'rgba(124, 58, 237, 0.10)',
+  grid: 'rgba(138, 109, 11, 0.09)',
+  halo: 'rgba(124, 58, 237, 0.07)',
+  haloGold: 'rgba(138, 109, 11, 0.05)',
   rarityCommon: 'rgba(0, 0, 0, 0.08)',
   rarityRare: 'rgba(29, 78, 216, 0.35)',
   raritySuper: 'rgba(124, 58, 237, 0.45)',

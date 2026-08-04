@@ -87,7 +87,7 @@ const Register = () => {
         display: 'grid',
         placeItems: 'center',
         padding: '60px 16px',
-        background: 'var(--bg)',
+        background: 'transparent',
         overflow: 'hidden',
       }}>
       <AppBackground />

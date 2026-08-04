@@ -106,7 +106,7 @@ const plinth = (color: string): React.CSSProperties => ({
 
 const Home = () => {
   return (
-    <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
 

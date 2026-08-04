@@ -148,7 +148,7 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
         <div
           className="animate-spin"
           style={{
@@ -173,7 +173,7 @@ const Profile = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
       <CornerOrnaments />
       <AppNavbar />

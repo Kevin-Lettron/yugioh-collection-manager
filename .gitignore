@@ -68,3 +68,9 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Assets du moteur de duel — cards.cdb (BabelCDB) et les scripts Lua (CardScripts).
+# Telecharges par `npm run duel:assets`, jamais versionnes : BabelCDB ne declare
+# aucune licence, les redistribuer depuis notre depot serait un risque inutile.
+server/assets/duel/
+server/.tmp/
