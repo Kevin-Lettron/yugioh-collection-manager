@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { duelEngineApi } from '../services/duelEngineApi';
@@ -57,6 +57,14 @@ export default function EngineDuelRoom() {
   const [openZone, setOpenZone] = useState<'extra' | 'grave' | 'banished' | null>(null);
   const [selection, setSelection] = useState<string[]>([]);
   const [phasesOpen, setPhasesOpen] = useState(false);
+  /**
+   * Un coup est en cours d'envoi.
+   *
+   * En ref et pas seulement en state : le sondage periodique est capture dans
+   * un setInterval qui ne verrait jamais la valeur mise a jour, et ecraserait
+   * l'etat en pleine action.
+   */
+  const busyRef = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -80,16 +88,35 @@ export default function EngineDuelRoom() {
   useEffect(() => {
     if (!Number.isInteger(duelId)) return;
     refresh();
+
     // Le serveur signale seulement qu'il y a du changement : chacun redemande
     // sa propre vue. Diffuser l'état dans la salle commune révélerait la main
     // de l'un à l'autre.
-    return duelEngineApi.subscribe(duelId, {
+    const unsubscribe = duelEngineApi.subscribe(duelId, {
       onUpdate: refresh,
       onEngineLost: ({ reason }) => {
         toast.error(`Duel interrompu (${reason}) — la partie est annulée, sans défaite.`);
         setState(null);
       },
     });
+
+    /**
+     * Filet de sécurité : on redemande l'état à intervalle régulier.
+     *
+     * Le temps réel repose sur le WebSocket, mais un socket peut ne pas être
+     * connecté, tomber, ou être bloqué par un réseau d'entreprise. Sans ce
+     * filet, la partie se fige et il faut recharger la page — ce qui est
+     * exactement ce qu'on veut éviter. L'appel est bon marché : le worker
+     * répond depuis sa mémoire, sans toucher à PostgreSQL.
+     */
+    const poll = setInterval(() => {
+      if (!busyRef.current) void refresh();
+    }, 3000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(poll);
+    };
   }, [duelId, refresh]);
 
   const prompt = state?.prompt ?? null;
@@ -115,6 +142,29 @@ export default function EngineDuelRoom() {
     [prompt]
   );
 
+  /**
+   * Répond automatiquement aux demandes sans réponse possible.
+   *
+   * Le moteur demande parfois « veux-tu répondre en chaîne ? » alors qu'aucune
+   * carte n'est activable. Poser la question dans ce cas n'a aucun sens : il
+   * n'y a rien à choisir, et le joueur ne peut que cliquer « non ». On passe
+   * pour lui.
+   *
+   * Uniquement si le moteur autorise le refus, évidemment : une chaîne
+   * obligatoire sans option serait une anomalie qu'il vaut mieux laisser
+   * visible que masquer derrière un envoi automatique.
+   */
+  useEffect(() => {
+    if (!prompt || busy) return;
+    const answerable = ['chain', 'confirm', 'option'].includes(prompt.kind);
+    if (answerable && prompt.options.length === 0 && prompt.canCancel) {
+      void send([], true);
+    }
+    // `send` est recréé à chaque rendu ; le dépendre ici relancerait l'effet en
+    // boucle. L'invite et l'état d'occupation suffisent à décider.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt, busy]);
+
   /** Options sans carte : ce sont les changements de phase. */
   const phaseOptions = useMemo(
     () =>
@@ -125,7 +175,8 @@ export default function EngineDuelRoom() {
   );
 
   const send = async (optionIds: string[], cancel = false) => {
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setFocusedOptions(null);
     setPhasesOpen(false);
@@ -136,6 +187,7 @@ export default function EngineDuelRoom() {
       toast.error(err?.response?.data?.error || 'Choix refusé');
       await refresh();
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -373,7 +425,7 @@ export default function EngineDuelRoom() {
           coin : la partie est suspendue tant qu'on n'a pas répondu, et un
           bouton discret sur le côté laissait le joueur bloqué sans comprendre
           ce qu'on attendait de lui. */}
-      {prompt && ['chain', 'confirm', 'option'].includes(prompt.kind) && (
+      {prompt && ['chain', 'confirm', 'option'].includes(prompt.kind) && prompt.options.length > 0 && (
         <Overlay onClose={() => undefined}>
           <h4 style={{ margin: '0 0 14px', color: 'var(--gold)' }}>{prompt.message}</h4>
           <div style={{ display: 'grid', gap: 8 }}>

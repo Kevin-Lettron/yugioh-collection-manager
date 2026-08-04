@@ -49,9 +49,6 @@ export const duelEngineApi = {
       onEngineLost?: (data: { duelId: number; reason: string }) => void;
     }
   ): (() => void) => {
-    const socket = socketService.getSocket();
-    if (!socket) return () => {};
-
     const onUpdate = (data: { duelId: number }) => {
       if (data?.duelId === duelId) handlers.onUpdate?.();
     };
@@ -59,14 +56,44 @@ export const duelEngineApi = {
       if (data?.duelId === duelId) handlers.onEngineLost?.(data);
     };
 
-    socket.emit('duel:join', { duelId });
-    socket.on('duel:engine_update', onUpdate);
-    socket.on('duel:engine_lost', onLost);
+    let attached: ReturnType<typeof socketService.getSocket> = null;
+
+    /**
+     * Le socket n'existe pas forcement au montage.
+     *
+     * `socketService.connect()` est appele une fois l'authentification
+     * resolue ; sur un rechargement de page, la salle de duel se monte AVANT.
+     * L'ancienne version renvoyait alors un abonnement vide, definitivement :
+     * les deux joueurs devaient rafraichir pour voir quoi que ce soit.
+     *
+     * On reessaie donc jusqu'a ce que le socket apparaisse.
+     */
+    const attach = (): boolean => {
+      const socket = socketService.getSocket();
+      if (!socket) return false;
+      attached = socket;
+      socket.emit('duel:join', { duelId });
+      socket.on('duel:engine_update', onUpdate);
+      socket.on('duel:engine_lost', onLost);
+      return true;
+    };
+
+    let retry: ReturnType<typeof setInterval> | null = null;
+    if (!attach()) {
+      retry = setInterval(() => {
+        if (attach() && retry) {
+          clearInterval(retry);
+          retry = null;
+        }
+      }, 500);
+    }
 
     return () => {
-      socket.off('duel:engine_update', onUpdate);
-      socket.off('duel:engine_lost', onLost);
-      socket.emit('duel:leave', { duelId });
+      if (retry) clearInterval(retry);
+      if (!attached) return;
+      attached.off('duel:engine_update', onUpdate);
+      attached.off('duel:engine_lost', onLost);
+      attached.emit('duel:leave', { duelId });
     };
   },
 };
