@@ -721,32 +721,78 @@ function CardGrid({
 }
 
 /** Détail affiché au survol : nom, caractéristiques, et le texte que le moteur applique. */
+/**
+ * Aperçu au survol, au centre de l'écran.
+ *
+ * Une vignette de 64 px ne permet ni de lire un texte d'effet, ni de distinguer
+ * deux cartes d'un même archétype. L'aperçu montre donc **l'illustration en
+ * grand**, et le texte dessous.
+ *
+ * `pointerEvents: none` sur l'ensemble : l'aperçu se superpose au plateau, et
+ * s'il interceptait la souris il chasserait le survol qui l'a fait apparaître —
+ * il clignoterait sans fin.
+ */
 function HoverCard({ card }: { card: DuelCardView }) {
   return (
     <div
       style={{
         position: 'fixed',
-        right: 20,
-        bottom: 20,
-        width: 320,
-        background: 'var(--panel)',
-        border: '1px solid var(--gold)',
-        padding: 14,
+        inset: 0,
+        display: 'grid',
+        placeItems: 'center',
         zIndex: 8000,
         pointerEvents: 'none',
       }}>
-      <strong style={{ color: 'var(--gold)', fontSize: 14 }}>{card.name}</strong>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 8px' }}>
-        {card.level !== undefined && `Niveau ${card.level}`}
-        {card.attack !== undefined && ` · ATK ${card.attack}`}
-        {card.defense !== undefined && ` · DEF ${card.defense}`}
-        {card.materials ? ` · ${card.materials} matériau(x)` : ''}
+      <div
+        style={{
+          display: 'grid',
+          justifyItems: 'center',
+          gap: 12,
+          maxWidth: 340,
+          animation: 'san-announce-still 140ms ease-out both',
+        }}>
+        <img
+          src={`https://images.ygoprodeck.com/images/cards/${card.code}.jpg`}
+          alt={card.name ?? ''}
+          style={{
+            width: 260,
+            border: '1px solid var(--gold)',
+            boxShadow: '0 18px 50px rgba(0,0,0,.75), 0 0 40px rgba(245,197,24,.25)',
+          }}
+        />
+
+        <div
+          style={{
+            background: 'var(--panel)',
+            border: '1px solid var(--gold)',
+            borderLeftWidth: 3,
+            padding: '12px 14px',
+            width: '100%',
+            boxShadow: '0 12px 32px rgba(0,0,0,.6)',
+          }}>
+          <strong style={{ color: 'var(--gold)', fontSize: 14 }}>{card.name}</strong>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 8px' }}>
+            {card.level !== undefined && `Niveau ${card.level}`}
+            {card.attack !== undefined && ` · ATK ${card.attack}`}
+            {card.defense !== undefined && ` · DEF ${card.defense}`}
+            {card.materials ? ` · ${card.materials} matériau(x)` : ''}
+          </div>
+          {card.description && (
+            <p
+              style={{
+                fontSize: 12,
+                color: 'var(--text)',
+                margin: 0,
+                lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+                maxHeight: 180,
+                overflowY: 'auto',
+              }}>
+              {card.description}
+            </p>
+          )}
+        </div>
       </div>
-      {card.description && (
-        <p style={{ fontSize: 12, color: 'var(--text)', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-          {card.description}
-        </p>
-      )}
     </div>
   );
 }
