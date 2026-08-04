@@ -220,6 +220,7 @@ export default function EngineDuelRoom() {
 
       <div style={{ padding: '20px 20px 20px', maxWidth: 1100, margin: '0 auto' }}>
         <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
           <DuelField
             board={board}
             placeOptions={placeOptions}
@@ -229,6 +230,12 @@ export default function EngineDuelRoom() {
             onPlace={(optionId) => send([optionId])}
             onOpenZone={(zone, side) => setOpenZone(side === 'me' ? zone : null)}
           />
+          <ActionRail
+            prompt={prompt}
+            busy={busy}
+            onOpenPhases={() => setPhasesOpen(true)}
+          />
+          </div>
 
           {/* Points de vie, de part et d'autre du plateau */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 14 }}>
@@ -359,12 +366,35 @@ export default function EngineDuelRoom() {
         </Overlay>
       )}
 
-      <ActionRail
-        prompt={prompt}
-        busy={busy}
-        onOpenPhases={() => setPhasesOpen(true)}
-        onPass={() => send([], true)}
-      />
+      {/* Demandes qui exigent une réponse immédiate — répondre en chaîne,
+          confirmer, choisir un effet.
+
+          Elles s'imposent au centre de l'écran plutôt que d'attendre dans un
+          coin : la partie est suspendue tant qu'on n'a pas répondu, et un
+          bouton discret sur le côté laissait le joueur bloqué sans comprendre
+          ce qu'on attendait de lui. */}
+      {prompt && ['chain', 'confirm', 'option'].includes(prompt.kind) && (
+        <Overlay onClose={() => undefined}>
+          <h4 style={{ margin: '0 0 14px', color: 'var(--gold)' }}>{prompt.message}</h4>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {prompt.options.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                disabled={busy}
+                onClick={() => send([o.id])}
+                style={btn('var(--gold)')}>
+                {o.label}
+              </button>
+            ))}
+            {prompt.canCancel && (
+              <button type="button" disabled={busy} onClick={() => send([], true)} style={ghostBtn}>
+                {prompt.kind === 'chain' ? 'Ne pas répondre' : 'Passer'}
+              </button>
+            )}
+          </div>
+        </Overlay>
+      )}
 
       {/* Choix de la phase suivante, parmi celles que le moteur autorise. */}
       {phasesOpen && (
@@ -417,26 +447,16 @@ function ActionRail({
   prompt,
   busy,
   onOpenPhases,
-  onPass,
 }: {
   prompt: DuelPrompt | null;
   busy: boolean;
   onOpenPhases: () => void;
-  onPass: () => void;
 }) {
   const phaseCount = (prompt?.options ?? []).filter((o) => o.code === undefined).length;
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        right: 20,
-        top: '52%',
-        display: 'grid',
-        gap: 10,
-        zIndex: 500,
-        width: 150,
-      }}>
+      style={{ display: 'grid', gap: 10, width: 128, alignSelf: 'center' }}>
       <button
         type="button"
         disabled={busy || phaseCount === 0}
@@ -454,13 +474,6 @@ function ActionRail({
         Phases{phaseCount > 0 ? ` · ${phaseCount}` : ''}
       </button>
 
-      {/* « Passer » n'apparaît que si le moteur l'autorise : sur une chaîne
-          obligatoire il n'y a pas d'échappatoire, et l'afficher mentirait. */}
-      {prompt?.canCancel && (
-        <button type="button" disabled={busy} onClick={onPass} style={ghostBtn}>
-          {prompt.kind === 'chain' ? 'Ne pas répondre' : 'Passer'}
-        </button>
-      )}
     </div>
   );
 }
