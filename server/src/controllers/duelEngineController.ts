@@ -186,8 +186,12 @@ export class DuelEngineController {
       // Validation stricte : tailles + banlist + max 3 exemplaires.
       // Cf. `checkEngineDeckStrict` — un joueur ne peut plus soumettre 40× Pot
       // of Greed ni glisser une carte Forbidden.
+      // /!\ En mode 'free' (choisi par le challenger au defi), on skip la
+      // banlist — les tailles minimum restent verifiees car sans elles le
+      // moteur crashe.
+      const skipBanlist = currentDuel.rules_mode === 'free';
       const strictResults = await Promise.all(
-        conversions.map((c) => checkEngineDeckStrict(c as any))
+        conversions.map((c) => checkEngineDeckStrict(c as any, [], { skipBanlist }))
       );
       const problems = strictResults
         .map((problem, i) =>

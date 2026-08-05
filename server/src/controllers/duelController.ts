@@ -377,8 +377,13 @@ export class DuelController {
     try {
       if (!req.user) throw new ValidationError('Not authenticated');
 
-      const { opponent_id, opponent_username, challenger_deck_id } = req.body;
+      const { opponent_id, opponent_username, challenger_deck_id, rules_mode } = req.body;
       let opponentId: number | null = null;
+      // Mode de regles : 'standard' (banlist TCG appliquee, defaut) ou 'free'
+      // (aucune restriction hors tailles minimum). Le challenger decide au
+      // moment du defi, l'opponent le voit dans la pop-up d'acceptation.
+      const rulesMode: 'standard' | 'free' =
+        rules_mode === 'free' ? 'free' : 'standard';
 
       if (opponent_id) {
         opponentId = Number(opponent_id);
@@ -413,7 +418,7 @@ export class DuelController {
         throw new ValidationError('Un duel est deja en attente entre vous et ce joueur');
       }
 
-      const duel = await DuelModel.create(req.user.id, opponentId, deckId);
+      const duel = await DuelModel.create(req.user.id, opponentId, deckId, rulesMode);
       loggers.api.request('POST', '/duels', req.user.id);
 
       // Notification WebSocket a l'opponent (room user:${id} deja rejointe a la co)

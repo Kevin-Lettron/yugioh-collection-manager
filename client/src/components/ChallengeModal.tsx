@@ -27,6 +27,9 @@ const ChallengeModal = ({ open, onClose, opponent, onSuccess }: Props) => {
   const [deckOpen, setDeckOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // 'standard' = banlist TCG appliquee (max 3, Limited, Forbidden).
+  // 'free' = aucune restriction hors tailles minimum du deck.
+  const [rulesMode, setRulesMode] = useState<'standard' | 'free'>('standard');
   const deckRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,6 +74,7 @@ const ChallengeModal = ({ open, onClose, opponent, onSuccess }: Props) => {
       await duelApi.challenge({
         opponent_id: opponent.id,
         challenger_deck_id: selectedDeckId,
+        rules_mode: rulesMode,
       });
       toast.success(`Défi envoyé à @${opponent.username}`);
       onClose();
@@ -321,6 +325,71 @@ const ChallengeModal = ({ open, onClose, opponent, onSuccess }: Props) => {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Choix des regles */}
+          <div style={{ marginTop: 22 }}>
+            <label
+              style={{
+                display: 'block',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: '#A99C86',
+                marginBottom: 8,
+              }}>
+              Regles du duel
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {(['standard', 'free'] as const).map((mode) => {
+                const active = rulesMode === mode;
+                const label = mode === 'standard' ? 'Standard' : 'Libre';
+                const desc =
+                  mode === 'standard'
+                    ? 'Banlist TCG · max 3'
+                    : 'Aucune restriction';
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setRulesMode(mode)}
+                    style={{
+                      padding: '10px 12px',
+                      border: `1px solid ${active ? '#F5C518' : '#3A2E1C'}`,
+                      background: active
+                        ? 'linear-gradient(135deg,rgba(245,197,24,.18),rgba(168,85,247,.1))'
+                        : '#1A1510',
+                      color: active ? '#F5C518' : '#F5EFE0',
+                      fontFamily: "'Orbitron', sans-serif",
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      clipPath: CUT_SM,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                    }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}>
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: active ? '#F5EFE0' : '#A99C86',
+                        letterSpacing: '0.05em',
+                      }}>
+                      {desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Actions */}
