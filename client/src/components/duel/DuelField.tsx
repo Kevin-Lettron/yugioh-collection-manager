@@ -58,10 +58,16 @@ const CARD_BACK = 'https://images.ygoprodeck.com/images/cards/back.jpg';
  * Masque de position du moteur : 0x4 défense face visible, 0x8 défense face
  * cachée. Un monstre en défense se pose **couché**, c'est ce qui permet de lire
  * sa position d'un coup d'œil.
+ *
+ * /!\ Les cartes Magie/Piège POSEES SET (face verso) portent aussi la position
+ * `POS_FACEDOWN_DEFENSE = 8` cote ygopro-core — c'est LEUR position "set". Sans
+ * filtrer par LOCATION_MZONE, on couche donc aussi les magies/pieges poses set,
+ * ce qui est faux : seuls les monstres se posent horizontalement. On restreint
+ * donc le couchage aux cartes des zones monstres.
  */
 const POSITION_DEFENSE = 0xc;
-const isDefense = (card: DuelCardView): boolean =>
-  ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
+const isMonsterInDefense = (card: DuelCardView, location: number): boolean =>
+  location === LOCATION_MZONE && ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
 
 export interface FieldProps {
   board: DuelBoardView;
@@ -142,6 +148,7 @@ export function DuelField({
         placeable={!!place}
         actionable={targets.length > 0}
         selected={selected}
+        layFlat={!!card && isMonsterInDefense(card, location)}
         onHover={onHover}
         onClick={onClick}
       />
@@ -276,6 +283,7 @@ function Zone({
   selected,
   field,
   pendulum,
+  layFlat,
   onHover,
   onClick,
 }: {
@@ -287,6 +295,12 @@ function Zone({
   selected?: boolean;
   field?: boolean;
   pendulum?: 'left' | 'right';
+  /**
+   * Vrai UNIQUEMENT pour un monstre en défense : la carte est couchée. Calculé
+   * dans renderZone en tenant compte de la location (M-zone), pour ne pas
+   * coucher les magies/pieges poses set qui portent aussi POS_FACEDOWN_DEFENSE.
+   */
+  layFlat?: boolean;
   onHover: (c: DuelCardView | null) => void;
   onClick: () => void;
 }) {
@@ -334,14 +348,14 @@ function Zone({
         // Volontairement pas de `overflow: hidden` : une carte couchée déborde
         // dans l'écart, et c'est ce débordement qui la rend lisible en entier.
         overflow: 'visible',
-        zIndex: card && isDefense(card) ? 2 : 1,
+        zIndex: layFlat ? 2 : 1,
       }}>
       {card ? (
         <img
           src={card.faceDown || card.code === 0 ? CARD_BACK : cardImage(card.code)}
           alt={card.faceDown ? 'Carte face cachée' : (card.name ?? '')}
           style={
-            isDefense(card)
+            layFlat
               ? {
                   // La carte garde ses proportions de portrait AVANT rotation :
                   // c'est le `rotate(90deg)` qui la couche. Pré-échanger la
