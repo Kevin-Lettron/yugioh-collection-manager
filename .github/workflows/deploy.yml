@@ -43,13 +43,16 @@ jobs:
             echo "▶ Installing server deps..."
             cd server && npm ci
 
-            # better-sqlite3 est un module natif : son .node binaire doit etre
-            # compile pour la version Node du VPS. Sans ca, cardStore.ts throw
-            # au chargement du duel ("Cannot find module .../better_sqlite3.node").
-            # npm ci lance normalement le postinstall, mais si build-essential
-            # manque il fail silencieusement — on force ici avec fallback.
-            echo "▶ Rebuilding better-sqlite3 native binding..."
+            # better-sqlite3 ET bcrypt sont des modules natifs : leur .node
+            # binaire doit etre compile pour la version Node du VPS. Sans ca,
+            # cardStore.ts (better-sqlite3) ou authController (bcrypt) throw
+            # au chargement, PM2 restart en boucle, et nginx renvoie 502 sur
+            # tout. npm ci lance normalement le postinstall, mais si
+            # build-essential manque il fail silencieusement — on force ici
+            # avec fallback.
+            echo "▶ Rebuilding native bindings (better-sqlite3, bcrypt)..."
             npm rebuild better-sqlite3 || npm install better-sqlite3 --build-from-source
+            npm rebuild bcrypt || npm install bcrypt --build-from-source
 
             echo "▶ Compiling backend TypeScript..."
             npx tsc
