@@ -91,6 +91,8 @@ function rowToDuel(row: any): Duel {
     // Migration 014 — flags "prêt" du lobby (salle d'attente pré-coin-flip).
     challenger_ready: row.challenger_ready === true,
     opponent_ready: row.opponent_ready === true,
+    // Migration 016 — regles de partie : 'standard' (banlist) ou 'free'.
+    rules_mode: (row.rules_mode as 'standard' | 'free') ?? 'standard',
   } as Duel;
 
   if (row.challenger_username) {
