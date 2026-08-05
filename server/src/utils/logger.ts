@@ -3,6 +3,7 @@ import Transport from 'winston-transport';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
+import { isMainThread } from 'worker_threads';
 import { writeLog } from '../services/logSink';
 import type { LogLevel } from '../models/applicationLogModel';
 
@@ -172,7 +173,11 @@ const transports: winston.transport[] = [
 
   // Table application_logs — alimente /admin/logs (page live).
   // Uniquement error + warn pour éviter que la table explose.
-  new DbTransport({ level: 'warn' }),
+  // /!\ MAIN THREAD ONLY : les worker_threads (moteur de duel) n'ont pas leur
+  // propre pool PG proprement initialisé — une INSERT depuis un worker peut
+  // faire crasher le thread silencieusement (SIGABRT natif via node-postgres).
+  // Le worker log toujours en console (visible via PM2), ce qui suffit.
+  ...(isMainThread ? [new DbTransport({ level: 'warn' })] : []),
 ];
 
 // Create logger instance

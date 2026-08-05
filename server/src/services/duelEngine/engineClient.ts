@@ -149,8 +149,17 @@ function ensureWorker(): Worker {
     else p.reject(new Error(msg.error));
   });
 
-  w.on('error', (err) => handleWorkerDeath(err.message));
+  w.on('error', (err) => {
+    // Console brute EN PLUS de winston : quand le worker meurt sur un abort
+    // natif, l'ordre exact des logs importe pour diagnostiquer, et winston
+    // peut ne pas avoir flush a temps.
+    // eslint-disable-next-line no-console
+    console.error('[ENGINE-CLIENT] worker error:', err?.message, err?.stack?.slice(0, 500));
+    handleWorkerDeath(err.message);
+  });
   w.on('exit', (code) => {
+    // eslint-disable-next-line no-console
+    console.error(`[ENGINE-CLIENT] worker exit code=${code}`);
     if (worker === w) handleWorkerDeath(`sortie code ${code}`);
   });
 
