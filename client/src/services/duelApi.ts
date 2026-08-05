@@ -15,6 +15,8 @@ export const duelApi = {
     opponent_id?: number;
     opponent_username?: string;
     challenger_deck_id?: number;
+    /** 'standard' (defaut, banlist appliquee) ou 'free' (aucune restriction). */
+    rules_mode?: 'standard' | 'free';
   }) => api.post<{ duel: Duel }>('/duels', payload).then((r) => r.data),
 
   listMine: (status?: DuelStatus) =>

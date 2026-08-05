@@ -384,6 +384,13 @@ export interface Duel {
   challenger_ready?: boolean;
   /** L'adversaire a cliqué « Prêt » dans le lobby. */
   opponent_ready?: boolean;
+  // ─── Regles de partie (migration 016) ─────────────────────────────────
+  /**
+   * 'standard' (defaut) : banlist TCG + max 3 exemplaires appliques.
+   * 'free' : aucune restriction hors tailles minimum du deck.
+   * Choisi par le challenger au moment du defi, immuable ensuite.
+   */
+  rules_mode?: 'standard' | 'free';
 }
 
 // ─── Match multi-manches (Bo3) ─────────────────────────────────────────

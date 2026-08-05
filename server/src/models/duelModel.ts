@@ -139,13 +139,14 @@ export class DuelModel {
   static async create(
     challengerId: number,
     opponentId: number,
-    challengerDeckId?: number | null
+    challengerDeckId?: number | null,
+    rulesMode: 'standard' | 'free' = 'standard'
   ): Promise<Duel> {
     const result = await query(
-      `INSERT INTO duels (challenger_id, opponent_id, challenger_deck_id, status)
-       VALUES ($1, $2, $3, 'pending')
+      `INSERT INTO duels (challenger_id, opponent_id, challenger_deck_id, status, rules_mode)
+       VALUES ($1, $2, $3, 'pending', $4)
        RETURNING id`,
-      [challengerId, opponentId, challengerDeckId ?? null]
+      [challengerId, opponentId, challengerDeckId ?? null, rulesMode]
     );
     const created = await this.findById(result.rows[0].id);
     // findById retourne toujours quelque chose ici puisqu'on vient de l'inserer

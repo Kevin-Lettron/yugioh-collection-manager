@@ -391,13 +391,18 @@ export function checkEngineDeck(conversion: DeckConversion): string | null {
  */
 export async function checkEngineDeckStrict(
   conversion: DeckConversion,
-  sideIds: number[] = []
+  sideIds: number[] = [],
+  options: { skipBanlist?: boolean } = {}
 ): Promise<string | null> {
   const basic = checkEngineDeck(conversion);
   if (basic) return basic;
   if (sideIds.length > 15) {
     return `Side Deck trop grand : ${sideIds.length} cartes sur 15 maximum`;
   }
+  // Mode 'free' : les joueurs jouent hors banlist (ex : entrainement,
+  // format maison). On garde uniquement les tailles minimum du deck
+  // — sans quoi le moteur crashe — et on laisse tout le reste passer.
+  if (options.skipBanlist) return null;
   const violations = await validateDeckLegality(
     conversion.deck.main,
     conversion.deck.extra,
