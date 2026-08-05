@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -23,7 +23,13 @@ const CUT_FEED = 'polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,
 const Social = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'decks' | 'users'>('decks');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Deep-link vers l'onglet "Trouver des gardiens" depuis la navbar
+  // (?tab=users). Sans ca, "Rechercher des duellistes" retomberait toujours
+  // sur les decks publics.
+  const [tab, setTab] = useState<'decks' | 'users'>(
+    searchParams.get('tab') === 'users' ? 'users' : 'decks'
+  );
   const [sort, setSort] = useState<'populaires' | 'recents' | 'suivis'>('populaires');
 
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -153,6 +159,15 @@ const Social = () => {
     { id: 'suivis', label: 'Suivis' },
   ];
 
+  // Bascule d'onglet + repercute dans l'URL pour rester deep-linkable.
+  const changeTab = (next: 'decks' | 'users') => {
+    setTab(next);
+    const params = new URLSearchParams(searchParams);
+    if (next === 'decks') params.delete('tab');
+    else params.set('tab', next);
+    setSearchParams(params, { replace: true });
+  };
+
   return (
     <div style={{ minHeight: '100vh', position: 'relative', background: 'transparent' }}>
       <AppBackground />
@@ -221,8 +236,8 @@ const Social = () => {
           </div>
         </div>
 
-        {/* Sub tabs Decks / Users */}
-        <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+        {/* Sub tabs Decks / Users + raccourci Mes abonnements */}
+        <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           {[
             { id: 'decks' as const, label: 'Decks publics' },
             { id: 'users' as const, label: 'Trouver des gardiens' },
@@ -231,7 +246,7 @@ const Social = () => {
             return (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
+                onClick={() => changeTab(t.id)}
                 style={{
                   padding: '10px 18px',
                   background: 'transparent',
@@ -249,6 +264,32 @@ const Social = () => {
               </button>
             );
           })}
+          <span style={{ flex: 1 }} />
+          {/* Raccourci discret vers la liste des gens que l'user suit deja.
+              Sans ce point d'entree, la page Social ne debouchait sur les
+              abonnements que par le menu profil, invisible pour beaucoup. */}
+          <Link
+            to="/followers?tab=following"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 10,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              clipPath: CUT_SM,
+            }}>
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Mes abonnements
+          </Link>
         </div>
 
         {tab === 'decks' && (

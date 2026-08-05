@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Follow } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
@@ -10,7 +10,22 @@ import Button from '../components/ui/Button';
 const Followers = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Onglet initial pilote par ?tab=followers|following (defaut: abonnes).
+  // Sans ca, un lien direct depuis Profile ou AppNavbar retomberait toujours
+  // sur la liste des abonnes, meme quand l'utilisateur voulait ses abonnements.
+  const initialTab = searchParams.get('tab') === 'following' ? 'following' : 'followers';
+  const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
+
+  // Synchronise l'onglet actif dans l'URL pour rester deep-linkable.
+  useEffect(() => {
+    const current = searchParams.get('tab');
+    if (current !== activeTab) {
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', activeTab);
+      setSearchParams(next, { replace: true });
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [followers, setFollowers] = useState<Follow[]>([]);
   const [following, setFollowing] = useState<Follow[]>([]);
   const [loading, setLoading] = useState(true);

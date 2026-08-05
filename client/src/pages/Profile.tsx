@@ -165,11 +165,14 @@ const Profile = () => {
 
   const initials = (username.match(/[A-Z]/g) || username.slice(0, 2).toUpperCase().split('')).slice(0, 2).join('');
 
-  const profileStats = [
+  // "Copies de deck" degageait de la place a une donnee reelle : les
+  // abonnements. Le lien vers /followers?tab=... etait la piece manquante
+  // pour que ces compteurs servent a autre chose qu'a decorer.
+  const profileStats: Array<{ label: string; value: string; to?: string }> = [
     { label: 'Cartes', value: stats.totalCards.toLocaleString('fr-FR') },
     { label: 'Decks publics', value: String(stats.totalDecks) },
-    { label: 'Abonnés', value: String(stats.followersCount) },
-    { label: 'Copies de deck', value: '— À venir' },
+    { label: 'Abonnés', value: String(stats.followersCount), to: '/followers?tab=followers' },
+    { label: 'Abonnements', value: String(stats.followingCount), to: '/followers?tab=following' },
   ];
 
   return (
@@ -325,38 +328,63 @@ const Profile = () => {
               clipPath: CUT_STATS,
             }}
             className="max-md:!grid-cols-2">
-            {profileStats.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  padding: '18px 22px',
-                  background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                }}>
-                <span
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: 9,
-                    letterSpacing: '0.2em',
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase',
-                  }}>
-                  {s.label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: 26,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                  {s.value}
-                </span>
-              </div>
-            ))}
+            {profileStats.map((s) => {
+              const content = (
+                <>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 9,
+                      letterSpacing: '0.2em',
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                    }}>
+                    {s.label}
+                    {s.to && (
+                      <span
+                        style={{ marginLeft: 6, color: 'var(--gold-dim)', letterSpacing: 0 }}
+                        aria-hidden>
+                        ›
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: 26,
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                    {s.value}
+                  </span>
+                </>
+              );
+              const baseStyle: React.CSSProperties = {
+                padding: '18px 22px',
+                background: 'linear-gradient(135deg,var(--panel),var(--panel-2))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              };
+              if (s.to) {
+                return (
+                  <Link
+                    key={s.label}
+                    to={s.to}
+                    style={{ ...baseStyle, textDecoration: 'none', cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg,var(--panel-2),var(--bg-elev))')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg,var(--panel),var(--panel-2))')}>
+                    {content}
+                  </Link>
+                );
+              }
+              return (
+                <div key={s.label} style={baseStyle}>
+                  {content}
+                </div>
+              );
+            })}
           </div>
 
           {/* Edit form inline */}
