@@ -183,11 +183,20 @@ export default function EngineDuelRoom() {
         }
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Duel injoignable');
+      // Silence les 404 pendant la pre-game : le moteur n'est legitimement
+      // pas encore instancie (le winner du coin flip n'a pas encore choisi
+      // P1/P2), le polling 3s ne doit pas spam un toast rouge a chaque call.
+      // Meme silence si on est dans une phase transitoire (accept en cours,
+      // refresh WS qui arrive avant que le backend ait bascule active).
+      const status = err?.response?.status;
+      const isTransient404 = status === 404;
+      if (!isTransient404) {
+        toast.error(err?.response?.data?.error || 'Duel injoignable');
+      }
     } finally {
       setLoading(false);
     }
-  }, [duelId]);
+  }, [duelId, navigate]);
 
   useEffect(() => {
     if (!Number.isInteger(duelId)) return;
