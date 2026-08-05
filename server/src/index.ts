@@ -34,6 +34,12 @@ const io = new SocketServer(httpServer, {
   },
 });
 
+// En prod, on tourne derriere nginx en reverse proxy qui pose l'IP client
+// dans X-Forwarded-For. Sans ce flag, express-rate-limit voit tout le monde
+// comme 127.0.0.1 (nginx local) et le rate-limit devient inutile. `1` = trust
+// une couche de proxy (nginx uniquement, jamais un proxy externe non maitrise).
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },

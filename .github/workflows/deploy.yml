@@ -46,6 +46,14 @@ jobs:
             echo "▶ Compiling backend TypeScript..."
             npx tsc
 
+            echo "▶ Ensuring duel engine assets..."
+            # cards.cdb (~15 Mo) + scripts Lua ProjectIgnis (~50 Mo, clone git).
+            # Sans ces assets, tout appel a l'engine plante "moteur non installe".
+            # Idempotent : ne re-telecharge que si absent, git pull sinon.
+            if [ ! -f assets/duel/cards.cdb ] || [ ! -d assets/duel/scripts/.git ]; then
+              npx ts-node scripts/fetchDuelAssets.ts || echo "⚠ fetchDuelAssets a echoue — le duel ne fonctionnera pas"
+            fi
+
             echo "▶ Installing client deps..."
             cd ../client && npm ci
 
