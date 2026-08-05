@@ -148,10 +148,12 @@ export function DuelChallengeWatcher() {
       const opponentName = duel.opponent?.username ?? "L'adversaire";
       // Ferme un eventuel toast "Defi recu" residuel avant de partir.
       toast.dismiss(`duel-challenge-${duel.id}`);
-      toast.success(`@${opponentName} a accepte ton defi — direction l'arene`, {
+      toast.success(`@${opponentName} a accepte ton defi — salle d'attente`, {
         duration: 3000,
       });
-      navigate(`/duel/${duel.id}`);
+      // On atterrit dans la salle d'attente : chaque joueur y confirme deck
+      // + prêt avant que le pile ou face ne démarre.
+      navigate(`/duel/${duel.id}/lobby`);
     });
 
     return unsubscribe;

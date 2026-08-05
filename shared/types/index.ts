@@ -12,6 +12,11 @@ export interface User {
   disabled_at?: Date | null;
   created_at: Date;
   updated_at: Date;
+  // ─── Présence temps réel (migration 013) ────────────────────────────────
+  /** Dernière requête authentifiée (throttlé côté serveur à 30 s). */
+  last_seen?: Date | string | null;
+  /** Booléen dérivé côté back : `last_seen > NOW() - 2min`. Servi tel quel. */
+  is_online?: boolean;
 }
 
 export interface Card {
@@ -374,6 +379,11 @@ export interface Duel {
   game_number?: number;
   // ─── Mode moteur ygopro-core (migration 009) ──────────────────────────
   engine_mode?: boolean;
+  // ─── Salle d'attente pré-coin-flip (migration 014) ────────────────────
+  /** Le challenger a cliqué « Prêt » dans le lobby. */
+  challenger_ready?: boolean;
+  /** L'adversaire a cliqué « Prêt » dans le lobby. */
+  opponent_ready?: boolean;
 }
 
 // ─── Match multi-manches (Bo3) ─────────────────────────────────────────

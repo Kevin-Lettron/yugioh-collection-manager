@@ -11,37 +11,55 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { socialApi } from '@/services/socialApi';
+import { socialApi, type FollowUser } from '@/services/socialApi';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useAppTheme, type Theme } from '@/theme/ThemeContext';
 import { AppBackground } from '@/components/decor/AppBackground';
 import { API_URL } from '@/config';
+import ChallengeModal from '@/components/ChallengeModal';
 
 type Tab = 'followers' | 'following';
-type UserRow = {
-  id: number;
-  username: string;
-  profile_picture?: string | null;
-};
 
 /**
- * Écran /followers?tab=followers|following — deux listes en tabs (abonnés / abonnements).
- * Chaque row = avatar + username, tap = nav vers /user/[id]. Pull-to-refresh.
+ * `/followers?tab=followers|following` — deux listes (abonnés / abonnements).
+ * Chaque ligne : avatar, pastille de présence, timestamp "vu à …", bouton
+ * "Défier en duel" (ouvre `ChallengeModal` pré-rempli). Pull-to-refresh + refetch
+ * périodique pour rafraîchir les pastilles online (30 s).
  */
+function formatLastSeen(iso?: string | null): string {
+  if (!iso) return 'Jamais vu';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'Jamais vu';
+  const diff = Date.now() - then;
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "a l'instant";
+  if (min < 60) return `vu il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `vu il y a ${h} h`;
+  const days = Math.floor(h / 24);
+  if (days < 7) return `vu il y a ${days} j`;
+  return `vu le ${new Date(iso).toLocaleDateString('fr-FR')}`;
+}
+
 export default function FollowersScreen() {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: Tab }>();
   const [tab, setTab] = useState<Tab>((params.tab as Tab) || 'followers');
-  const [users, setUsers] = useState<UserRow[]>([]);
+  const [users, setUsers] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Cible d'un défi — quand non-null, on ouvre ChallengeModal pré-rempli.
+  const [challengeTarget, setChallengeTarget] = useState<{ id: number; username: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const list = tab === 'followers' ? await socialApi.getFollowers() : await socialApi.getFollowing();
-      setUsers(list as unknown as UserRow[]);
+      const list =
+        tab === 'followers'
+          ? await socialApi.getFollowers()
+          : await socialApi.getFollowing();
+      setUsers(list);
     } catch {
       setUsers([]);
     } finally {
@@ -53,6 +71,9 @@ export default function FollowersScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
+      // Refetch périodique — la pastille online doit bouger sans reload.
+      const iv = setInterval(load, 30_000);
+      return () => clearInterval(iv);
     }, [load])
   );
 
@@ -79,7 +100,7 @@ export default function FollowersScreen() {
             onPress={() => setTab('followers')}
             style={[styles.tab, tab === 'followers' && styles.tabActive]}>
             <Text style={[styles.tabText, tab === 'followers' && styles.tabTextActive]}>
-              Abonnés
+              Abonnes
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -113,27 +134,78 @@ export default function FollowersScreen() {
             renderItem={({ item }) => {
               const uri = avatarUri(item.profile_picture);
               const initials = (item.username || 'YG').slice(0, 2).toUpperCase();
+              const isOnline = Boolean(item.is_online);
               return (
-                <TouchableOpacity
-                  style={styles.row}
-                  onPress={() => router.push(`/user/${item.id}` as any)}
-                  activeOpacity={0.7}>
-                  <View style={styles.avatar}>
-                    {uri ? (
-                      <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
-                    ) : (
-                      <Text style={styles.avatarText}>{initials}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.username}>@{item.username}</Text>
-                </TouchableOpacity>
+                <View
+                  style={[
+                    styles.row,
+                    { borderColor: isOnline ? colors.success : colors.border },
+                  ]}>
+                  {/* Avatar + pastille */}
+                  <TouchableOpacity
+                    style={styles.avatarWrap}
+                    onPress={() => router.push(`/user/${item.id}` as any)}
+                    activeOpacity={0.7}>
+                    <View style={styles.avatar}>
+                      {uri ? (
+                        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Text style={styles.avatarText}>{initials}</Text>
+                      )}
+                    </View>
+                    <View
+                      style={[
+                        styles.presenceDot,
+                        {
+                          backgroundColor: isOnline ? colors.success : colors.textMuted,
+                          borderColor: colors.bg,
+                        },
+                      ]}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Nom + timestamp */}
+                  <TouchableOpacity
+                    style={{ flex: 1, minWidth: 0 }}
+                    onPress={() => router.push(`/user/${item.id}` as any)}
+                    activeOpacity={0.7}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={styles.username} numberOfLines={1}>
+                        @{item.username}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.presenceTag,
+                          {
+                            color: isOnline ? colors.success : colors.textMuted,
+                            borderColor: isOnline ? colors.success : colors.border,
+                          },
+                        ]}>
+                        {isOnline ? '● En ligne' : '○ Hors ligne'}
+                      </Text>
+                    </View>
+                    <Text style={styles.metaText}>
+                      {isOnline ? 'Actif maintenant' : formatLastSeen(item.last_seen)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Bouton Défier */}
+                  <TouchableOpacity
+                    onPress={() =>
+                      setChallengeTarget({ id: item.id, username: item.username })
+                    }
+                    style={[styles.duelBtn, { borderColor: colors.violet }]}
+                    activeOpacity={0.8}>
+                    <Text style={[styles.duelBtnText, { color: colors.violet }]}>⚔ Defier</Text>
+                  </TouchableOpacity>
+                </View>
               );
             }}
             ListEmptyComponent={
               <View style={styles.center}>
                 <Text style={styles.empty}>
                   {tab === 'followers'
-                    ? 'Aucun abonné pour l\'instant.'
+                    ? 'Aucun abonne pour l\'instant.'
                     : 'Tu ne suis personne pour l\'instant.'}
                 </Text>
                 <TouchableOpacity
@@ -146,6 +218,14 @@ export default function FollowersScreen() {
           />
         )}
       </SafeAreaView>
+
+      {/* Modal de défi — pré-rempli avec l'user cliqué */}
+      <ChallengeModal
+        visible={!!challengeTarget}
+        targetUsername={challengeTarget?.username || ''}
+        targetUserId={challengeTarget?.id}
+        onClose={() => setChallengeTarget(null)}
+      />
     </View>
   );
 }
@@ -221,29 +301,65 @@ const makeStyles = (t: Theme) =>
       padding: 12,
       backgroundColor: t.colors.bgElev,
       borderWidth: 1,
-      borderColor: t.colors.border,
+      borderLeftWidth: 3,
       gap: 12,
     },
+    avatarWrap: { position: 'relative' },
     avatar: {
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       backgroundColor: t.colors.violet,
       borderWidth: 1,
       borderColor: t.colors.gold,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+      borderRadius: 24,
     },
     avatarText: {
       fontSize: 14,
       fontWeight: '900',
       color: t.colors.onGold,
     },
+    presenceDot: {
+      position: 'absolute',
+      right: -2,
+      bottom: -2,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
+    },
     username: {
-      flex: 1,
       color: t.colors.text,
       fontWeight: '700',
-      fontSize: 14,
+      fontSize: 13,
       letterSpacing: 0.5,
+    },
+    presenceTag: {
+      fontSize: 9,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 1,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      fontWeight: '700',
+    },
+    metaText: {
+      marginTop: 3,
+      fontSize: 11,
+      color: t.colors.textMuted,
+    },
+    duelBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      backgroundColor: 'rgba(168,85,247,0.10)',
+    },
+    duelBtnText: {
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
     },
   });

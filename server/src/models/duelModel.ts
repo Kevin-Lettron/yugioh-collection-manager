@@ -88,6 +88,9 @@ function rowToDuel(row: any): Duel {
     // Migration 009 — engine_mode : drapeau qui indique que ce duel se joue
     // par ygopro-core (côté mobile, ça détermine vers quelle arène rediriger).
     engine_mode: row.engine_mode === true,
+    // Migration 014 — flags "prêt" du lobby (salle d'attente pré-coin-flip).
+    challenger_ready: row.challenger_ready === true,
+    opponent_ready: row.opponent_ready === true,
   } as Duel;
 
   if (row.challenger_username) {
@@ -346,6 +349,74 @@ export class DuelModel {
               turn_number = COALESCE(NULLIF(turn_number, 0), 1),
               updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND status IN ('pre_game', 'pending')`,
+      [id]
+    );
+  }
+
+  // ─── Migration 014 · salle d'attente (change-deck + ready) ──────────────
+
+  /**
+   * Change le deck d'un joueur pendant le lobby.
+   *
+   * Autorisé UNIQUEMENT tant que :
+   *  - `phase_pre_game` n'est pas posé (pas encore de coin flip)
+   *  - le joueur concerné n'a pas encore cliqué « Prêt »
+   *  - `status` ∈ ('pending', 'active')
+   *
+   * Renvoie le duel mis à jour, ou `null` si la transition n'est pas autorisée.
+   * Idempotent : un même deck posé deux fois ne casse rien.
+   */
+  static async changeDeck(
+    id: number,
+    side: 'challenger' | 'opponent',
+    deckId: number
+  ): Promise<Duel | null> {
+    const column = side === 'challenger' ? 'challenger_deck_id' : 'opponent_deck_id';
+    const readyColumn = side === 'challenger' ? 'challenger_ready' : 'opponent_ready';
+    const result = await query(
+      `UPDATE duels
+          SET ${column} = $1,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+          AND phase_pre_game IS NULL
+          AND ${readyColumn} = FALSE
+          AND status IN ('pending', 'active')
+        RETURNING id`,
+      [deckId, id]
+    );
+    if (result.rows.length === 0) return null;
+    return this.findById(id);
+  }
+
+  /**
+   * Marque un joueur comme « prêt ». Idempotent : un second appel ne change
+   * rien. La transition vers `pre_game` (coin flip) est gérée par le controller.
+   */
+  static async setReady(
+    id: number,
+    side: 'challenger' | 'opponent'
+  ): Promise<Duel | null> {
+    const column = side === 'challenger' ? 'challenger_ready' : 'opponent_ready';
+    await query(
+      `UPDATE duels
+          SET ${column} = TRUE,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+          AND phase_pre_game IS NULL
+          AND status IN ('pending', 'active')`,
+      [id]
+    );
+    return this.findById(id);
+  }
+
+  /**
+   * Reset des flags "prêt" — utilisé si on veut retomber dans le lobby après
+   * un incident. Non exposé pour l'instant, gardé pour l'admin.
+   */
+  static async resetReady(id: number): Promise<void> {
+    await query(
+      `UPDATE duels SET challenger_ready = FALSE, opponent_ready = FALSE
+        WHERE id = $1`,
       [id]
     );
   }

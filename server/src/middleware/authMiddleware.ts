@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { getRequiredEnv } from '../utils/env';
 import { UserRole } from '../../../shared/types';
 import { query } from '../config/database';
+import { touchLastSeen } from './touchLastSeen';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -54,7 +55,9 @@ export const authenticateToken = async (
     // Refresh role from DB so promote/demote is also instant
     decoded.role = result.rows[0].role;
     req.user = decoded;
-    next();
+    // ── last_seen — best-effort, chaîné après auth. Le middleware appelle
+    //    `next()` lui-même (avec throttling 30 s pour ne pas assommer la DB).
+    touchLastSeen(req, res, next);
   } catch {
     res.status(500).json({ error: 'Failed to verify account status' });
   }

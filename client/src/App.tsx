@@ -26,6 +26,7 @@ import DuelRoom from './pages/DuelRoom';
 import EngineDuelRoom from './pages/EngineDuelRoom';
 import DuelMatchLobby from './pages/DuelMatchLobby';
 import DuelSpectate from './pages/DuelSpectate';
+import DuelLobby from './pages/DuelLobby';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -168,6 +169,16 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <EngineDuelRoom />
+          </ProtectedRoute>
+        }
+      />
+      {/* Salle d'attente pré-coin-flip — les 2 joueurs valident deck + prêt
+          avant que le pile ou face ne démarre. */}
+      <Route
+        path="/duel/:id/lobby"
+        element={
+          <ProtectedRoute>
+            <DuelLobby />
           </ProtectedRoute>
         }
       />

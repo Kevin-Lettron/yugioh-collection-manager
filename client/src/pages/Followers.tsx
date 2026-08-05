@@ -1,23 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Follow } from '../../../shared/types';
+import { User } from '../../../shared/types';
 import api, { getImageUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import AppNavbar from '../components/AppNavbar';
-import Button from '../components/ui/Button';
+import ChallengeModal from '../components/ChallengeModal';
+
+/**
+ * `/followers?tab=followers|following` — hub des connexions sociales.
+ *
+ * Deux onglets miroirs (Abonnés / Abonnements). Chaque ligne = avatar,
+ * pastille de présence (vert si actif < 2 min, gris sinon), timestamp
+ * "vu à …", bouton "Défier en duel" (violet) et action follow/unfollow.
+ *
+ * Le back renvoie `last_seen` + `is_online` dans /social/{followers,following}
+ * depuis la migration 013 — pas de calcul côté client.
+ */
+
+// ── Rendu pastille + label "vu à …" ────────────────────────────────────────
+function formatLastSeen(iso?: string | null): string {
+  if (!iso) return 'Jamais vu';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'Jamais vu';
+  const diff = Date.now() - then;
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `vu il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `vu il y a ${h} h`;
+  const days = Math.floor(h / 24);
+  if (days < 7) return `vu il y a ${days} j`;
+  return `vu le ${new Date(iso).toLocaleDateString('fr-FR')}`;
+}
+
+type SocialUser = Partial<User> & { id: number; username: string; is_online?: boolean; last_seen?: string | null };
 
 const Followers = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  // Onglet initial pilote par ?tab=followers|following (defaut: abonnes).
-  // Sans ca, un lien direct depuis Profile ou AppNavbar retomberait toujours
-  // sur la liste des abonnes, meme quand l'utilisateur voulait ses abonnements.
   const initialTab = searchParams.get('tab') === 'following' ? 'following' : 'followers';
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
 
-  // Synchronise l'onglet actif dans l'URL pour rester deep-linkable.
   useEffect(() => {
     const current = searchParams.get('tab');
     if (current !== activeTab) {
@@ -26,14 +51,11 @@ const Followers = () => {
       setSearchParams(next, { replace: true });
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [followers, setFollowers] = useState<Follow[]>([]);
-  const [following, setFollowing] = useState<Follow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [followingIds, setFollowingIds] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const [followers, setFollowers] = useState<SocialUser[]>([]);
+  const [following, setFollowing] = useState<SocialUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [challengeTarget, setChallengeTarget] = useState<{ id: number; username: string } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,19 +64,8 @@ const Followers = () => {
         api.get('/social/followers'),
         api.get('/social/following'),
       ]);
-
-      // Extract arrays from response (API returns { followers: [...], total: ... })
-      const followersData = followersRes.data.followers || followersRes.data || [];
-      const followingData = followingRes.data.following || followingRes.data || [];
-
-      setFollowers(followersData);
-      setFollowing(followingData);
-
-      // Create set of user IDs we're following
-      const followingUserIds = new Set<number>(
-        followingData.map((f: Follow) => f.following_id || f.following?.id || f.id)
-      );
-      setFollowingIds(followingUserIds);
+      setFollowers(followersRes.data.followers ?? []);
+      setFollowing(followingRes.data.following ?? []);
     } catch (error) {
       console.error('Failed to fetch followers/following:', error);
     } finally {
@@ -62,227 +73,333 @@ const Followers = () => {
     }
   };
 
-  const handleFollow = async (userId: number) => {
-    try {
-      await api.post(`/social/follow/${userId}`);
-      setFollowingIds((prev) => new Set([...prev, userId]));
-      toast.success('Utilisateur suivi !');
-      // Refresh data to get updated lists
-      fetchData();
-    } catch (error) {
-      console.error('Failed to follow user:', error);
-    }
-  };
+  useEffect(() => {
+    fetchData();
+    // Refetch périodique : les pastilles online doivent respirer sans reload.
+    // 30 s suffit — les changements de présence sont peu bruyants.
+    const iv = window.setInterval(fetchData, 30_000);
+    return () => window.clearInterval(iv);
+  }, []);
+
+  const followingIds = useMemo(
+    () => new Set<number>(following.map((f) => f.id)),
+    [following]
+  );
 
   const handleUnfollow = async (userId: number) => {
     try {
       await api.delete(`/social/follow/${userId}`);
-      setFollowingIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
-      toast.success('Utilisateur ne plus suivi');
-      // Refresh data to get updated lists
+      toast.success('Ne suit plus');
       fetchData();
-    } catch (error) {
-      console.error('Failed to unfollow user:', error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const renderUserCard = (followRecord: any, _isFollowerTab: boolean) => {
-    // The API returns user data directly (not nested in follower/following objects)
-    // So followRecord IS the user, or it has follower/following nested
-    const displayUser = followRecord.follower || followRecord.following || followRecord;
+  const handleFollow = async (userId: number) => {
+    try {
+      await api.post(`/social/follow/${userId}`);
+      toast.success('Duelliste suivi');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    if (!displayUser || !displayUser.id) return null;
-
-    const isFollowing = followingIds.has(displayUser.id);
-    const isSelf = displayUser.id === user?.id;
+  const renderRow = (u: SocialUser, isFollowingTab: boolean) => {
+    if (!u?.id) return null;
+    const isSelf = u.id === user?.id;
+    const isOnline = Boolean(u.is_online);
+    const iFollow = followingIds.has(u.id);
 
     return (
       <div
-        key={displayUser.id}
-        className="bg-white rounded-lg shadow p-4 flex items-center space-x-4 hover:shadow-md transition"
-      >
+        key={u.id}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '14px 16px',
+          background: 'linear-gradient(160deg,#1A1510,#0F0C07)',
+          border: `1px solid ${isOnline ? '#4ADE80' : '#3A2E1C'}`,
+          borderLeftWidth: 3,
+          borderLeftColor: isOnline ? '#4ADE80' : '#3A2E1C',
+          transition: 'border-color 200ms, transform 180ms',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}>
         {/* Avatar */}
-        {displayUser.profile_picture ? (
-          <img
-            src={getImageUrl(displayUser.profile_picture)}
-            alt={displayUser.username}
-            className="w-16 h-16 rounded-full object-cover"
+        <div
+          onClick={() => navigate(`/profile/${u.id}`)}
+          style={{ position: 'relative', width: 56, height: 56, flexShrink: 0, cursor: 'pointer' }}>
+          {u.profile_picture ? (
+            <img
+              src={getImageUrl(u.profile_picture)}
+              alt={u.username}
+              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '1px solid #3A2E1C' }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg,#A855F7,#5A4D2E)',
+                display: 'grid',
+                placeItems: 'center',
+                color: '#F5EFE0',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 18,
+                fontWeight: 900,
+                border: '1px solid #3A2E1C',
+              }}>
+              {(u.username || '?').slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          {/* Pastille online — coin bas-droit */}
+          <span
+            title={isOnline ? 'En ligne' : 'Hors ligne'}
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 2,
+              width: 14,
+              height: 14,
+              borderRadius: '50%',
+              background: isOnline ? '#4ADE80' : '#6B5A3E',
+              border: '2px solid #0F0C07',
+              boxShadow: isOnline ? '0 0 8px rgba(74,222,128,.7)' : 'none',
+            }}
           />
-        ) : (
-          <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">
-              {displayUser.username.charAt(0).toUpperCase()}
+        </div>
+
+        {/* Identite + presence */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => navigate(`/profile/${u.id}`)}
+              style={{
+                background: 'transparent',
+                border: 0,
+                padding: 0,
+                color: '#F5EFE0',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}>
+              @{u.username}
+            </button>
+            <span
+              style={{
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 999,
+                background: isOnline ? 'rgba(74,222,128,.15)' : 'rgba(107,90,62,.15)',
+                color: isOnline ? '#4ADE80' : '#A99C86',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+              }}>
+              {isOnline ? '● En ligne' : '○ Hors ligne'}
             </span>
           </div>
-        )}
-
-        {/* User Info */}
-        <div className="flex-1">
-          <h3 className="font-bold text-gray-800 text-lg">{displayUser.username}</h3>
-          <p className="text-sm text-gray-600">{displayUser.email}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Inscrit le {new Date(displayUser.created_at).toLocaleDateString()}
-          </p>
+          <div
+            style={{
+              marginTop: 3,
+              fontSize: 12,
+              color: '#A99C86',
+              fontFamily: "'Rajdhani', sans-serif",
+            }}>
+            {isOnline ? 'Actif maintenant' : formatLastSeen(u.last_seen)}
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col space-y-2">
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {!isSelf && (
-            <>
-              {isFollowing ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleUnfollow(displayUser.id)}
-                >
-                  Ne plus suivre
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleFollow(displayUser.id)}
-                >
-                  Suivre en retour
-                </Button>
-              )}
-            </>
+            <button
+              onClick={() => setChallengeTarget({ id: u.id, username: u.username })}
+              title="Défier en duel"
+              style={{
+                height: 36,
+                padding: '0 14px',
+                background: 'linear-gradient(135deg,#A855F7,#7C3AED)',
+                border: '1px solid #A855F7',
+                color: '#F5EFE0',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 10,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 0 12px rgba(168,85,247,.35)',
+              }}>
+              <span style={{ fontSize: 14 }}>⚔</span>
+              Défier
+            </button>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => navigate(`/profile/${displayUser.id}`)}
-          >
-            Voir le profil
-          </Button>
+          {!isSelf && isFollowingTab && iFollow && (
+            <button
+              onClick={() => handleUnfollow(u.id)}
+              style={{
+                height: 36,
+                padding: '0 12px',
+                background: 'transparent',
+                border: '1px solid #3A2E1C',
+                color: '#A99C86',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+              Ne plus suivre
+            </button>
+          )}
+          {!isSelf && !isFollowingTab && !iFollow && (
+            <button
+              onClick={() => handleFollow(u.id)}
+              style={{
+                height: 36,
+                padding: '0 12px',
+                background: 'transparent',
+                border: '1px solid #F5C518',
+                color: '#F5C518',
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+              Suivre en retour
+            </button>
+          )}
         </div>
       </div>
     );
   };
 
+  const list = activeTab === 'followers' ? followers : following;
+
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
+    <div style={{ minHeight: '100vh', background: '#0B0906' }}>
       <AppNavbar />
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Connexions sociales</h2>
-
-          {/* Tabs */}
-          <div className="flex space-x-4 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('followers')}
-              className={`pb-3 px-6 font-semibold transition ${
-                activeTab === 'followers'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              Abonnés ({followers.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('following')}
-              className={`pb-3 px-6 font-semibold transition ${
-                activeTab === 'following'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              Abonnements ({following.length})
-            </button>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '30px 20px 60px' }}>
+        <div style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: 'italic',
+              fontSize: 12,
+              letterSpacing: '0.32em',
+              color: '#F5C518',
+              textTransform: 'uppercase',
+            }}>
+            — Cercle des duellistes —
           </div>
+          <h1
+            style={{
+              margin: '10px 0 6px',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 'clamp(28px, 4vw, 42px)',
+              fontWeight: 900,
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+              color: '#F5EFE0',
+            }}>
+            Connexions
+          </h1>
+          <p style={{ margin: 0, color: '#A99C86', fontSize: 14 }}>
+            Suis les autres duellistes, vois qui est en ligne et lance un défi en un clic.
+          </p>
         </div>
 
-        {/* Loading State */}
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid #3A2E1C', marginBottom: 20 }}>
+          {(['followers', 'following'] as const).map((t) => {
+            const on = activeTab === t;
+            const count = t === 'followers' ? followers.length : following.length;
+            return (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                style={{
+                  padding: '10px 18px',
+                  background: 'transparent',
+                  border: 0,
+                  borderBottom: `2px solid ${on ? '#F5C518' : 'transparent'}`,
+                  color: on ? '#F5C518' : '#A99C86',
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: 12,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  fontWeight: on ? 700 : 500,
+                  cursor: 'pointer',
+                }}>
+                {t === 'followers' ? 'Abonnés' : 'Abonnements'} ({count})
+              </button>
+            );
+          })}
+        </div>
+
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <div
+              className="animate-spin"
+              style={{
+                display: 'inline-block',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: '3px solid rgba(245,197,24,.3)',
+                borderTopColor: '#F5C518',
+              }}
+            />
+          </div>
+        ) : list.length === 0 ? (
+          <div
+            style={{
+              padding: '50px 20px',
+              textAlign: 'center',
+              border: '1px dashed #3A2E1C',
+              color: '#A99C86',
+            }}>
+            <p style={{ margin: 0, fontSize: 15 }}>
+              {activeTab === 'followers'
+                ? "Personne ne te suit encore. Partage un deck public pour attirer l'attention."
+                : "Tu ne suis personne. Explore le fil social pour trouver des duellistes."}
+            </p>
           </div>
         ) : (
-          <>
-            {/* Followers Tab */}
-            {activeTab === 'followers' && (
-              <div className="space-y-4">
-                {followers.length > 0 ? (
-                  followers.map((follower) => renderUserCard(follower, true))
-                ) : (
-                  <div className="text-center py-12 bg-white rounded-lg shadow">
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">Aucun abonné pour le moment</h3>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Partagez vos decks publics pour gagner des abonnés !
-                    </p>
-                    <div className="mt-6">
-                      <Button
-                        variant="primary"
-                        onClick={() => navigate('/social')}
-                      >
-                        Explorer le fil d'actualités
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Following Tab */}
-            {activeTab === 'following' && (
-              <div className="space-y-4">
-                {following.length > 0 ? (
-                  following.map((follow) => renderUserCard(follow, false))
-                ) : (
-                  <div className="text-center py-12 bg-white rounded-lg shadow">
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">Vous ne suivez personne pour le moment</h3>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Découvrez des utilisateurs et suivez-les pour voir leurs decks dans votre fil
-                    </p>
-                    <div className="mt-6">
-                      <Button
-                        variant="primary"
-                        onClick={() => navigate('/social')}
-                      >
-                        Trouver des utilisateurs à suivre
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {list.map((u) => renderRow(u, activeTab === 'following'))}
+          </div>
         )}
       </div>
+
+      {/* Modal Défi — pré-rempli avec l'user cliqué */}
+      {challengeTarget && (
+        <ChallengeModal
+          open={true}
+          onClose={() => setChallengeTarget(null)}
+          opponent={challengeTarget}
+          onSuccess={() => setChallengeTarget(null)}
+        />
+      )}
     </div>
   );
 };

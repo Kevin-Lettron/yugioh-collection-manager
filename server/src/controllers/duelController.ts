@@ -541,6 +541,103 @@ export class DuelController {
   }
 
   /**
+   * POST /duels/:id/change-deck — un joueur change son deck depuis le lobby.
+   *
+   * Body : `{ deck_id: number }`.
+   *
+   * Autorisé uniquement tant que la phase pré-game n'a pas démarré ET que
+   * le joueur n'est pas déjà « prêt ». Émet `duel:deck-changed` aux deux
+   * joueurs pour rafraîchir l'affichage temps réel de l'adversaire.
+   */
+  static async changeDeck(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new ValidationError('Not authenticated');
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) throw new ValidationError('id invalide');
+      const deckId = Number(req.body?.deck_id);
+      if (!Number.isInteger(deckId)) throw new ValidationError('deck_id requis');
+
+      const duel = await DuelModel.findById(id);
+      if (!duel) throw new NotFoundError('Duel introuvable');
+      const side = sideOf(duel, req.user.id);
+      if (!side) throw new ForbiddenError('Vous ne participez pas a ce duel');
+      if (duel.phase_pre_game) {
+        throw new ValidationError('Trop tard — le pile ou face a déjà démarré');
+      }
+      const alreadyReady = side === 'challenger' ? duel.challenger_ready : duel.opponent_ready;
+      if (alreadyReady) {
+        throw new ValidationError('Vous êtes déjà prêt — annulez pour changer de deck');
+      }
+
+      const deck = await DeckModel.findById(deckId);
+      if (!deck) throw new NotFoundError('Deck introuvable');
+      if (deck.user_id !== req.user.id) throw new ForbiddenError('Ce deck ne vous appartient pas');
+
+      const updated = await DuelModel.changeDeck(id, side, deckId);
+      if (!updated) throw new ValidationError('Impossible de changer de deck maintenant');
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`duel:${id}`).emit('duel:deck-changed', { duel: updated });
+        io.to(`user:${duel.challenger_id}`).emit('duel:deck-changed', { duel: updated });
+        io.to(`user:${duel.opponent_id}`).emit('duel:deck-changed', { duel: updated });
+      }
+
+      res.json({ duel: updated });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /duels/:id/ready — un joueur clique « Prêt » dans le lobby.
+   *
+   * Body : `{ ready?: boolean }` (défaut `true`).
+   *
+   * Marque le joueur comme prêt. Quand les deux joueurs le sont, le duel
+   * reste en `active` — le passage au coin flip est déclenché par l'appel
+   * à `/duels/:id/engine/start` que fera le front en atterrissant sur
+   * `/duel/:id`. Ce découplage évite de dépendre de l'ordre des messages.
+   */
+  static async setReady(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new ValidationError('Not authenticated');
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) throw new ValidationError('id invalide');
+
+      const duel = await DuelModel.findById(id);
+      if (!duel) throw new NotFoundError('Duel introuvable');
+      const side = sideOf(duel, req.user.id);
+      if (!side) throw new ForbiddenError('Vous ne participez pas a ce duel');
+      if (duel.phase_pre_game) {
+        // Idempotent : si on est déjà en pile ou face, on renvoie le duel tel quel.
+        res.json({ duel });
+        return;
+      }
+      // Un deck est requis pour se déclarer prêt.
+      const myDeckId = side === 'challenger' ? duel.challenger_deck_id : duel.opponent_deck_id;
+      if (!myDeckId) throw new ValidationError('Choisissez un deck avant de vous déclarer prêt');
+
+      const updated = await DuelModel.setReady(id, side);
+      if (!updated) throw new ValidationError('Impossible de vous déclarer prêt');
+
+      const bothReady = updated.challenger_ready && updated.opponent_ready;
+
+      const io = req.app.get('io');
+      if (io) {
+        const payload = { duel: updated, bothReady };
+        io.to(`duel:${id}`).emit('duel:ready-changed', payload);
+        io.to(`user:${duel.challenger_id}`).emit('duel:ready-changed', payload);
+        io.to(`user:${duel.opponent_id}`).emit('duel:ready-changed', payload);
+      }
+
+      res.json({ duel: updated, bothReady });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
    * POST /duels/:id/action — applique une action + broadcast.
    */
   static async performAction(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

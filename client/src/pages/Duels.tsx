@@ -139,11 +139,13 @@ const Duels = () => {
     setAcceptSubmitting(true);
     try {
       await duelApi.accept(acceptFor.id, acceptDeckId);
-      toast.success('Duel accepté — que la meilleure stratégie gagne');
+      toast.success('Duel accepté — salle d\'attente');
       const id = acceptFor.id;
       setAcceptFor(null);
       await fetchAll();
-      navigate(`/duel/${id}`);
+      // On passe par la salle d'attente : chaque joueur y confirme deck + prêt
+      // avant que le pile ou face ne s'enclenche.
+      navigate(`/duel/${id}/lobby`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -499,7 +501,15 @@ const Duels = () => {
           )}
           {isActive && (
             <button
-              onClick={() => navigate(`/duel/${d.id}`)}
+              onClick={() => {
+                // Si le duel est active mais pas encore en pile ou face, on
+                // atterrit d'abord dans la salle d'attente.
+                const target =
+                  d.phase_pre_game || d.first_player_id
+                    ? `/duel/${d.id}`
+                    : `/duel/${d.id}/lobby`;
+                navigate(target);
+              }}
               style={{
                 height: 42,
                 padding: '0 22px',

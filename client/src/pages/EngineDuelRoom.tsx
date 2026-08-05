@@ -131,6 +131,16 @@ export default function EngineDuelRoom() {
       const currentDuel = await duelApi.get(duelId);
       setDuel(currentDuel);
 
+      // Salle d'attente (migration 014) — tant qu'au moins un joueur n'a pas
+      // cliqué « Prêt » ET que le pile ou face n'a pas démarré, on renvoie
+      // dans le lobby plutôt que d'entrer dans l'arène. Sans ça, atterrir
+      // ici via URL directe court-circuiterait le choix de deck.
+      const bothReady = Boolean(currentDuel.challenger_ready && currentDuel.opponent_ready);
+      if (!currentDuel.phase_pre_game && !currentDuel.first_player_id && !bothReady && currentDuel.status !== 'finished' && currentDuel.status !== 'cancelled') {
+        navigate(`/duel/${duelId}/lobby`, { replace: true });
+        return;
+      }
+
       if (currentDuel.status === 'pre_game' || !currentDuel.first_player_id) {
         // On tente d'ouvrir la phase pré-game. Si `start` renvoie déjà l'état
         // moteur, on bascule directement.

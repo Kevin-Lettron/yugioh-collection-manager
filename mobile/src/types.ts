@@ -196,6 +196,10 @@ export interface DeckUser {
   id: number;
   username: string;
   profile_picture?: string;
+  /** Migration 013 — présence temps réel. */
+  last_seen?: string | null;
+  /** Booléen dérivé serveur : `last_seen > NOW() - 2min`. */
+  is_online?: boolean;
 }
 
 export interface DeckCard {
@@ -327,6 +331,9 @@ export interface Duel {
   game_number?: number;
   // Mode moteur (ygopro-core)
   engine_mode?: boolean;
+  // Salle d'attente pré-coin-flip (migration 014)
+  challenger_ready?: boolean;
+  opponent_ready?: boolean;
 }
 
 // ─── Duel moteur (miroir de shared/duelView.ts) ────────────────────────

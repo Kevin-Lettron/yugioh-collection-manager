@@ -34,6 +34,17 @@ export const duelApi = {
   performAction: (id: number, action: DuelAction) =>
     api.post<{ duel: Duel }>(`/duels/${id}/action`, action).then((r) => r.data.duel),
 
+  // ── Salle d'attente (migration 014) ───────────────────────────────────
+  changeDeck: (id: number, deckId: number) =>
+    api
+      .post<{ duel: Duel }>(`/duels/${id}/change-deck`, { deck_id: deckId })
+      .then((r) => r.data.duel),
+
+  setReady: (id: number) =>
+    api
+      .post<{ duel: Duel; bothReady: boolean }>(`/duels/${id}/ready`)
+      .then((r) => r.data),
+
   // ── WebSocket ─────────────────────────────────────────────────────────
 
   /**
@@ -46,6 +57,37 @@ export const duelApi = {
 
   leaveRoom: (duelId: number) => {
     socketService.getSocket()?.emit('duel:leave', { duelId });
+  },
+
+  /**
+   * S'abonne aux updates de la salle d'attente (change-deck + ready).
+   * Ces events sont émis à la fois dans la room `duel:${id}` et dans les rooms
+   * `user:${id}` des deux joueurs pour couvrir les cas où la room duel n'est
+   * pas encore rejointe (chargement du lobby).
+   */
+  subscribeToLobby: (
+    duelId: number,
+    handlers: {
+      onDeckChanged?: (data: { duel: Duel }) => void;
+      onReadyChanged?: (data: { duel: Duel; bothReady: boolean }) => void;
+    }
+  ): (() => void) => {
+    const socket = socketService.getSocket();
+    if (!socket) return () => {};
+    socket.emit('duel:join', { duelId });
+    // Filet : ignorer les events qui ne concernent pas ce duel — un même socket
+    // peut recevoir des events d'autres duels dans lesquels l'user est engagé.
+    const wrap = <T extends { duel: Duel }>(fn?: (data: T) => void) =>
+      fn ? (data: T) => data?.duel?.id === duelId && fn(data) : undefined;
+    const onDeck = wrap(handlers.onDeckChanged);
+    const onReady = wrap(handlers.onReadyChanged);
+    if (onDeck) socket.on('duel:deck-changed', onDeck);
+    if (onReady) socket.on('duel:ready-changed', onReady);
+    return () => {
+      if (onDeck) socket.off('duel:deck-changed', onDeck);
+      if (onReady) socket.off('duel:ready-changed', onReady);
+      socket.emit('duel:leave', { duelId });
+    };
   },
 
   /**

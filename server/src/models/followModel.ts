@@ -66,8 +66,14 @@ export class FollowModel {
     const total = parseInt(countResult.rows[0].count);
 
     // Get followers with user details
+    //   `is_online` : dérivé de last_seen — 2 min de fenêtre, alignée sur le
+    //   throttling du middleware `touchLastSeen` (30 s). Servi tel quel au front
+    //   pour éviter un round-trip d'horloge.
     const result = await query(
-      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at,
+              u.last_seen,
+              (u.last_seen IS NOT NULL AND u.last_seen > NOW() - INTERVAL '2 minutes') AS is_online,
+              f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.follower_id = u.id
        WHERE f.following_id = $1
@@ -97,9 +103,12 @@ export class FollowModel {
     );
     const total = parseInt(countResult.rows[0].count);
 
-    // Get following with user details
+    // Get following with user details (cf. `getFollowers` pour is_online).
     const result = await query(
-      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at, f.created_at as followed_at
+      `SELECT u.id, u.username, u.profile_picture, u.created_at, u.updated_at,
+              u.last_seen,
+              (u.last_seen IS NOT NULL AND u.last_seen > NOW() - INTERVAL '2 minutes') AS is_online,
+              f.created_at as followed_at
        FROM follows f
        JOIN users u ON f.following_id = u.id
        WHERE f.follower_id = $1

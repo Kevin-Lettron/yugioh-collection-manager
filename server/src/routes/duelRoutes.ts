@@ -25,6 +25,10 @@ router.post('/:id/reject', authenticateToken, DuelController.reject);
 router.post('/:id/cancel', authenticateToken, DuelController.cancel);
 router.post('/:id/action', authenticateToken, DuelController.performAction);
 
+// ─── Salle d'attente (migration 014) — change-deck + ready ────────────────
+router.post('/:id/change-deck', authenticateToken, DuelController.changeDeck);
+router.post('/:id/ready',       authenticateToken, DuelController.setReady);
+
 // ─── Pile ou face (avant lancement du moteur) — cf. §4 F1 de PLAN-DUEL-AMELIORATIONS
 router.post('/:id/coin-flip',            authenticateToken, DuelEngineController.coinFlip);
 router.post('/:id/first-player-choice',  authenticateToken, DuelEngineController.firstPlayerChoice);

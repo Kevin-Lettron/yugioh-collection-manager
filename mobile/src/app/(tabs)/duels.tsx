@@ -99,7 +99,9 @@ export default function DuelsScreen() {
     try {
       await duelApi.accept(duelId, deckId);
       await fetchAll();
-      router.push(`/duel/${duelId}`);
+      // Salle d'attente d'abord — chaque joueur valide deck + prêt avant que
+      // le pile ou face ne démarre.
+      router.push(`/duel/lobby/${duelId}` as any);
     } catch (err: any) {
       Alert.alert('Erreur', err?.response?.data?.error || "Acceptation echouee");
     }
@@ -255,7 +257,15 @@ export default function DuelsScreen() {
                   key={d.id}
                   duel={d}
                   meId={user?.id ?? -1}
-                  onOpen={() => router.push(`/duel/${d.id}`)}
+                  onOpen={() => {
+                    // Si le duel est active mais pas encore en pile ou face,
+                    // on repasse par la salle d'attente.
+                    const target =
+                      d.status === 'active' && !d.phase_pre_game && !d.first_player_id
+                        ? `/duel/lobby/${d.id}`
+                        : `/duel/${d.id}`;
+                    router.push(target as any);
+                  }}
                   onAccept={() => openDeckPickerFor(d)}
                   onReject={() => doReject(d)}
                   onCancel={() => doCancel(d)}

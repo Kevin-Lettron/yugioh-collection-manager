@@ -76,6 +76,19 @@ export default function DuelScreen() {
   const fetchDuel = useCallback(async () => {
     try {
       const d = await duelApi.get(duelId);
+      // Salle d'attente (migration 014) — avant tout autre routage : si les
+      // deux joueurs n'ont pas encore cliqué « Prêt » et que le pile ou face
+      // n'a pas démarré, on renvoie dans le lobby.
+      const bothReady = Boolean(d.challenger_ready && d.opponent_ready);
+      if (
+        d.status === 'active' &&
+        !d.phase_pre_game &&
+        !d.first_player_id &&
+        !bothReady
+      ) {
+        router.replace(`/duel/lobby/${duelId}` as any);
+        return;
+      }
       // F8 · si le duel est en mode moteur, on redirige vers l'arène engine
       // dédiée. Le mode manuel reste dispo pour les duels historiques créés
       // avant l'intégration moteur.

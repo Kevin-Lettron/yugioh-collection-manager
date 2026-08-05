@@ -37,6 +37,17 @@ export const duelApi = {
     api
       .post<{ duel: Duel }>(`/duels/${id}/action`, action)
       .then((r) => r.data.duel),
+
+  // ── Salle d'attente (migration 014) ─────────────────────────────────────
+  changeDeck: (id: number, deckId: number) =>
+    api
+      .post<{ duel: Duel }>(`/duels/${id}/change-deck`, { deck_id: deckId })
+      .then((r) => r.data.duel),
+
+  setReady: (id: number) =>
+    api
+      .post<{ duel: Duel; bothReady: boolean }>(`/duels/${id}/ready`)
+      .then((r) => r.data),
 };
 
 export default duelApi;

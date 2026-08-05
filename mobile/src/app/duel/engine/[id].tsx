@@ -158,9 +158,28 @@ export default function EngineDuelScreen() {
   }, [duelId, router]);
 
   useEffect(() => {
-    duelApi.get(duelId).then(setDuel).catch(() => undefined);
-    start();
-  }, [duelId, start]);
+    if (!Number.isFinite(duelId)) return;
+    // Salle d'attente (migration 014) — si les 2 joueurs n'ont pas encore
+    // cliqué « Prêt » ET que le pile ou face n'a pas démarré, on renvoie
+    // dans le lobby au lieu d'ouvrir le moteur (qui refuserait de toute façon).
+    duelApi
+      .get(duelId)
+      .then((d) => {
+        setDuel(d);
+        const bothReady = Boolean(d.challenger_ready && d.opponent_ready);
+        const skipLobby = d.phase_pre_game || d.first_player_id || bothReady ||
+          d.status === 'finished' || d.status === 'cancelled';
+        if (!skipLobby) {
+          router.replace(`/duel/lobby/${duelId}` as any);
+          return;
+        }
+        start();
+      })
+      .catch(() => {
+        // Duel introuvable — on tente quand même start() pour respecter le comportement legacy.
+        start();
+      });
+  }, [duelId, start, router]);
 
   /**
    * CHANTIER 2 — verrou landscape à l'entrée du duel + libération à la sortie.
