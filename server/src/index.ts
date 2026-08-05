@@ -278,6 +278,25 @@ onWorkerLost((lostDuelIds, reason) => {
     );
 });
 
+// Attrape les crashes silencieux qui font redémarrer PM2 sans laisser de trace
+// dans stderr. Sans ça, un `throw` dans un callback async ou une rejection
+// non catchée tue le process sans qu'aucun log ne l'explique (cf. incident
+// aout 2026 : 1018 restarts en 10 min avec stderr vide).
+process.on('uncaughtException', (err, origin) => {
+  logger.error(`[CRASH] uncaughtException (${origin})`, err);
+  console.error('[CRASH] uncaughtException', origin, err);
+  // On laisse quand meme le process mourir : uncaughtException veut dire
+  // qu'un invariant du programme est casse. PM2 restartera proprement.
+  setTimeout(() => process.exit(1), 100);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('[CRASH] unhandledRejection', reason as Error);
+  console.error('[CRASH] unhandledRejection', reason);
+  // Node 20+ tue le process par defaut sur unhandled rejection. On accompagne
+  // avec un log explicite plutot que de laisser un crash muet.
+});
+
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
