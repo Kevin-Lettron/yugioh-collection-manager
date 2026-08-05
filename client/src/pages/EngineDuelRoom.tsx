@@ -200,12 +200,17 @@ export default function EngineDuelRoom() {
       const status = err?.response?.status;
       const serverMsg: string | undefined = err?.response?.data?.error;
       const isTransient404 = status === 404;
-      // Panne fatale : le serveur n'a pas les assets du moteur. Inutile de
-      // continuer à taper l'API — on fige avec un panneau clair. Un simple
-      // rechargement ne rétablira rien tant que le VPS n'a pas les fichiers.
+      // Erreurs fatales cote back qui rendent le duel injouable en l'etat :
+      //  - assets moteur pas installes
+      //  - deck illegal (banlist violee, tailles hors norme, cartes inconnues)
+      //  - deck incomplet (les 2 joueurs n'ont pas choisi)
+      // Inutile de continuer a taper l'API — on fige avec un panneau clair
+      // qui donne la vraie cause au joueur au lieu de spammer un toast rouge.
       if (
         serverMsg &&
-        /moteur.+installé|données manquantes|assets/i.test(serverMsg)
+        /moteur.+installé|données manquantes|assets|deck illégal|deck.+incomplet|deck.+trop grand|cartes non jouables|choisi un deck/i.test(
+          serverMsg
+        )
       ) {
         engineFatalRef.current = serverMsg;
         setEngineFatal(serverMsg);
@@ -493,10 +498,11 @@ export default function EngineDuelRoom() {
           <div style={{ color: '#ff6b6b', fontWeight: 700, marginBottom: 8 }}>
             Duel indisponible
           </div>
-          <p style={{ margin: '0 0 16px' }}>{engineFatal}</p>
+          <p style={{ margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{engineFatal}</p>
           <p style={{ opacity: 0.7, fontSize: 13, margin: '0 0 16px' }}>
-            L'administrateur doit installer les assets du moteur sur le
-            serveur (<code>npx ts-node scripts/fetchDuelAssets.ts</code>).
+            {/deck/i.test(engineFatal)
+              ? "Un des decks n'est pas conforme (banlist, tailles). Editez le deck depuis « Mes decks » avant de relancer."
+              : "L'administrateur doit installer les assets du moteur sur le serveur (npx ts-node scripts/fetchDuelAssets.ts)."}
           </p>
           <button
             onClick={() => navigate('/duels')}
