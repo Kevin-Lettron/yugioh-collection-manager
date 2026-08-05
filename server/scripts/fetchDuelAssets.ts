@@ -28,6 +28,12 @@ const CDB_PATH = path.join(ASSETS_DIR, 'cards.cdb');
 const CDB_URL =
   'https://raw.githubusercontent.com/ProjectIgnis/BabelCDB/master/cards.cdb';
 const SCRIPTS_REPO = 'https://github.com/ProjectIgnis/CardScripts.git';
+// strings-fr.conf : traductions des invites systeme (SELECT_OPTION, marqueurs,
+// archetypes). Sans ce fichier, les invites multi-effets affichent 'Effet 1',
+// 'Effet 2' au lieu du vrai texte — l'user ne sait pas quel effet il active.
+const STRINGS_FR_URL =
+  'https://raw.githubusercontent.com/ProjectIgnis/DeltaPuzzle/master/strings-fr.conf';
+const STRINGS_FR_PATH = path.join(ASSETS_DIR, 'strings-fr.conf');
 
 /** Un fichier SQLite commence par cette signature. Sert à détecter une page d'erreur HTML. */
 const SQLITE_MAGIC = 'SQLite format 3\0';
@@ -114,12 +120,40 @@ function fetchScripts(force: boolean): void {
   log('scripts', `${officialCount} scripts de cartes dans official/`);
 }
 
+async function fetchStringsFr(force: boolean): Promise<void> {
+  if (!force && fs.existsSync(STRINGS_FR_PATH)) {
+    log('strings', `déjà présent — --force pour retélécharger`);
+    return;
+  }
+  log('strings', `téléchargement depuis ${STRINGS_FR_URL}`);
+  try {
+    const res = await fetch(STRINGS_FR_URL);
+    if (!res.ok) {
+      log('strings', `HTTP ${res.status} — l'engine tournera avec des libellés génériques`);
+      return;
+    }
+    const text = await res.text();
+    // Garde-fou : le fichier valide commence par des commentaires ou des !system
+    if (!text.includes('!system') && !text.includes('#')) {
+      log('strings', 'contenu inattendu — abandon');
+      return;
+    }
+    fs.mkdirSync(ASSETS_DIR, { recursive: true });
+    fs.writeFileSync(STRINGS_FR_PATH, text);
+    const lines = text.split(/\r?\n/).filter((l) => l.startsWith('!system')).length;
+    log('strings', `écrit dans ${STRINGS_FR_PATH} (${lines} entrées système)`);
+  } catch (err) {
+    log('strings', `échec (${err instanceof Error ? err.message : err}) — non bloquant`);
+  }
+}
+
 async function main(): Promise<void> {
   const force = process.argv.includes('--force');
 
   log('init', `destination : ${ASSETS_DIR}`);
   await fetchCardDatabase(force);
   fetchScripts(force);
+  await fetchStringsFr(force);
   log('init', 'assets du moteur prêts');
 }
 
