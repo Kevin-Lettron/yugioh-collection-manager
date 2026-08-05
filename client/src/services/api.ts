@@ -32,17 +32,25 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ error: string }>) => {
     if (error.response) {
-      const message = error.response.data?.error || 'Une erreur est survenue';
+      // 502/503/504 = c'est nginx qui parle parce que le back est HS, pas
+      // une reponse metier de l'app. Le corps est du HTML, pas de JSON
+      // {error}. On specialise le message pour ne pas laisser croire a un
+      // bug applicatif ; c'est une infra qui a plante.
+      const status = error.response.status;
+      const isGatewayDown = status === 502 || status === 503 || status === 504;
+      const message = isGatewayDown
+        ? `Backend indisponible (${status} Bad Gateway) — Node crash ou en cours de redemarrage.`
+        : error.response.data?.error || 'Une erreur est survenue';
 
       // Remontée serveur : un 401 est une situation normale (session expirée),
       // et l'endpoint de report lui-même est exclu pour ne pas boucler.
       const url = error.config?.url || '';
       const method = error.config?.method?.toUpperCase() || 'GET';
-      if (error.response.status !== 401 && !url.includes('client-errors')) {
+      if (status !== 401 && !url.includes('client-errors')) {
         reportClientError({
-          message: `HTTP ${error.response.status} · ${method} ${url}`,
+          message: `HTTP ${status} · ${method} ${url}`,
           context: {
-            status: error.response.status,
+            status,
             url,
             method: error.config?.method,
             // Le corps de la réponse dit souvent pourquoi, là où le toast
@@ -50,12 +58,15 @@ api.interceptors.response.use(
             body: JSON.stringify(error.response.data)?.slice(0, 600),
           },
         });
-        // Overlay debug à l'écran (visible si ?debug=1) — même infos brutes que le report.
         pushDebugError({
           kind: 'http',
-          title: `${error.response.status} · ${method} ${url}`,
-          detail: typeof message === 'string' ? message : JSON.stringify(message),
-          meta: { body: error.response.data, status: error.response.status },
+          title: isGatewayDown
+            ? `🔥 ${status} BACKEND DOWN · ${method} ${url}`
+            : `${status} · ${method} ${url}`,
+          detail: isGatewayDown
+            ? "Le serveur Node a plante (uncaughtException) ou PM2 est en train de le relancer. Regarde ~/.pm2/logs/yugioh-api-error.log pour la stack."
+            : typeof message === 'string' ? message : JSON.stringify(message),
+          meta: { body: error.response.data, status, url, method },
         });
       }
 
