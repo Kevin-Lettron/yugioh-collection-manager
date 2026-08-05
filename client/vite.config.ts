@@ -43,6 +43,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
+        // Sans ces deux options, un nouveau SW attend que TOUS les onglets de
+        // l'app soient fermés avant de s'activer — l'user reste sur l'ancien
+        // bundle pendant des jours et « le déploiement ne marche pas ». Avec
+        // skipWaiting+clientsClaim, le nouveau SW prend la main au prochain
+        // reload de l'onglet courant.
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           // NOTE: /api/* is intentionally NOT cached. API responses can contain
           // user-private data (profile, decks, tokens). A shared-device user
