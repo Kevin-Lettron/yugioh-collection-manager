@@ -49,17 +49,19 @@ const AdminTopbar = () => {
               </Link>
             ))}
             {/* Ouverture en nouvel onglet : la page /admin/logs est faite pour
-                rester ouverte en second écran pendant qu'on utilise l'app. */}
+                rester ouverte en second écran pendant qu'on utilise l'app.
+                Style rouge/pulse pour se distinguer des liens admin normaux —
+                c'est l'outil de diagnostic, il doit sauter aux yeux. */}
             <a
               href="/admin/logs"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-800 hover:text-red-300 transition whitespace-nowrap"
+              className="flex items-center gap-1 px-2 py-1 rounded bg-red-900/40 text-red-200 hover:bg-red-800/60 hover:text-white transition whitespace-nowrap border border-red-800/60"
               title="Ouvre la page live des logs dans un nouvel onglet"
             >
               <span>📜</span>
-              <span className="hidden md:inline">Logs live</span>
-              <span className="hidden md:inline text-[10px] opacity-60">↗</span>
+              <span>Logs live</span>
+              <span className="text-[10px] opacity-70">↗</span>
             </a>
           </nav>
         </div>

@@ -35,9 +35,12 @@ export default function DebugErrorOverlay() {
   // pour la session courante (`dismissed`).
   const enabled = !dismissed && (isStaff || manualEnabled);
   const [entries, setEntries] = useState<DebugErrorEntry[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+  // Replié par défaut : tant qu'aucune erreur n'est arrivée, on n'occupe
+  // qu'une pastille en bas à droite. Il se déplie tout seul dès la première.
+  const [collapsed, setCollapsed] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
+  const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -45,6 +48,12 @@ export default function DebugErrorOverlay() {
       if (seenIds.current.has(entry.id)) return;
       seenIds.current.add(entry.id);
       setEntries((prev) => [entry, ...prev].slice(0, MAX_ENTRIES));
+      // Première erreur : on déplie automatiquement pour attirer l'oeil.
+      // Ensuite l'admin peut re-replier via ▼ sans qu'on force l'ouverture.
+      if (!autoOpenedRef.current) {
+        autoOpenedRef.current = true;
+        setCollapsed(false);
+      }
     });
   }, [enabled]);
 
@@ -97,6 +106,12 @@ export default function DebugErrorOverlay() {
     setExpandedId(null);
   };
 
+  const hasErrors = entries.length > 0;
+  // Pastille discrète tant qu'aucune erreur n'est arrivée, sinon panneau
+  // « erreur ». Codes couleurs : vert = ras, rouge = au moins une erreur.
+  const accent = hasErrors ? '#ff6b6b' : '#3f9142';
+  const headerBg = hasErrors ? '#1a0f0f' : '#0f1a11';
+
   return (
     <div
       style={{
@@ -106,7 +121,7 @@ export default function DebugErrorOverlay() {
         width: collapsed ? 200 : 460,
         maxHeight: '75vh',
         background: 'rgba(15, 15, 20, 0.96)',
-        border: '1px solid #ff6b6b',
+        border: `1px solid ${accent}`,
         borderRadius: 6,
         color: '#f5f5f5',
         fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
@@ -124,12 +139,12 @@ export default function DebugErrorOverlay() {
           alignItems: 'center',
           gap: 8,
           padding: '6px 10px',
-          background: '#1a0f0f',
-          borderBottom: '1px solid #ff6b6b',
+          background: headerBg,
+          borderBottom: `1px solid ${accent}`,
         }}
       >
-        <strong style={{ color: '#ff6b6b', flex: 1 }}>
-          ⚠ DEBUG ({entries.length})
+        <strong style={{ color: accent, flex: 1 }}>
+          {hasErrors ? '⚠' : '🐛'} DEBUG ({entries.length})
         </strong>
         <button onClick={copyAll} style={btnStyle} title="Copier tout">
           Copier
