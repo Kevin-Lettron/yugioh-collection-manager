@@ -9,6 +9,7 @@ import type {
   DuelZoneView,
 } from '../../../../shared/duelView';
 import type { CardStore } from './cardStore';
+import { cardNameOf } from './cardStore';
 
 /**
  * Photographie du plateau, prise **auprès du moteur** et non déduite des
@@ -117,7 +118,10 @@ function toView(card: QueriedCard, visible: boolean, store: CardStore): DuelCard
   };
 
   if (code) {
-    const name = store.names.get(code);
+    // Nom localisé : FR si dispo (cardStore.namesFr), sinon EN, sinon
+    // « Carte NNN ». `cardNameOf` retombe toujours sur quelque chose, mais
+    // on préfère ne pas assigner une chaîne vide au champ optionnel.
+    const name = cardNameOf(store, code);
     if (name) view.name = name;
     const description = store.descriptions.get(code);
     if (description) view.description = description;
@@ -244,7 +248,7 @@ export function buildBoardView(
   // en attente de résolution. Cf. audit §5.2 gap n°8.
   const chain: DuelChainEntry[] = field.chain.map((entry, i) => {
     const controller: DuelSeat = entry.controller === 1 ? 1 : 0;
-    const name = store.names.get(entry.code);
+    const name = cardNameOf(store, entry.code);
     const link: DuelChainEntry = {
       link: i + 1,
       code: entry.code,
