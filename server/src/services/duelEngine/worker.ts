@@ -12,6 +12,7 @@ import { getCardStore, resolveCard, type CardStore } from './cardStore';
 import { DuelSession } from './session';
 import { searchAnnounceCards } from './prompt';
 import { loadHintStrings } from './hintStrings';
+import { loadNamesFrFromDb } from './namesFr';
 import type {
   EngineRequest,
   EngineResponse,
@@ -126,6 +127,12 @@ async function ensureReady(): Promise<{
     trace('ensureReady: loadHintStrings');
     loadHintStrings();
     trace('ensureReady: loadHintStrings OK');
+    // Charge les noms FR depuis PG. En cas d'échec (PG absent en dev), le
+    // module renvoie un Map vide silencieusement, le duel reste jouable en EN.
+    trace('ensureReady: loadNamesFrFromDb');
+    const namesFr = await loadNamesFrFromDb();
+    store.namesFr = namesFr;
+    trace('ensureReady: loadNamesFrFromDb OK', { count: namesFr.size });
   }
   return { core, ocg, store };
 }

@@ -7,6 +7,7 @@ import type {
   DuelSeat,
 } from '../../../../shared/duelView';
 import type { CardStore } from './cardStore';
+import { cardNameOf } from './cardStore';
 import { counterString, systemString } from './hintStrings';
 
 /**
@@ -28,8 +29,12 @@ import { counterString, systemString } from './hintStrings';
 
 type Ocg = typeof import('ocgcore-wasm');
 
-const nameOf = (store: CardStore, code: number): string =>
-  store.names.get(code) || `Carte ${code}`;
+/**
+ * Nom d'une carte préférant la traduction FR quand elle existe (cf.
+ * `cardStore.cardNameOf`). Conservé sous ce nom pour ne pas renommer chaque
+ * site d'appel — mais **c'est bien** le nom localisé qui est retourné.
+ */
+const nameOf = (store: CardStore, code: number): string => cardNameOf(store, code);
 
 /**
  * Attache le hint courant à un prompt, en évitant l'écrasement des invites où
@@ -944,7 +949,7 @@ export function buildResponse(
         }
         if (!ocg.cardMatchesOpcode(card, message.opcodes)) {
           throw new Error(
-            `La carte ${store.names.get(code) ?? code} ne passe pas le filtre du moteur`
+            `La carte ${cardNameOf(store, code)} ne passe pas le filtre du moteur`
           );
         }
       }
@@ -985,12 +990,19 @@ export function searchAnnounceCards(
 
   const opcodes = (message as { opcodes: Parameters<typeof ocg.cardMatchesOpcode>[1] }).opcodes;
   const results: Array<{ code: number; name: string }> = [];
+  // On indexe sur les noms EN (source complète), mais on filtre aussi sur le
+  // nom FR quand il existe — un joueur francophone doit pouvoir taper
+  // « Magicien » et retrouver Dark Magician. L'entrée retournée porte le nom
+  // localisé (via `cardNameOf`), qui alimentera la liste typeahead.
   for (const [code, name] of store.names) {
-    if (!name.toLowerCase().includes(needle)) continue;
+    const fr = store.namesFr?.get(code);
+    const enHit = name.toLowerCase().includes(needle);
+    const frHit = fr ? fr.toLowerCase().includes(needle) : false;
+    if (!enHit && !frHit) continue;
     const card = store.data.get(code);
     if (!card) continue;
     if (!ocg.cardMatchesOpcode(card, opcodes)) continue;
-    results.push({ code, name });
+    results.push({ code, name: cardNameOf(store, code) });
     if (results.length >= limit) break;
   }
   return results;

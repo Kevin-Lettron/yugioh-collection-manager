@@ -115,6 +115,21 @@ export default function EngineDuelRoom() {
   /** Onglet actif du journal — §C.1 : Actions vs Déroulé. */
   const [logTab, setLogTab] = useState<'actions' | 'flow'>('actions');
   /**
+   * Étape intermédiaire des invites de chaîne.
+   *
+   * Le moteur envoie `kind='chain'` avec la liste des cartes activables ; sans
+   * cet écran, le joueur voit tout de suite la grille d'options — pas très
+   * lisible quand la seule vraie question est « veux-tu répondre en chaîne,
+   * oui ou non ? ». Cette bascule affiche d'abord un Oui/Non ; sur Oui, on
+   * révèle la grille habituelle. Sur Non, on renvoie l'équivalent du bouton
+   * « Ne pas répondre » (`send([], true)`).
+   *
+   * Reset : à chaque `send()` (toute nouvelle invite venant du serveur repasse
+   * par Oui/Non), et via un `useEffect` quand le prompt cesse d'être un chain
+   * — filet contre un état orphelin après une transition inattendue.
+   */
+  const [chainConfirmed, setChainConfirmed] = useState(false);
+  /**
    * Un coup est en cours d'envoi.
    *
    * En ref et pas seulement en state : le sondage periodique est capture dans
@@ -272,6 +287,14 @@ export default function EngineDuelRoom() {
 
   const prompt = state?.prompt ?? null;
 
+  // Toute invite qui n'est pas une chaîne repasse chainConfirmed à false.
+  // Sans ça, un Oui laissé posé avant une transition (chain → confirm par
+  // exemple) resterait actif au prochain retour en chain, sautant l'écran
+  // Oui/Non que le joueur attend.
+  useEffect(() => {
+    if (prompt?.kind !== 'chain') setChainConfirmed(false);
+  }, [prompt?.kind]);
+
   /**
    * Répartition des options entre le plateau et la barre de commandes.
    *
@@ -379,6 +402,10 @@ export default function EngineDuelRoom() {
     setPhasesOpen(false);
     setSelection([]);
     setEndTurnConfirm(null);
+    // Toute réponse envoyée réinitialise l'étape Oui/Non de la chaîne : la
+    // prochaine invite `kind='chain'` — qu'elle vienne du même joueur ou de
+    // l'autre — doit repasser par la confirmation.
+    setChainConfirmed(false);
     try {
       const choice: DuelChoice = { optionIds, cancel, ...(extra ?? {}) };
       setState(await duelEngineApi.choose(duelId, choice));
@@ -843,14 +870,64 @@ export default function EngineDuelRoom() {
         </Overlay>
       )}
 
-      {/* Demandes qui exigent une réponse immédiate — répondre en chaîne,
-          confirmer, choisir un effet.
+      {/* Étape intermédiaire des invites de chaîne — un Oui/Non centré avant
+          d'ouvrir la grille des cartes activables. Sans ce filtre, la grille
+          apparaît directement, alors que la vraie question à ce moment est
+          simplement « veux-tu répondre ? ». Oui → on rebascule vers l'overlay
+          d'options habituel (rendu inchangé, cf. `chainConfirmed`).
+          Non → équivalent au bouton « Ne pas répondre » historique. */}
+      {prompt && needsDialog && prompt.kind === 'chain' && !chainConfirmed && (
+        <Overlay onClose={() => undefined}>
+          <h4 style={{ margin: '0 0 8px', color: 'var(--gold)', fontFamily: "'Orbitron', sans-serif" }}>
+            {prompt.hint?.title ?? 'Répondre à la chaîne ?'}
+          </h4>
+          <p
+            style={{
+              margin: '0 0 14px',
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              fontFamily: "'Rajdhani', system-ui, sans-serif",
+            }}>
+            {/* Chaîne « forcée » = le moteur ne laisse pas passer (SELECT_CHAIN
+                avec forced=true, remonté ici par `canCancel=false`). */}
+            {!prompt.canCancel
+              ? "Le moteur t'oblige à répondre — enchaîne."
+              : 'Tes cartes activables sont prêtes. Veux-tu répondre ?'}
+          </p>
+          {prompt.hint?.note && (
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--cyan)' }}>
+              {prompt.hint.note}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setChainConfirmed(true)}
+              style={btn('var(--gold)')}>
+              Oui, répondre
+            </button>
+            {prompt.canCancel && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => send([], true)}
+                style={ghostBtn}>
+                Non, laisser passer
+              </button>
+            )}
+          </div>
+        </Overlay>
+      )}
+
+      {/* Demandes qui exigent une réponse immédiate — répondre en chaîne
+          (après Oui), confirmer, choisir un effet.
 
           Elles s'imposent au centre de l'écran plutôt que d'attendre dans un
           coin : la partie est suspendue tant qu'on n'a pas répondu, et un
           bouton discret sur le côté laissait le joueur bloqué sans comprendre
           ce qu'on attendait de lui. */}
-      {prompt && needsDialog && (
+      {prompt && needsDialog && !(prompt.kind === 'chain' && !chainConfirmed) && (
         <Overlay onClose={() => undefined}>
           <h4 style={{ margin: '0 0 4px', color: 'var(--gold)' }}>
             {prompt.hint?.title ?? prompt.message}

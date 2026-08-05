@@ -35,6 +35,13 @@ export interface CardStore {
   /** Noms anglais, pour les journaux et le débogage. */
   names: Map<number, string>;
   /**
+   * Traductions françaises, quand elles existent en base PG (colonne
+   * `cards.name_fr`). Optionnel : populé par le worker après `getCardStore()`
+   * via `loadNamesFrFromDb`. Absent en unit-test — `cardNameOf` retombera
+   * silencieusement sur `names`.
+   */
+  namesFr?: Map<number, string>;
+  /**
    * Textes de carte, tels que le moteur les connaît.
    *
    * Ils viennent de la table `texts` de `cards.cdb` : la base du moteur les
@@ -43,6 +50,28 @@ export interface CardStore {
    * autre source qui pourrait diverger.
    */
   descriptions: Map<number, string>;
+}
+
+/**
+ * Nom affichable d'une carte, FR si dispo puis EN puis passcode.
+ *
+ * Passe aussi par l'`alias` pour rattraper les artworks alternatifs : la carte
+ * dont l'alias pointe vers l'original hérite du nom FR de l'original quand elle
+ * n'en a pas elle-même. Sans ce fallback, seule la plus ancienne impression
+ * bénéficierait de la traduction et un joueur qui utilise une réédition FR
+ * verrait un titre anglais.
+ */
+export function cardNameOf(store: CardStore, code: number): string {
+  const direct = store.namesFr?.get(code);
+  if (direct) return direct;
+  const aliasCode = store.data.get(code)?.alias ?? 0;
+  if (aliasCode) {
+    const viaAlias = store.namesFr?.get(aliasCode);
+    if (viaAlias) return viaAlias;
+  }
+  const en = store.names.get(code);
+  if (en) return en;
+  return `Carte ${code}`;
 }
 
 /** Découpe un `setcode` 64 bits en ses archétypes de 16 bits, zéros exclus. */

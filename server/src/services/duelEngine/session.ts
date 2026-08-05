@@ -11,6 +11,7 @@ import type {
   DuelTossEvent,
 } from '../../../../shared/duelView';
 import type { CardStore } from './cardStore';
+import { cardNameOf } from './cardStore';
 import { buildBoardView } from './snapshot';
 import { buildPrompt, buildResponse } from './prompt';
 import { systemString } from './hintStrings';
@@ -290,7 +291,9 @@ export class DuelSession {
   /** Met à jour l'état hors-plateau et alimente le journal. */
   private absorb(ocg: Ocg, store: CardStore, message: OcgMessage, duelId?: number): void {
     const M = ocg.OcgMessageType;
-    const name = (code: number) => store.names.get(code) || `Carte ${code}`;
+    // Nom localisé (FR si dispo, sinon EN, sinon `Carte NNN`). Alimente le
+    // journal, les toasts et les descriptions d'animations.
+    const name = (code: number) => cardNameOf(store, code);
 
     switch (message.type) {
       case M.RETRY: {
@@ -321,7 +324,7 @@ export class DuelSession {
                 ? 'extratop'
                 : revealOrigin(c.location);
           const reveal: DuelReveal = { code: c.code, from };
-          const nm = store.names.get(c.code);
+          const nm = cardNameOf(store, c.code);
           if (nm) reveal.name = nm;
           return reveal;
         });
@@ -962,7 +965,7 @@ export class DuelSession {
             // On l'ajoute au journal côté joueur destinataire.
             const code = Number(h.hint);
             if (Number.isInteger(code) && code > 0) {
-              const nm = store.names.get(code) ?? `Carte ${code}`;
+              const nm = cardNameOf(store, code);
               this.push({ kind: 'hint_card', text: `Carte visée : ${nm}`, codes: [code] });
               this.pushAnim({
                 kind: 'card_hint',
@@ -1011,7 +1014,7 @@ export class DuelSession {
           case T.CODE: {
             const code = Number(h.hint);
             if (Number.isInteger(code) && code > 0) {
-              const nm = store.names.get(code) ?? `Carte ${code}`;
+              const nm = cardNameOf(store, code);
               this.push({ kind: 'hint_code', text: `Carte annoncée : ${nm}`, codes: [code] });
             }
             return;
