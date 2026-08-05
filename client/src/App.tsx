@@ -5,6 +5,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import DuelChallengeWatcher from './components/DuelChallengeWatcher';
 import AdminTopbar from './components/AdminTopbar';
+import DebugErrorOverlay from './components/DebugErrorOverlay';
 
 // Pages (will be created next)
 import Home from './pages/Home';
@@ -21,6 +22,7 @@ import Social from './pages/Social';
 import Followers from './pages/Followers';
 import News from './pages/News';
 import Admin from './pages/Admin';
+import AdminLogs from './pages/AdminLogs';
 import Duels from './pages/Duels';
 import DuelRoom from './pages/DuelRoom';
 import EngineDuelRoom from './pages/EngineDuelRoom';
@@ -150,6 +152,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {/* Page dédiée : ouverte en nouvel onglet pour rester en second écran
+          pendant qu'on travaille sur l'app. Guard admin est dans le composant. */}
+      <Route
+        path="/admin/logs"
+        element={
+          <ProtectedRoute>
+            <AdminLogs />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/duels"
         element={
@@ -229,6 +241,9 @@ function App() {
             {/* Surveille les defis depuis n'importe quelle page : un duel recu doit
                 se voir meme en pleine consultation de sa collection. */}
             <DuelChallengeWatcher />
+            {/* Debug overlay façon WP_DEBUG_DISPLAY : n'apparaît que si
+                ?debug=1 ou localStorage.keitlandDebug = 'on'. */}
+            <DebugErrorOverlay />
             <Toaster
               position="top-right"
               toastOptions={{

@@ -148,7 +148,11 @@ const AppNavbar = () => {
   ];
 
   const mobileNavLinks = isAdmin
-    ? [...navLinks, { to: '/admin', label: '⚙️ Admin' }]
+    ? [
+        ...navLinks,
+        { to: '/admin', label: '⚙️ Admin' },
+        { to: '/admin/logs', label: '📜 Logs live' },
+      ]
     : navLinks;
 
   return (

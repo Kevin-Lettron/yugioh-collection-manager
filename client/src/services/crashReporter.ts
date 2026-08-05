@@ -1,3 +1,5 @@
+import { pushDebugError } from '../utils/debugBus';
+
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 /**
@@ -80,19 +82,34 @@ export function reportClientError(payload: ReportPayload): void {
  */
 export function installWebCrashReporter(): void {
   window.addEventListener('error', (event) => {
+    const message = event.message || 'Erreur JS non rattrapée';
     reportClientError({
-      message: event.message || 'Erreur JS non rattrapée',
+      message,
       stack: event.error?.stack,
       context: { file: event.filename, line: event.lineno, col: event.colno },
+    });
+    pushDebugError({
+      kind: 'js',
+      title: message,
+      detail: event.filename
+        ? `${event.filename}:${event.lineno}:${event.colno}`
+        : undefined,
+      stack: event.error?.stack,
     });
   });
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason: any = event.reason;
+    const message = reason?.message || String(reason) || 'Promesse rejetée';
     reportClientError({
-      message: reason?.message || String(reason) || 'Promesse rejetée',
+      message,
       stack: reason?.stack,
       context: { kind: 'unhandledrejection' },
+    });
+    pushDebugError({
+      kind: 'promise',
+      title: message,
+      stack: reason?.stack,
     });
   });
 }

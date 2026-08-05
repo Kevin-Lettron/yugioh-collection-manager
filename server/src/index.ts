@@ -8,6 +8,8 @@ import path from 'path';
 import { errorHandler } from './middleware/errorHandler';
 import logger, { loggers } from './utils/logger';
 import { validateStartupEnv } from './utils/env';
+import { bindSocketServer, ADMIN_LOGS_ROOM } from './services/logSink';
+import { ApplicationLogModel } from './models/applicationLogModel';
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +35,10 @@ const io = new SocketServer(httpServer, {
     methods: ['GET', 'POST'],
   },
 });
+
+// Le sink des logs applicatifs a besoin de l'io pour émettre `admin:log` à la
+// room des admins connectés à /admin/logs (broadcast temps réel).
+bindSocketServer(io);
 
 // En prod, on tourne derriere nginx en reverse proxy qui pose l'IP client
 // dans X-Forwarded-For. Sans ce flag, express-rate-limit voit tout le monde
@@ -99,6 +105,25 @@ io.on('connection', (socket) => {
   // Join only the room for the authenticated userId — client cannot spoof another user's room
   socket.join(`user:${userId}`);
   loggers.socket.connection(socket.id, userId);
+
+  // Admins et modérateurs rejoignent la room `admin:logs` qui reçoit le flux
+  // temps réel des logs applicatifs. Rôle lu depuis la DB (jamais depuis le
+  // JWT seul) — un utilisateur promu doit voir la room dès sa prochaine
+  // connexion socket, un rétrogradé doit en perdre l'accès.
+  import('./config/database')
+    .then(({ query }) => query('SELECT role FROM users WHERE id = $1', [userId]))
+    .then((res) => {
+      const role = res.rows[0]?.role;
+      if (role === 'admin' || role === 'moderator') {
+        socket.join(ADMIN_LOGS_ROOM);
+      }
+    })
+    .catch((err) => {
+      // Non fatal — l'user n'aura simplement pas le flux live des logs.
+      // On ne relogue pas via logger.warn pour éviter le bruit de boot.
+      // eslint-disable-next-line no-console
+      console.warn('[socket] admin room join failed', err);
+    });
 
   // Legacy 'authenticate' event kept for backwards compat but the room is already joined
   // and userId comes from the verified JWT — client-sent userId is ignored.
@@ -238,6 +263,18 @@ httpServer.listen(PORT, () => {
       purgeOldItems()
         .then((n) => { if (n > 0) logger.info(`[news:cron] purge ${n} article(s)`); })
         .catch((err) => logger.error('[news:cron] purge KO', { error: err instanceof Error ? err.message : err }));
+
+      // Ménage sur la table application_logs — même politique quotidienne.
+      // Rétention 7 jours (cf. modèle) : au-delà, les fichiers winston prennent
+      // le relais pour l'archivage long terme.
+      ApplicationLogModel.purgeOld()
+        .then((n) => { if (n > 0) logger.info(`[logs:cron] purge ${n} entrée(s)`); })
+        .catch((err) => {
+          // Interdit d'appeler logger.error ici — un échec DB de logs générerait
+          // un log qui tenterait d'écrire dans la même DB. Console uniquement.
+          // eslint-disable-next-line no-console
+          console.error('[logs:cron] purge KO', err);
+        });
     };
 
     // Premier tir au démarrage (une petite temporisation pour laisser la DB

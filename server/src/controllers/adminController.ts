@@ -4,6 +4,11 @@ import { ValidationError, NotFoundError, ForbiddenError } from '../middleware/er
 import { query } from '../config/database';
 import { UserRole } from '../../../shared/types';
 import logger from '../utils/logger';
+import {
+  ApplicationLogModel,
+  type LogLevel,
+  type LogSource,
+} from '../models/applicationLogModel';
 
 const VALID_ROLES: UserRole[] = ['user', 'moderator', 'admin'];
 
@@ -449,6 +454,55 @@ export class AdminController {
 
       auditLog(req.user!.id, 'delete_comment', `comment:${commentId}`, check.rows[0]);
       res.json({ message: 'Comment deleted' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ─── APPLICATION LOGS ──────────────────────────────────────────────
+  //
+  // Alimente la page /admin/logs — vue live des erreurs/warnings serveur,
+  // erreurs front (via /api/client-errors) et crashs process. Le broadcast
+  // temps réel se fait par la room socket `admin:logs` ; cet endpoint est
+  // le fetch initial + les rechargements manuels (filtres, recherche).
+
+  private static VALID_LEVELS: LogLevel[] = ['error', 'warn', 'info'];
+  private static VALID_SOURCES: LogSource[] = ['server', 'client', 'crash', 'http'];
+
+  static async listLogs(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const rawLevel = req.query.level as string | undefined;
+      const rawSource = req.query.source as string | undefined;
+      const level = rawLevel && AdminController.VALID_LEVELS.includes(rawLevel as LogLevel)
+        ? (rawLevel as LogLevel)
+        : undefined;
+      const source = rawSource && AdminController.VALID_SOURCES.includes(rawSource as LogSource)
+        ? (rawSource as LogSource)
+        : undefined;
+
+      // sinceId : polling / rattrapage — le front l'envoie pour ne recevoir
+      // que les nouveaux logs quand le socket est temporairement HS.
+      const sinceIdRaw = req.query.sinceId as string | undefined;
+      const sinceId = sinceIdRaw && /^\d+$/.test(sinceIdRaw) ? sinceIdRaw : undefined;
+
+      const limitRaw = parseInt(req.query.limit as string) || 100;
+      const limit = Math.min(200, Math.max(1, limitRaw));
+
+      const search = (req.query.search as string || '').trim().slice(0, 200);
+
+      const result = await ApplicationLogModel.list({
+        level,
+        source,
+        sinceId,
+        limit,
+        search: search || undefined,
+      });
+
+      res.json({ logs: result.logs, total: result.total });
     } catch (error) {
       next(error);
     }
