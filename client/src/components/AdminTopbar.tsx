@@ -18,6 +18,8 @@ const AdminTopbar = () => {
     { to: '/admin?tab=users', label: 'Users', icon: '👥' },
     { to: '/admin?tab=decks', label: 'Decks', icon: '🃏' },
     { to: '/admin?tab=comments', label: 'Comments', icon: '💬' },
+    // `logs` est traité à part plus bas : la page est faite pour rester
+    // ouverte en second écran, donc target=_blank obligatoire.
   ];
 
   return (
@@ -46,6 +48,19 @@ const AdminTopbar = () => {
                 <span className="hidden md:inline">{link.label}</span>
               </Link>
             ))}
+            {/* Ouverture en nouvel onglet : la page /admin/logs est faite pour
+                rester ouverte en second écran pendant qu'on utilise l'app. */}
+            <a
+              href="/admin/logs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-800 hover:text-red-300 transition whitespace-nowrap"
+              title="Ouvre la page live des logs dans un nouvel onglet"
+            >
+              <span>📜</span>
+              <span className="hidden md:inline">Logs live</span>
+              <span className="hidden md:inline text-[10px] opacity-60">↗</span>
+            </a>
           </nav>
         </div>
 

@@ -71,6 +71,14 @@ export default function EngineDuelRoom() {
   const [preGame, setPreGame] = useState<DuelPreGameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  /**
+   * Erreur fatale côté serveur qui rend la partie injouable (moteur non installé,
+   * cards.cdb manquant, panne loader). Quand elle est posée, on arrête le
+   * polling et on affiche un panneau plutôt que de continuer à taper l'API en
+   * boucle — sans ça, chaque poll spam un toast d'erreur et pollue les logs.
+   */
+  const [engineFatal, setEngineFatal] = useState<string | null>(null);
+  const engineFatalRef = useRef<string | null>(null);
   const [hovered, setHovered] = useState<DuelCardView | null>(null);
   /**
    * Menu contextuel d'une carte — Bloc 3 §4bis.
@@ -127,6 +135,7 @@ export default function EngineDuelRoom() {
    * vérité, alors que le moteur ne connaît rien du statut « pre_game ».
    */
   const refresh = useCallback(async () => {
+    if (engineFatalRef.current) return;
     try {
       const currentDuel = await duelApi.get(duelId);
       setDuel(currentDuel);
@@ -189,9 +198,19 @@ export default function EngineDuelRoom() {
       // Meme silence si on est dans une phase transitoire (accept en cours,
       // refresh WS qui arrive avant que le backend ait bascule active).
       const status = err?.response?.status;
+      const serverMsg: string | undefined = err?.response?.data?.error;
       const isTransient404 = status === 404;
-      if (!isTransient404) {
-        toast.error(err?.response?.data?.error || 'Duel injoignable');
+      // Panne fatale : le serveur n'a pas les assets du moteur. Inutile de
+      // continuer à taper l'API — on fige avec un panneau clair. Un simple
+      // rechargement ne rétablira rien tant que le VPS n'a pas les fichiers.
+      if (
+        serverMsg &&
+        /moteur.+installé|données manquantes|assets/i.test(serverMsg)
+      ) {
+        engineFatalRef.current = serverMsg;
+        setEngineFatal(serverMsg);
+      } else if (!isTransient404) {
+        toast.error(serverMsg || 'Duel injoignable');
       }
     } finally {
       setLoading(false);
@@ -235,6 +254,8 @@ export default function EngineDuelRoom() {
      * répond depuis sa mémoire, sans toucher à PostgreSQL.
      */
     const poll = setInterval(() => {
+      // Fatal serveur : plus la peine de poller — voir engineFatalRef.
+      if (engineFatalRef.current) return;
       if (!busyRef.current) void refresh();
     }, 3000);
 
@@ -444,6 +465,55 @@ export default function EngineDuelRoom() {
   };
 
   if (!Number.isInteger(duelId)) return null;
+
+  if (engineFatal) {
+    // Écran plein : le serveur nous a dit qu'il n'a pas les assets. On coupe
+    // le polling (cf. engineFatalRef) et on donne à l'admin ce dont il a
+    // besoin pour réparer — pas d'espoir d'auto-guérison côté client.
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          padding: 24,
+          background: 'rgba(15,15,20,0.98)',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 640,
+            border: '1px solid #ff6b6b',
+            padding: 24,
+            borderRadius: 6,
+            fontFamily: "'Rajdhani', system-ui, sans-serif",
+            color: 'var(--text)',
+          }}
+        >
+          <div style={{ color: '#ff6b6b', fontWeight: 700, marginBottom: 8 }}>
+            Duel indisponible
+          </div>
+          <p style={{ margin: '0 0 16px' }}>{engineFatal}</p>
+          <p style={{ opacity: 0.7, fontSize: 13, margin: '0 0 16px' }}>
+            L'administrateur doit installer les assets du moteur sur le
+            serveur (<code>npx ts-node scripts/fetchDuelAssets.ts</code>).
+          </p>
+          <button
+            onClick={() => navigate('/duels')}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              border: '1px solid var(--gold)',
+              color: 'var(--gold)',
+              cursor: 'pointer',
+            }}
+          >
+            Retour à la liste des duels
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

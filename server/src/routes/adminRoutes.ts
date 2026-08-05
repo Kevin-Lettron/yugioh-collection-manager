@@ -28,4 +28,7 @@ router.post('/decks/:id/unshare', AdminController.forceUnshareDeck);
 router.get('/comments', AdminController.listComments);
 router.delete('/comments/:id', AdminController.deleteComment);
 
+// ── Application logs (page /admin/logs)
+router.get('/logs', AdminController.listLogs);
+
 export default router;

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
 import { reportClientError } from './crashReporter';
+import { pushDebugError } from '../utils/debugBus';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -36,9 +37,10 @@ api.interceptors.response.use(
       // Remontée serveur : un 401 est une situation normale (session expirée),
       // et l'endpoint de report lui-même est exclu pour ne pas boucler.
       const url = error.config?.url || '';
+      const method = error.config?.method?.toUpperCase() || 'GET';
       if (error.response.status !== 401 && !url.includes('client-errors')) {
         reportClientError({
-          message: `HTTP ${error.response.status} · ${error.config?.method?.toUpperCase()} ${url}`,
+          message: `HTTP ${error.response.status} · ${method} ${url}`,
           context: {
             status: error.response.status,
             url,
@@ -47,6 +49,13 @@ api.interceptors.response.use(
             // générique ne dit rien.
             body: JSON.stringify(error.response.data)?.slice(0, 600),
           },
+        });
+        // Overlay debug à l'écran (visible si ?debug=1) — même infos brutes que le report.
+        pushDebugError({
+          kind: 'http',
+          title: `${error.response.status} · ${method} ${url}`,
+          detail: typeof message === 'string' ? message : JSON.stringify(message),
+          meta: { body: error.response.data, status: error.response.status },
         });
       }
 
@@ -150,6 +159,21 @@ interface PaginationMeta {
   totalPages: number;
 }
 
+export type AdminLogLevel = 'error' | 'warn' | 'info';
+export type AdminLogSource = 'server' | 'client' | 'crash' | 'http';
+
+export interface AdminLog {
+  id: string; // BIGSERIAL renvoyé en string pour éviter tout dépassement JS.
+  level: AdminLogLevel;
+  source: AdminLogSource;
+  message: string;
+  stack: string | null;
+  url: string | null;
+  user_id: number | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+}
+
 export const adminApi = {
   stats: () => api.get<AdminStats>('/admin/stats').then((r) => r.data),
 
@@ -177,6 +201,17 @@ export const adminApi = {
     api.get<PaginationMeta & { comments: AdminComment[] }>('/admin/comments', { params }).then((r) => r.data),
 
   deleteComment: (id: number) => api.delete(`/admin/comments/${id}`).then((r) => r.data),
+
+  listLogs: (params: {
+    level?: AdminLogLevel;
+    source?: AdminLogSource;
+    sinceId?: string | number;
+    limit?: number;
+    search?: string;
+  } = {}) =>
+    api
+      .get<{ logs: AdminLog[]; total: number }>('/admin/logs', { params })
+      .then((r) => r.data),
 };
 
 export default api;

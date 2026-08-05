@@ -1,12 +1,108 @@
 import winston from 'winston';
+import Transport from 'winston-transport';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
+import { writeLog } from '../services/logSink';
+import type { LogLevel } from '../models/applicationLogModel';
 
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, '../../logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
+}
+
+/**
+ * Transport winston qui déverse chaque log de niveau ≤ warn dans la table
+ * `application_logs`, puis broadcast aux admins connectés à la page /admin/logs.
+ *
+ * Précautions anti-boucle :
+ *   - toute erreur d'écriture est avalée par `writeLog` (pas de re-log)
+ *   - on n'écrit QUE error et warn (les info/debug feraient exploser la table
+ *     — un seul GET produit déjà 3-4 lignes info via loggers.api)
+ */
+class DbTransport extends Transport {
+  constructor(opts?: Transport.TransportStreamOptions) {
+    super(opts);
+  }
+
+  log(info: any, next: () => void): void {
+    // setImmediate: winston attend `next()` synchrone. On ne bloque pas la
+    // chaîne de log sur une INSERT — si la DB rame, les fichiers continuent
+    // à s'écrire normalement.
+    setImmediate(() => {
+      try {
+        const rawLevel = String(info?.level ?? 'info').toLowerCase();
+        const level: LogLevel =
+          rawLevel === 'error' ? 'error' : rawLevel === 'warn' ? 'warn' : 'info';
+
+        // Le message peut être `string`, `Error`, ou objet — winston.format.errors
+        // reformate en général en string, mais on ceinture.
+        const rawMessage =
+          typeof info.message === 'string'
+            ? info.message
+            : info.message instanceof Error
+            ? info.message.message
+            : JSON.stringify(info.message);
+
+        // `stack` peut venir soit du champ direct (format.errors), soit du meta.
+        const stack: string | null =
+          (typeof info.stack === 'string' && info.stack) ||
+          (typeof info?.error === 'string' ? info.error : null) ||
+          null;
+
+        // meta = tout ce qui n'est pas un champ standard winston.
+        const meta: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(info)) {
+          if (['level', 'message', 'stack', 'timestamp', 'splat'].includes(k)) continue;
+          if (typeof k === 'symbol') continue;
+          meta[k] = v;
+        }
+
+        // Auto-tag "http" si le message évoque une erreur de requête HTTP
+        // (errorHandler.ts logue "Internal server error" avec statusCode).
+        const isHttp =
+          typeof meta.statusCode === 'number' ||
+          rawMessage.toLowerCase().includes('internal server error');
+        // Auto-tag "client" pour les crashs remontés depuis le front — le
+        // handler /api/client-errors préfixe systématiquement par [CLIENT_CRASH].
+        const isClientCrash = rawMessage.startsWith('[CLIENT_CRASH]');
+        // Auto-tag "crash" pour les uncaught / unhandled — le handler préfixe
+        // par [CRASH].
+        const isCrash = rawMessage.startsWith('[CRASH]');
+
+        const source: 'server' | 'client' | 'crash' | 'http' = isCrash
+          ? 'crash'
+          : isClientCrash
+          ? 'client'
+          : isHttp
+          ? 'http'
+          : 'server';
+
+        // Fire-and-forget : writeLog gère lui-même ses erreurs sans throw.
+        // url = URL front (client-errors envoie `screen`) ou route API pour un
+        // log serveur qui l'a mis dans son meta.
+        const url =
+          (typeof meta.url === 'string' && meta.url) ||
+          (typeof meta.screen === 'string' && meta.screen) ||
+          null;
+        void writeLog({
+          level,
+          source,
+          message: rawMessage,
+          stack,
+          url,
+          user_id: typeof meta.userId === 'number' ? meta.userId : null,
+          meta,
+        });
+      } catch (err) {
+        // Absolument aucun logger.* ici — cf. commentaire logSink.
+        // eslint-disable-next-line no-console
+        console.error('[DbTransport] log failed (swallowed)', err);
+      }
+    });
+    next();
+  }
 }
 
 // Define log format
@@ -73,6 +169,10 @@ const transports: winston.transport[] = [
         }),
       ]
     : []),
+
+  // Table application_logs — alimente /admin/logs (page live).
+  // Uniquement error + warn pour éviter que la table explose.
+  new DbTransport({ level: 'warn' }),
 ];
 
 // Create logger instance
