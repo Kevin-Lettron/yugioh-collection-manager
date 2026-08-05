@@ -50,19 +50,30 @@ export class DuelPreGameModel {
    * joués au moteur.
    */
   static async begin(duelId: number): Promise<void> {
+    // Récupère les 2 IDs pour tirer le winner immédiatement (pas de bouton
+    // à cliquer côté client — l'user a demandé un flow direct : on ouvre le
+    // duel, la pièce tombe, le vainqueur choisit qui commence).
+    const meta = await query(
+      `SELECT challenger_id, opponent_id FROM duels WHERE id = $1`,
+      [duelId]
+    );
+    const row = meta.rows[0];
+    if (!row) return;
+    const winnerId: number = Math.random() < 0.5 ? row.challenger_id : row.opponent_id;
+
     await query(
       `UPDATE duels
           SET status = 'pre_game',
-              phase_pre_game = 'awaiting_flip',
-              coin_flip_winner_id = NULL,
+              phase_pre_game = 'awaiting_choice',
+              coin_flip_winner_id = $2,
               coin_flip_choice = NULL,
               first_player_id = NULL,
               updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND status IN ('pending', 'active')`,
-      [duelId]
+      [duelId, winnerId]
     );
     clearClicks(duelId);
-    choiceDeadlines.delete(duelId);
+    choiceDeadlines.set(duelId, Date.now() + CHOICE_DEADLINE_MS);
   }
 
   /**

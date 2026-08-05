@@ -272,6 +272,16 @@ export class DuelEngineController {
       const state = await DuelPreGameModel.recordChoice(duel, req.user!.id, raw);
       const refreshed = (await DuelModel.findById(duel.id))!;
       notifyPreGame(req, refreshed, state);
+
+      // Si le choix vient de resoudre la pre-game, on lance IMMEDIATEMENT
+      // le moteur cote back — sinon l'appel `view()` du front repond 404
+      // "Ce duel n'est pas ouvert dans le moteur" ("Duel injoignable").
+      // On reutilise la logique de `start()` en la re-appelant : elle est
+      // idempotente (case 3 = pre-game resolu → cree l'instance moteur).
+      if (refreshed.phase_pre_game === 'resolved') {
+        return DuelEngineController.start(req, res, next);
+      }
+
       res.json({ preGame: state });
     } catch (err) {
       next(err);
