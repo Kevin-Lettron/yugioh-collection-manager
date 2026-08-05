@@ -36,6 +36,28 @@ if (!parentPort) {
 }
 const port = parentPort;
 
+// Traces bas niveau : quand le worker meurt sur un abort natif (SIGABRT depuis
+// ocgcore-wasm par ex), aucun handler JS ne se declenche et winston n'a pas le
+// temps de flush. console.error direct sur stderr = capte par PM2 avant kill.
+// On les garde meme apres debug : la boucle de crash silencieuse a coute cher
+// a diagnostiquer, ces traces previendront la prochaine.
+const trace = (step: string, extra?: unknown) => {
+  // eslint-disable-next-line no-console
+  console.error(
+    `[WORKER-TRACE] ${new Date().toISOString()} ${step}${
+      extra !== undefined ? ' ' + JSON.stringify(extra).slice(0, 300) : ''
+    }`
+  );
+};
+trace('boot');
+process.on('exit', (code) => trace('process.exit', { code }));
+process.on('uncaughtException', (err) => {
+  trace('uncaughtException', { message: (err as Error)?.message, stack: (err as Error)?.stack?.slice(0, 500) });
+});
+process.on('unhandledRejection', (reason) => {
+  trace('unhandledRejection', { reason: String(reason).slice(0, 500) });
+});
+
 const sessions = new Map<number, DuelSession>();
 
 let core: OcgCoreSync | null = null;
@@ -92,13 +114,18 @@ async function ensureReady(): Promise<{
   store: CardStore;
 }> {
   if (!core || !ocg || !store) {
+    trace('ensureReady: getOcgModule');
     ocg = await getOcgModule();
+    trace('ensureReady: getOcgModule OK');
+    trace('ensureReady: getCore (WASM init)');
     core = await getCore();
+    trace('ensureReady: getCore OK');
+    trace('ensureReady: getCardStore');
     store = getCardStore();
-    // Le fil principal charge aussi `strings.conf` au boot, mais le worker
-    // vit dans son propre espace mémoire — on le fait donc ici aussi. Fichier
-    // optionnel : sans lui, les invites retombent sur les libellés génériques.
+    trace('ensureReady: getCardStore OK');
+    trace('ensureReady: loadHintStrings');
     loadHintStrings();
+    trace('ensureReady: loadHintStrings OK');
   }
   return { core, ocg, store };
 }
