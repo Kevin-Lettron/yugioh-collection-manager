@@ -871,8 +871,14 @@ function ClockPill({
 const LOCATION_MZONE = 0x4;
 const LOCATION_SZONE = 0x8;
 const POSITION_DEFENSE = 0xc;
-const isDefense = (card: DuelCardView | null): boolean =>
-  !!card && ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
+/**
+ * Une carte est visuellement couchee (horizontale, rotate 90deg) UNIQUEMENT
+ * si c'est un MONSTRE en defense. Les magies/pieges poses SET portent aussi
+ * POS_FACEDOWN_DEFENSE = 8 cote ygopro (c'est leur position 'set'), mais elles
+ * restent verticales — d'ou le check sur LOCATION_MZONE.
+ */
+const isMonsterInDefense = (card: DuelCardView | null, location: number): boolean =>
+  !!card && location === LOCATION_MZONE && ((card.position ?? 0) & POSITION_DEFENSE) !== 0;
 
 /**
  * BoardSide — un camp complet en landscape.
@@ -940,6 +946,7 @@ function BoardSide({
         field={extra?.field}
         pendulum={extra?.pendulum}
         emz={extra?.emz}
+        layFlat={isMonsterInDefense(card, location)}
         onPress={onPress}
         styles={styles}
       />
@@ -1040,6 +1047,7 @@ function ZoneSlot({
   field,
   pendulum,
   emz,
+  layFlat,
   onPress,
   styles,
 }: {
@@ -1049,6 +1057,8 @@ function ZoneSlot({
   field?: boolean;
   pendulum?: 'left' | 'right';
   emz?: boolean;
+  /** Monstre en defense uniquement (cf isMonsterInDefense). */
+  layFlat?: boolean;
   onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
 }) {
@@ -1064,7 +1074,7 @@ function ZoneSlot({
           : emz
             ? '#22d3ee'
             : undefined;
-  const defense = isDefense(card);
+  const defense = !!layFlat;
   const counters = card?.counters ?? null;
   const totalCounters = counters
     ? Object.values(counters).reduce((a, b) => a + b, 0)
@@ -1330,9 +1340,51 @@ function PromptModal({
 }) {
   const [picked, setPicked] = useState<string[]>([]);
   useEffect(() => setPicked([]), [prompt.message]);
+  // Etape intermediaire pour les fenetres de chaine : Oui / Non avant la
+  // grille d'options. Sans ca, le joueur voit tout de suite la grille alors
+  // que la vraie question est « veux-tu repondre en chaine ? ». Reset quand
+  // le kind ou le message change (nouvelle invite = re-demander la confirm).
+  const [chainConfirmed, setChainConfirmed] = useState(false);
+  useEffect(() => setChainConfirmed(false), [prompt.kind, prompt.message]);
+  const chainGate = prompt.kind === 'chain' && !chainConfirmed && prompt.canCancel;
 
   const canValidate = picked.length >= prompt.min && picked.length <= prompt.max;
   const isSingle = prompt.min === 1 && prompt.max === 1;
+
+  // Vue "Oui / Non" prealable pour la chaine — on la rend a la place du contenu
+  // normal, dans le meme Modal (garde la meme UX de dialogue central).
+  if (chainGate) {
+    return (
+      <Modal transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 320 }]}>
+            <Text style={[styles.modalTitle, { color: colors.gold }]}>
+              {prompt.hint?.title ?? 'Répondre à la chaîne ?'}
+            </Text>
+            <Text style={styles.dim}>
+              Ta réponse est possible sur les cartes cliquables. Veux-tu répondre ?
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={() => setChainConfirmed(true)}
+                disabled={busy}
+              >
+                <Text style={styles.btnTxt}>Oui</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.ghostBtn}
+                onPress={() => onChoose([], true)}
+                disabled={busy}
+              >
+                <Text style={styles.ghostTxt}>Non</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   // §C.2 · Indication de portée
   const rangeText =
